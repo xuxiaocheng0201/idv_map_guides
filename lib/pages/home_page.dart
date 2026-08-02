@@ -1,0 +1,87 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:idv_map_guides/bloc/map_cubit.dart';
+import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/models/map.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              S.of(context).title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            Text(S.of(context).mapChoose, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            BlocBuilder<MapCubit, MapState>(
+              builder: (context, state) => Wrap(
+                spacing: 12,
+                children: MapType.values.map((map) {
+                  final isSelected = state.selectedMap == map;
+                  return ChoiceChip(
+                    label: Text(mapLabel(context, map)),
+                    selected: isSelected,
+                    onSelected: (_) => context.read<MapCubit>().selectMap(map),
+                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            Text(S.of(context).difficultyChoose, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            BlocBuilder<MapCubit, MapState>(
+              builder: (context, state) => Wrap(
+                  spacing: 12,
+                  children: MapDifficulty.values.map((difficulty) {
+                    final isSelected = state.selectedDifficulty == difficulty;
+                    return ChoiceChip(
+                      label: Text(difficultyLabel(context, difficulty)),
+                      selected: isSelected,
+                      onSelected: (_) => context.read<MapCubit>().selectDifficulty(difficulty),
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                    );
+                  }).toList(),
+                ),
+            ),
+            const SizedBox(height: 32),
+
+            ElevatedButton(
+              onPressed: () {
+                final state = context.read<MapCubit>().state;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Enter ${mapLabel(context, state.selectedMap)} - ${difficultyLabel(context, state.selectedDifficulty)}',
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                S.of(context).enter,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

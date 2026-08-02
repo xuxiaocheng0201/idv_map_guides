@@ -1,0 +1,12 @@
+{
+  "@@locale": "en",
+  "title": "IDV Map Guides",
+  "mapChoose": "Choose map",
+  "mapTheBringerOfDoom": "The Bringer Of Doom",
+  "difficultyChoose": "Choose difficulty",
+  "difficultyNovice": "Novice",
+  "difficultyEasy": "Easy",
+  "difficultyNormal": "Normal",
+  "difficultyHard": "Hard",
+  "enter": "Enter"
+}

@@ -4,6 +4,7 @@
 !/pubspec.yaml
 !/pubspec.lock
 !/README.md
-!/.metadata
 
 !/lib
+/lib/generated
+#!/maps
