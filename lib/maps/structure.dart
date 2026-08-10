@@ -96,6 +96,7 @@ abstract class StructureDef {
   int get boundRows;
   int get boundCols;
   bool get isDouble;
+  bool get isCorridor => false;
   Set<LocalPos> cells(Layer layer);
   Set<DoorDef> doors(Layer layer);
 }
@@ -108,36 +109,9 @@ class CorridorDef extends StructureDef {
   @override int get boundRows => path.map((p) => p.row).reduce((a,b) => a > b ? a : b) + 1;
   @override int get boundCols => path.map((p) => p.col).reduce((a,b) => a > b ? a : b) + 1;
   @override bool get isDouble => false;
+  @override bool get isCorridor => true;
   @override Set<LocalPos> cells(Layer layer) => path;
   @override Set<DoorDef> doors(Layer layer) => doorList;
-}
-
-/// ```
-/// X X N X X
-/// N R R R N
-/// X R R R X
-/// X R R R X
-/// X R R R X
-/// ```
-class MuseRoomDef extends StructureDef {
-  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
-    DoorDef(LocalPos(0, 2), Direction.north),
-    DoorDef(LocalPos(1, 0), Direction.north),
-    DoorDef(LocalPos(1, 4), Direction.north),
-  ]);
-  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
-    LocalPos(0, 2),
-    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
-    LocalPos(2, 1), LocalPos(2, 2), LocalPos(2, 3),
-    LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3),
-    LocalPos(4, 1), LocalPos(4, 2), LocalPos(4, 3),
-  ]);
-  @override String get typeName => 'muse_room';
-  @override int get boundRows => 5;
-  @override int get boundCols => 5;
-  @override bool get isDouble => false;
-  @override Set<LocalPos> cells(Layer layer) => _cells;
-  @override Set<DoorDef> doors(Layer layer) => _doors;
 }
 
 /// ```
@@ -163,6 +137,7 @@ class Stair2x2Def extends StructureDef {
   @override int get boundRows => 2;
   @override int get boundCols => 2;
   @override bool get isDouble => true;
+  @override bool get isCorridor => true;
   @override Set<LocalPos> cells(Layer layer) => _cells;
   @override Set<DoorDef> doors(Layer layer) => switch (layer) {
     Layer.upper => _upperDoors,
@@ -198,6 +173,7 @@ class Stair3x3Def extends StructureDef {
   @override int get boundRows => 3;
   @override int get boundCols => 3;
   @override bool get isDouble => true;
+  @override bool get isCorridor => true;
   @override Set<LocalPos> cells(Layer layer) => _cells;
   @override Set<DoorDef> doors(Layer layer) => switch (layer) {
     Layer.upper => _upperDoors,
@@ -214,8 +190,8 @@ class Stair3x3Def extends StructureDef {
 ///
 class YCorridorDef extends StructureDef {
   static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
-    DoorDef(LocalPos(0, 1), Direction.north),
-    DoorDef(LocalPos(0, 3), Direction.north),
+    DoorDef(LocalPos(0, 0), Direction.north),
+    DoorDef(LocalPos(0, 4), Direction.north),
     DoorDef(LocalPos(4, 2), Direction.south),
   ]);
   static final Set<LocalPos> _cells = createPosSet()..addAll(const [
@@ -226,6 +202,35 @@ class YCorridorDef extends StructureDef {
     LocalPos(4,2),
   ]);
   @override String get typeName => 'y_corridor';
+  @override int get boundRows => 5;
+  @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override bool get isCorridor => true;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// X X N X X
+/// N R R R N
+/// X R R R X
+/// X R R R X
+/// X R R R X
+/// ```
+class MuseRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 2), Direction.north),
+    DoorDef(LocalPos(1, 0), Direction.north),
+    DoorDef(LocalPos(1, 4), Direction.north),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
+    LocalPos(2, 1), LocalPos(2, 2), LocalPos(2, 3),
+    LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3),
+    LocalPos(4, 1), LocalPos(4, 2), LocalPos(4, 3),
+  ]);
+  @override String get typeName => 'muse_room';
   @override int get boundRows => 5;
   @override int get boundCols => 5;
   @override bool get isDouble => false;

@@ -38,6 +38,7 @@ class PlacedStructure {
 
 class CellInfo {
   int? structureId;
+  bool isCorridor = false;
   Set<Direction> doors = {};
 }
 
@@ -77,6 +78,7 @@ class MapModel {
       final grid = grids[layer]!;
       for (final c in ps.worldCells(layer)) {
         grid[c.row][c.col].structureId = ps.id;
+        grid[c.row][c.col].isCorridor = ps.def.isCorridor;
       }
       for (final d in ps.worldDoors(layer)) {
         grid[d.pos.row][d.pos.col].doors.add(d.facing);
@@ -90,20 +92,20 @@ class MapModel {
   void validateDoors() {
     for (final layer in Layer.values) {
       final grid = grids[layer]!;
-      for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-          final cell = grid[y][x];
+      for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+          final cell = grid[row][col];
           for (final dir in cell.doors) {
-            final nx = x + dir.dx;
-            final ny = y + dir.dy;
-            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            final ny = row + dir.dy;
+            final nx = col + dir.dx;
+            if (ny < 0 || ny >= height || nx < 0 || nx >= width) continue;
             final neighbor = grid[ny][nx];
             if (neighbor.structureId == null) continue;
             if (neighbor.structureId == cell.structureId) {
-              errors.add('Door inside structure at ($y,$x) facing ${dir.name}');
+              errors.add('Door inside structure at ($row,$col) facing ${dir.name}');
             }
             if (!neighbor.doors.contains(dir.opposite)) {
-              errors.add('Door mismatch at ($y,$x) facing ${dir.name}');
+              errors.add('Door mismatch at ($row,$col) facing ${dir.name}');
             }
           }
         }
