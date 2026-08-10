@@ -1,10 +1,10 @@
 import 'dart:collection';
 
 enum Direction {
-  north,
-  east,
-  south,
-  west,
+  north, // ↑
+  east, // →
+  south, // ↓
+  west, // ←
 }
 
 extension DirectionExt on Direction {
@@ -155,7 +155,7 @@ class Stair2x2Def extends StructureDef {
 /// W R E
 /// R R R
 /// ```
-class Stair3x3Def extends StructureDef {
+class Stair3x3TDef extends StructureDef {
   static final Set<DoorDef> _lowerDoors = createDoorSet()..addAll(const [
     DoorDef(LocalPos(0, 2), Direction.north),
     DoorDef(LocalPos(2, 0), Direction.south),
@@ -169,7 +169,42 @@ class Stair3x3Def extends StructureDef {
     LocalPos(1,0), LocalPos(1,1), LocalPos(1,2),
     LocalPos(2,0), LocalPos(2,1), LocalPos(2,2),
   ]);
-  @override String get typeName => 'stair_3x3';
+  @override String get typeName => 'stair_3x3_t';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => true;
+  @override bool get isCorridor => true;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => switch (layer) {
+    Layer.upper => _upperDoors,
+    Layer.lower => _lowerDoors,
+  };
+}
+
+/// ```
+/// R R R
+/// R R R
+/// R S R
+/// ```
+/// ```
+/// W R E
+/// R R R
+/// R R R
+/// ```
+class Stair3x3ODef extends StructureDef {
+  static final Set<DoorDef> _lowerDoors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(2, 1), Direction.south),
+  ]);
+  static final Set<DoorDef> _upperDoors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(0, 2), Direction.east),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0,0), LocalPos(0,1), LocalPos(0,2),
+    LocalPos(1,0), LocalPos(1,1), LocalPos(1,2),
+    LocalPos(2,0), LocalPos(2,1), LocalPos(2,2),
+  ]);
+  @override String get typeName => 'stair_3x3_o';
   @override int get boundRows => 3;
   @override int get boundCols => 3;
   @override bool get isDouble => true;
@@ -211,6 +246,61 @@ class YCorridorDef extends StructureDef {
 }
 
 /// ```
+/// R N R
+/// W R E
+/// R S R
+/// ```
+class CenterCorridorDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 1), Direction.north),
+    DoorDef(LocalPos(1, 0), Direction.west),
+    DoorDef(LocalPos(1, 2), Direction.east),
+    DoorDef(LocalPos(2, 1), Direction.south),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2),
+  ]);
+  @override String get typeName => 'center_corridor';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override bool get isCorridor => true;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// X N X
+/// R R R
+/// R R R
+/// W R E
+/// X R X
+/// ```
+class MainEntranceDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 1), Direction.north),
+    DoorDef(LocalPos(3, 0), Direction.west),
+    DoorDef(LocalPos(3, 2), Direction.east),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 1),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2),
+    LocalPos(4, 1),
+  ]);
+  @override String get typeName => 'main_entrance';
+  @override int get boundRows => 3;
+  @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override bool get isCorridor => true;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
 /// X X N X X
 /// N R R R N
 /// X R R R X
@@ -233,6 +323,301 @@ class MuseRoomDef extends StructureDef {
   @override String get typeName => 'muse_room';
   @override int get boundRows => 5;
   @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// S X X X X
+/// R X R R R
+/// R X R R R
+/// R R R R X
+/// N X X X X
+/// ```
+class BedRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.south),
+    DoorDef(LocalPos(4, 0), Direction.north),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0),
+    LocalPos(1, 0), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
+    LocalPos(2, 0), LocalPos(2, 2), LocalPos(2, 3), LocalPos(2, 4),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3),
+    LocalPos(4, 0),
+  ]);
+  @override String get typeName => 'bed_room';
+  @override int get boundRows => 5;
+  @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// N R R R R
+/// R R R R E
+/// R R R R R
+/// R R R R R
+/// R R R R R
+/// ```
+class FiveBedRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.north),
+    DoorDef(LocalPos(1, 4), Direction.east),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2), LocalPos(0, 3), LocalPos(0, 4),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2), LocalPos(2, 3), LocalPos(2, 4),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3), LocalPos(3, 4),
+    LocalPos(4, 0), LocalPos(4, 1), LocalPos(4, 2), LocalPos(4, 3), LocalPos(4, 4),
+  ]);
+  @override String get typeName => 'five_bed_room';
+  @override int get boundRows => 5;
+  @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// N R R R E
+/// R R R R R
+/// R R R R R
+/// R R R R R
+/// W R R R S
+/// ```
+class MeetingRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.north),
+    DoorDef(LocalPos(0, 4), Direction.east),
+    DoorDef(LocalPos(4, 0), Direction.west),
+    DoorDef(LocalPos(4, 4), Direction.south),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2), LocalPos(0, 3), LocalPos(0, 4),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2), LocalPos(2, 3), LocalPos(2, 4),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3), LocalPos(3, 4),
+    LocalPos(4, 0), LocalPos(4, 1), LocalPos(4, 2), LocalPos(4, 3), LocalPos(4, 4),
+  ]);
+  @override String get typeName => 'meeting_room';
+  @override int get boundRows => 5;
+  @override int get boundCols => 5;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// W R R R R
+/// R R R R R
+/// R R R R R
+/// R R R R R
+/// W R R S R
+/// ```
+/// ```
+/// W R R X X
+/// R R R X X
+/// R R R X X
+/// R R R X X
+/// W R R X X
+/// ```
+class RestaurantRoomDef extends StructureDef {
+  static final Set<DoorDef> _lowerDoors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(4, 0), Direction.west),
+    DoorDef(LocalPos(4, 3), Direction.south),
+  ]);
+  static final Set<DoorDef> _upperDoors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(4, 0), Direction.west),
+  ]);
+  static final Set<LocalPos> _lowerCells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2), LocalPos(0, 3), LocalPos(0, 4),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3), LocalPos(1, 4),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2), LocalPos(2, 3), LocalPos(2, 4),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2), LocalPos(3, 3), LocalPos(3, 4),
+    LocalPos(4, 0), LocalPos(4, 1), LocalPos(4, 2), LocalPos(4, 3), LocalPos(4, 4),
+  ]);
+  static final Set<LocalPos> _upperCells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2),
+    LocalPos(3, 0), LocalPos(3, 1), LocalPos(3, 2),
+    LocalPos(4, 0), LocalPos(4, 1), LocalPos(4, 2),
+  ]);
+  @override String get typeName => 'restaurant_room';
+  @override int get boundRows => 5;
+  @override int get boundCols => 5;
+  @override bool get isDouble => true;
+  @override Set<LocalPos> cells(Layer layer) => switch (layer) {
+    Layer.upper => _upperCells,
+    Layer.lower => _lowerCells,
+  };
+  @override Set<DoorDef> doors(Layer layer) => switch (layer) {
+    Layer.upper => _upperDoors,
+    Layer.lower => _lowerDoors,
+  };
+}
+
+/// ```
+/// R R X
+/// R R E
+/// X S X
+/// ```
+class CornerRoomADef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(1, 2), Direction.east),
+    DoorDef(LocalPos(2, 1), Direction.south),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 1),
+  ]);
+  @override String get typeName => 'corner_room_a';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// W R N
+/// R R R
+/// ```
+class CornerRoomBDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(0, 2), Direction.north),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+  ]);
+  @override String get typeName => 'corner_room_b';
+  @override int get boundRows => 2;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// W R N R
+/// R R R E
+/// ```
+class CenterRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(0, 2), Direction.north),
+    DoorDef(LocalPos(1, 3), Direction.east),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2), LocalPos(0, 3),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2), LocalPos(1, 3),
+  ]);
+  @override String get typeName => 'center_room';
+  @override int get boundRows => 2;
+  @override int get boundCols => 4;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// R N R
+/// R R X
+/// X R X
+/// ```
+class SafeRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 1), Direction.north),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1),
+    LocalPos(2, 1),
+  ]);
+  @override String get typeName => 'safe_room';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// X R E
+/// R R R
+/// W R X
+/// ```
+class StairRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 2), Direction.east),
+    DoorDef(LocalPos(2, 0), Direction.west),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 0), LocalPos(2, 1),
+  ]);
+  @override String get typeName => 'stair_room';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// W R E
+/// X R X
+/// X S X
+/// ```
+class TRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 0), Direction.west),
+    DoorDef(LocalPos(0, 2), Direction.east),
+    DoorDef(LocalPos(2, 1), Direction.south),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 0), LocalPos(0, 1), LocalPos(0, 2),
+    LocalPos(1, 1),
+    LocalPos(2, 1),
+  ]);
+  @override String get typeName => 't_room';
+  @override int get boundRows => 3;
+  @override int get boundCols => 3;
+  @override bool get isDouble => false;
+  @override Set<LocalPos> cells(Layer layer) => _cells;
+  @override Set<DoorDef> doors(Layer layer) => _doors;
+}
+
+/// ```
+/// X N X
+/// R R R
+/// R R R
+/// X S X
+/// ```
+class LanternRoomDef extends StructureDef {
+  static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
+    DoorDef(LocalPos(0, 1), Direction.north),
+    DoorDef(LocalPos(3, 1), Direction.south),
+  ]);
+  static final Set<LocalPos> _cells = createPosSet()..addAll(const [
+    LocalPos(0, 1),
+    LocalPos(1, 0), LocalPos(1, 1), LocalPos(1, 2),
+    LocalPos(2, 0), LocalPos(2, 1), LocalPos(2, 2),
+    LocalPos(3, 1),
+  ]);
+  @override String get typeName => 'lantern_room';
+  @override int get boundRows => 3;
+  @override int get boundCols => 4;
   @override bool get isDouble => false;
   @override Set<LocalPos> cells(Layer layer) => _cells;
   @override Set<DoorDef> doors(Layer layer) => _doors;

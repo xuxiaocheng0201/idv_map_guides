@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:idv_map_guides/maps/structure.dart';
 
@@ -114,7 +115,8 @@ class MapModel {
   }
 }
 
-MapModel parseJson(Map<String, dynamic> data) {
+MapModel parseJson(String source) {
+  final data = json.decode(source);
   final w = data['width'] as int;
   final h = data['height'] as int;
   final map = MapModel(w, h);
@@ -144,17 +146,59 @@ MapModel parseJson(Map<String, dynamic> data) {
         )).toSet();
         def = CorridorDef(path, doors);
         break;
-      case 'muse_room':
-        def = MuseRoomDef();
-        break;
       case 'stair_2x2':
         def = Stair2x2Def();
         break;
-      case 'stair_3x3':
-        def = Stair3x3Def();
+      case 'stair_3x3_t':
+        def = Stair3x3TDef();
+        break;
+      case 'stair_3x3_o':
+        def = Stair3x3ODef();
         break;
       case 'y_corridor':
         def = YCorridorDef();
+        break;
+      case 'center_corridor':
+        def = CenterCorridorDef();
+        break;
+      case 'main_entrance':
+        def = MainEntranceDef();
+        break;
+      case 'muse_room':
+        def = MuseRoomDef();
+        break;
+      case 'bed_room':
+        def = BedRoomDef();
+        break;
+      case 'five_bed_room':
+        def = FiveBedRoomDef();
+        break;
+      case 'meeting_room':
+        def = MeetingRoomDef();
+        break;
+      case 'restaurant_room':
+        def = RestaurantRoomDef();
+        break;
+      case 'corner_room_a':
+        def = CornerRoomADef();
+        break;
+      case 'corner_room_b':
+        def = CornerRoomBDef();
+        break;
+      case 'center_room':
+        def = CenterRoomDef();
+        break;
+      case 'safe_room':
+        def = SafeRoomDef();
+        break;
+      case 'stair_room':
+        def = StairRoomDef();
+        break;
+      case 't_room':
+        def = TRoomDef();
+        break;
+      case 'lantern_room':
+        def = LanternRoomDef();
         break;
       default:
         throw ArgumentError('Unknown structure type: $type');

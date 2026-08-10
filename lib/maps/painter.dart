@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' hide Layer;
 import 'package:idv_map_guides/maps/structure.dart';
 import 'package:idv_map_guides/maps/world.dart';
 
