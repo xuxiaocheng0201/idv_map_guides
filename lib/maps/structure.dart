@@ -329,16 +329,16 @@ class MuseRoomDef extends StructureDef {
 }
 
 /// ```
-/// S X X X X
+/// N X X X X
 /// R X R R R
 /// R X R R R
 /// R R R R X
-/// N X X X X
+/// S X X X X
 /// ```
 class BedRoomDef extends StructureDef {
   static final Set<DoorDef> _doors = createDoorSet()..addAll(const [
-    DoorDef(LocalPos(0, 0), Direction.south),
-    DoorDef(LocalPos(4, 0), Direction.north),
+    DoorDef(LocalPos(0, 0), Direction.north),
+    DoorDef(LocalPos(4, 0), Direction.south),
   ]);
   static final Set<LocalPos> _cells = createPosSet()..addAll(const [
     LocalPos(0, 0),
