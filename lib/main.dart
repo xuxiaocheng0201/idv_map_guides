@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' hide Layer;
-import 'dart:convert';
 import 'package:idv_map_guides/maps/structure.dart';
 import 'package:idv_map_guides/maps/world.dart';
 import 'package:idv_map_guides/maps/painter.dart';
@@ -33,7 +31,7 @@ class _EditorPageState extends State<EditorPage> {
   final TextEditingController _jsonController = TextEditingController();
   MapModel? _map;
   List<String> _errors = [];
-  Layer _currentLayer = Layer.lower; // 默认下层
+  Layer _currentLayer = Layer.lower;
 
   void _generate() {
     try {
@@ -138,13 +136,17 @@ class _EditorPageState extends State<EditorPage> {
                 Expanded(
                   child: _map == null
                       ? const Center(child: Text('左侧输入 JSON 并点击生成'))
-                      : LayoutBuilder(
-                    builder: (context, constraints) {
-                      return CustomPaint(
-                        painter: MapPainter(_map!, _currentLayer),
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
-                      );
-                    },
+                      : InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 5.0,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return CustomPaint(
+                          size: Size(constraints.maxWidth, constraints.maxHeight),
+                          painter: MapPainter(_map!, _currentLayer),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -188,7 +190,7 @@ class _HelpPageState extends State<HelpPage> {
 
   String? _selectedType;
   StructureDef? _selectedDef;
-  Layer _previewLayer = Layer.lower; // 默认下层
+  Layer _previewLayer = Layer.lower;
   MapModel? _previewMap;
 
   (int, int) _calculateOrigin(StructureDef def) {
@@ -201,7 +203,6 @@ class _HelpPageState extends State<HelpPage> {
   MapModel _buildPreviewMap(StructureDef def) {
     final map = MapModel(10, 10);
     final (ox, oy) = _calculateOrigin(def);
-    // 单层结构强制放在下层，上层为空
     final Layer? singleLayer = def.isDouble ? null : Layer.lower;
     final ps = PlacedStructure(
       1,
@@ -237,7 +238,7 @@ class _HelpPageState extends State<HelpPage> {
                       _selectedType = item.type;
                       _selectedDef = item.def;
                       _previewMap = _buildPreviewMap(item.def);
-                      _previewLayer = Layer.lower; // 切换结构时重置为下层
+                      _previewLayer = Layer.lower;
                     });
                   },
                 );
@@ -272,13 +273,17 @@ class _HelpPageState extends State<HelpPage> {
                   ),
                 ),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return CustomPaint(
-                        painter: MapPainter(_previewMap!, _previewLayer),
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
-                      );
-                    },
+                  child: InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 5.0,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return CustomPaint(
+                          size: Size(constraints.maxWidth, constraints.maxHeight),
+                          painter: MapPainter(_previewMap!, _previewLayer),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
