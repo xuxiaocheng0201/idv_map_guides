@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 //     |
 // ----+----> x
 //     |
-//     |
 // ```
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
@@ -64,7 +63,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub(crate) fn dxy(self) -> (i32, i32) {
+    pub fn dxy(self) -> (i32, i32) {
         match self {
             Direction::North => (0, 1),
             Direction::East => (1, 0),
@@ -73,7 +72,7 @@ impl Direction {
         }
     }
 
-    pub(crate) fn rotate(self, rotation: Rotation) -> Direction {
+    pub fn rotate(self, rotation: Rotation) -> Direction {
         let mut result = self;
         for _ in 0..rotation.times() {
             result = match result {

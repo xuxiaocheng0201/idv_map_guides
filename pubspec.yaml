@@ -5,19 +5,20 @@ publish_to: 'none'
 version: 0.1.0+20260709
 
 environment:
-  sdk: ^3.12.2
-  flutter: ^3.44.9
+  sdk: ^3.13.1
+  flutter: ^3.47.1
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  sentry_flutter: ^9.4.1
+  sentry_flutter: ^9.27.0
   flutter_bloc: ^9.1.1
   rust_lib_idv_map_guides:
     path: rust_builder
   flutter_rust_bridge: 2.12.0
+  freezed_annotation: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -25,6 +26,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   integration_test:
     sdk: flutter
+  freezed: ^4.0.0
+  build_runner: ^2.16.0
 
 flutter:
   uses-material-design: true
