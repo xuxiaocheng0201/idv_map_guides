@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:idv_map_guides/generated/rust/api/editor.dart';
-import 'package:idv_map_guides/generated/rust/api/map.dart';
-import 'package:idv_map_guides/painter/structure_editor_painter.dart';
+import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/serde.dart';
+import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 
 EdgeType getEdgeType(Structure structure, Position position, Direction direction) {
   if (structure.doors.any((d) => d.position == position && d.direction == direction)) return EdgeType.door;
@@ -57,8 +57,7 @@ void removeCell(Structure structure, Position position) {
 }
 
 Future<List<(String, Structure)>> readStructures(String path) async {
-  final content = await File(path).readAsBytes();
-  final map = await loadStructures(content: content);
+  final map = await loadStructures(path);
   final structures = map.entries.map((e) => (e.key, e.value)).toList();
   structures.sort((a, b) => a.$1.compareTo(b.$1));
   return structures;
@@ -66,9 +65,7 @@ Future<List<(String, Structure)>> readStructures(String path) async {
 
 Future<String> writeStructures(List<(String, Structure)> structures, String path) async {
   final map = Map.fromEntries(structures.map((entry) => MapEntry(entry.$1, entry.$2)));
-  final content = await saveStructures(structures: map);
-  await File(path).writeAsBytes(content);
-  return File(path).absolute.path;
+  return await saveStructures(map, path);
 }
 
 class StructuresEditorPage extends StatefulWidget {
@@ -267,10 +264,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                             ),
                             child: CustomPaint(
                               size: paintSize,
-                              painter: StructureEditorPainter(
+                              painter: EditorStructurePainter(
                                 structure: structure,
-                                cellsWidth: canvasWidth,
-                                cellsHeight: canvasHeight,
+                                width: canvasWidth,
+                                height: canvasHeight,
                                 selectedCell: _selectedCell,
                               ),
                             ),

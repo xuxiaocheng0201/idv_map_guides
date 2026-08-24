@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:idv_map_guides/bloc/map_cubit.dart';
+import 'package:idv_map_guides/core/maps.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/models/map.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -30,7 +30,7 @@ class HomePage extends StatelessWidget {
                 children: MapType.values.map((map) {
                   final isSelected = state.selectedMap == map;
                   return ChoiceChip(
-                    label: Text(mapLabel(context, map)),
+                    label: Text(map.label(context)),
                     selected: isSelected,
                     onSelected: (_) => context.read<MapCubit>().selectMap(map),
                     selectedColor: Theme.of(context).colorScheme.primaryContainer,
@@ -48,7 +48,7 @@ class HomePage extends StatelessWidget {
                   children: MapDifficulty.values.map((difficulty) {
                     final isSelected = state.selectedDifficulty == difficulty;
                     return ChoiceChip(
-                      label: Text(difficultyLabel(context, difficulty)),
+                      label: Text(difficulty.label(context)),
                       selected: isSelected,
                       onSelected: (_) => context.read<MapCubit>().selectDifficulty(difficulty),
                       selectedColor: Theme.of(context).colorScheme.primaryContainer,
@@ -64,7 +64,7 @@ class HomePage extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Enter ${mapLabel(context, state.selectedMap)} - ${difficultyLabel(context, state.selectedDifficulty)}',
+                      'Enter ${state.selectedMap.label(context)} - ${state.selectedDifficulty.label(context)}',
                     ),
                   ),
                 );

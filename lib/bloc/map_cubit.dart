@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:idv_map_guides/models/map.dart';
+import 'package:idv_map_guides/core/maps.dart';
 
 class MapState {
   final MapType selectedMap;

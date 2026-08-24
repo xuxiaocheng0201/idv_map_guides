@@ -1,11 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:idv_map_guides/generated/rust/api/map.dart';
+import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/painter/map_painter.dart';
 
 class MapScreen extends StatefulWidget {
-  final MapModel map;
+  final World map;
 
   const MapScreen({super.key, required this.map});
 
@@ -14,21 +15,21 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  late Layer _activeLayer;
+  late GroundLayer _activeLayer;
 
   @override
   void initState() {
     super.initState();
-    _activeLayer = Layer.ground;
+    _activeLayer = GroundLayer.ground;
   }
 
-  String _layerLabel(Layer layer) {
+  String _layerLabel(GroundLayer layer) {
     switch (layer) {
-      case Layer.basement:
+      case GroundLayer.basement:
         return '地下室';
-      case Layer.ground:
+      case GroundLayer.ground:
         return '一层';
-      case Layer.second:
+      case GroundLayer.second:
         return '二层';
     }
   }
@@ -41,7 +42,7 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: const Text('地图展示'),
         actions: [
-          PopupMenuButton<Layer>(
+          PopupMenuButton<GroundLayer>(
             initialValue: _activeLayer,
             onSelected: (layer) {
               setState(() {

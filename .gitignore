@@ -7,6 +7,6 @@
 
 !/lib
 /lib/generated
-!/flutter_rust_bridge.yaml
-!/rust
+lib/**/*.freezed.dart
+lib/**/*.g.dart
 !/assets

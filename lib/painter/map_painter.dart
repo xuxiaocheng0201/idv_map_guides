@@ -1,7 +1,10 @@
-import 'package:flutter/rendering.dart' hide Layer;
-import 'package:idv_map_guides/generated/rust/api/map.dart';
+import 'dart:math';
 
-const outsideColor = Color(0xFF223344);
+import 'package:flutter/rendering.dart';
+import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/world.dart';
+
+const backgroundColor = Color(0xFF223344);
 const corridorColor = Color(0xFF666666);
 const roomColor = Color(0xFF665544);
 const wallColor = Color(0xFF778899);
@@ -9,51 +12,33 @@ const doorColor = Color(0xFFFFDD33);
 const holeColor = Color(0xFFFF6F61);
 const stairGridColor = Color(0xFFBDBDBD);
 
-final Paint outsidePaint = Paint()
-  ..color = outsideColor;
-final Paint corridorPaint = Paint()
-  ..color = corridorColor;
-final Paint roomPaint = Paint()
-  ..color = roomColor;
-final Paint wallPaint = Paint()
-  ..color = wallColor
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = 2.0;
-final Paint doorPaint = Paint()
-  ..color = doorColor
-  ..strokeCap = StrokeCap.round
-  ..strokeWidth = 3.0;
-final Paint holePaint = Paint()
-  ..color = holeColor
-  ..style = PaintingStyle.stroke
-  ..strokeCap = StrokeCap.round
-  ..strokeWidth = 2.0;
-final Paint stairPaint = Paint()
-  ..color = stairGridColor
-  ..strokeWidth = 0.7;
+void drawBackground(Canvas canvas, int width, int height, double cellSize) {
+  final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
+  canvas.drawRect(rect, Paint()..color = backgroundColor);
+}
 
-void drawCell(Canvas canvas, Rect rect, bool isCorridor, StairTransport? isStair) {
-  canvas.drawRect(rect, isCorridor ? corridorPaint : roomPaint);
-  if (isStair != null) {
-    const divisions = 8;
-    for (int i = 1; i < divisions; i++) {
-      final x = rect.left + rect.width * i / divisions;
-      canvas.drawLine(
-        Offset(x, rect.top),
-        Offset(x, rect.bottom),
-        stairPaint,
-      );
-      final y = rect.top + rect.height * i / divisions;
-      canvas.drawLine(
-        Offset(rect.left, y),
-        Offset(rect.right, y),
-        stairPaint,
-      );
-    }
+void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize) {
+  canvas.drawRect(rect, Paint()..color = isCorridor ? corridorColor : roomColor);
+}
+
+void drawStair(Canvas canvas, Rect rect, StairTransport stair, double cellSize) {
+  final Paint paint = Paint()
+    ..color = stairGridColor
+    ..strokeWidth = cellSize * 0.01;
+  const divisions = 8;
+  for (int i = 1; i < divisions; i++) {
+    final x = rect.left + rect.width * i / divisions;
+    canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), paint);
+    final y = rect.top + rect.height * i / divisions;
+    canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), paint);
   }
 }
 
-void drawWall(Canvas canvas, Rect rect, Direction direction) {
+void drawWall(Canvas canvas, Rect rect, Direction direction, double cellSize) {
+  final Paint paint = Paint()
+    ..color = wallColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = cellSize * 0.01;
   final Offset p1;
   final Offset p2;
   switch (direction) {
@@ -74,34 +59,43 @@ void drawWall(Canvas canvas, Rect rect, Direction direction) {
       p2 = rect.bottomLeft;
       break;
   }
-  canvas.drawLine(p1, p2, wallPaint);
+  canvas.drawLine(p1, p2, paint);
 }
 
-void drawDoor(Canvas canvas, Rect rect, Direction direction, double cellW, double cellH) {
+void drawDoor(Canvas canvas, Rect rect, Direction direction, double cellSize) {
+  final Paint paint = Paint()
+    ..color = doorColor
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = cellSize * 0.02;
   final Offset p1;
   final Offset p2;
   switch (direction) {
     case Direction.north:
-      p1 = Offset(rect.left + 0.2 * cellW, rect.top);
-      p2 = Offset(rect.left + 0.8 * cellW, rect.top);
+      p1 = Offset(rect.left + 0.2 * cellSize, rect.top);
+      p2 = Offset(rect.left + 0.8 * cellSize, rect.top);
       break;
     case Direction.south:
-      p1 = Offset(rect.left + 0.2 * cellW, rect.bottom);
-      p2 = Offset(rect.left + 0.8 * cellW, rect.bottom);
+      p1 = Offset(rect.left + 0.2 * cellSize, rect.bottom);
+      p2 = Offset(rect.left + 0.8 * cellSize, rect.bottom);
       break;
     case Direction.east:
-      p1 = Offset(rect.right, rect.top + 0.2 * cellH);
-      p2 = Offset(rect.right, rect.top + 0.8 * cellH);
+      p1 = Offset(rect.right, rect.top + 0.2 * cellSize);
+      p2 = Offset(rect.right, rect.top + 0.8 * cellSize);
       break;
     case Direction.west:
-      p1 = Offset(rect.left, rect.top + 0.2 * cellH);
-      p2 = Offset(rect.left, rect.top + 0.8 * cellH);
+      p1 = Offset(rect.left, rect.top + 0.2 * cellSize);
+      p2 = Offset(rect.left, rect.top + 0.8 * cellSize);
       break;
   }
-  canvas.drawLine(p1, p2, doorPaint);
+  canvas.drawLine(p1, p2, paint);
 }
 
-void drawHole(Canvas canvas, Rect rect, Direction direction) {
+void drawHole(Canvas canvas, Rect rect, Direction direction, double cellSize) {
+  final Paint paint = Paint()
+    ..color = holeColor
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = cellSize * 0.01;
   const dashWidth = 4.0;
   const dashSpace = 3.0;
   double startX, startY, endX, endY;
@@ -138,68 +132,61 @@ void drawHole(Canvas canvas, Rect rect, Direction direction) {
     final t2 = ((i * (dashWidth + dashSpace)) + dashWidth) / total;
     final p1 = Offset(startX + (endX - startX) * t1, startY + (endY - startY) * t1);
     final p2 = Offset(startX + (endX - startX) * t2, startY + (endY - startY) * t2);
-    canvas.drawLine(p1, p2, holePaint);
+    canvas.drawLine(p1, p2, paint);
   }
 }
 
 class MapPainter extends CustomPainter {
-  final MapModel map;
-  final Layer layer;
+  final World map;
+  final GroundLayer layer;
 
   MapPainter(this.map, this.layer);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final width = map.width.toInt();
-    final height = map.height.toInt();
-
-    final cellW = size.width / width;
-    final cellH = size.height / height;
-    final originX = map.minX;
-    final originY = map.minY;
-
-    canvas.drawRect(Offset.zero & size, outsidePaint);
-    for (int dy = height - 1; dy >= 0; dy--) {
-      for (int dx = 0; dx < width; dx++) {
-        final wx = originX + dx;
-        final wy = originY + dy;
-        final cell = map.cell(layer: layer, x: wx, y: wy);
+    final cellSize = min(size.width / map.width, size.height / map.height);
+    drawBackground(canvas, map.width, map.height, cellSize);
+    for (int x = map.minX; x <= map.maxX; x++) {
+      for (int y = map.minY; y <= map.maxY; y++) {
+        final cell = map.cell(layer, x, y);
         switch (cell) {
           case null:
-          case CellInfo_Empty():
+          case CellEmpty():
             continue;
-          case CellInfo_Structure(
+          case CellStructure(
               :final id,
               :final isCorridor,
               :final isStair,
           ):
-            final rect = Rect.fromLTWH(dx * cellW, (height - dy - 1) * cellH, cellW, cellH);
-            drawCell(canvas, rect, isCorridor, isStair);
-            final doors = cell.getDirections(target: EdgeType.door);
-            final holes = cell.getDirections(target: EdgeType.hole);
-            final innerWalls = cell.getDirections(target: EdgeType.innerWall);
-            for (final direction in Direction.values) {
-              if (holes.contains(direction)) {
-                continue;
-              }
-              final (dx, dy) = direction.dxy;
-              final neighbor = map.cell(
-                layer: layer,
-                x: wx + dx,
-                y: wy + dy,
-              );
-              final isBoundary = switch (neighbor) {
-                null => true,
-                CellInfo_Empty() => true,
-                CellInfo_Structure(id: final neighborId) => id != neighborId,
-              };
-              final isInnerWall = innerWalls.contains(direction);
-              if (isInnerWall || isBoundary) {
-                drawWall(canvas, rect, direction);
-              }
+            final rect = Rect.fromLTWH((x - map.minX) * cellSize, (map.maxY  - y) * cellSize, cellSize, cellSize);
+            drawCell(canvas, rect, isCorridor, cellSize);
+            if (isStair != null) {
+              drawStair(canvas, rect, isStair, cellSize);
             }
-            for (final door in doors) {
-              drawDoor(canvas, rect, door, cellW, cellH);
+            for (final direction in Direction.values) {
+              switch (cell.getEdgeType(direction)) {
+                case EdgeType.nothing:
+                  final (dx, dy) = direction.dxy;
+                  final neighbor = map.cell(layer, x + dx, y + dy);
+                  final isBoundary = switch (neighbor) {
+                    null => true,
+                    CellEmpty() => true,
+                    CellStructure(id: final neighborId) => id != neighborId,
+                  };
+                  if (isBoundary) {
+                    drawWall(canvas, rect, direction, cellSize);
+                  }
+                  break;
+                case EdgeType.door:
+                  drawDoor(canvas, rect, direction, cellSize);
+                  break;
+                case EdgeType.innerWall:
+                  drawWall(canvas, rect, direction, cellSize);
+                  break;
+                case EdgeType.hole:
+                  drawHole(canvas, rect, direction, cellSize);
+                  break;
+              }
             }
         }
       }
