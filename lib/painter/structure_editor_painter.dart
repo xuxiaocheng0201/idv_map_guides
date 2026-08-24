@@ -14,13 +14,13 @@ final Paint selectedBorderPaint = Paint()
   ..style = PaintingStyle.stroke
   ..strokeWidth = 2.0;
 
-class StructurePainter extends CustomPainter {
+class StructureEditorPainter extends CustomPainter {
   final Structure structure;
   final int cellsWidth;
   final int cellsHeight;
   final Position? selectedCell;
 
-  StructurePainter({
+  StructureEditorPainter({
     required this.structure,
     required this.cellsWidth,
     required this.cellsHeight,
@@ -53,10 +53,6 @@ class StructurePainter extends CustomPainter {
       final isStair = getStairInfo(structure, position);
       drawCell(canvas, rect, structure.isCorridor, isStair);
 
-      if (selectedCell == position) {
-        canvas.drawRect(rect, selectedBorderPaint);
-      }
-
       for (final direction in Direction.values) {
         final edgeType = getEdgeType(structure, position, direction);
         switch (edgeType) {
@@ -73,11 +69,15 @@ class StructurePainter extends CustomPainter {
             break;
         }
       }
+
+      if (selectedCell == position) {
+        canvas.drawRect(rect, selectedBorderPaint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant StructurePainter oldDelegate) {
+  bool shouldRepaint(covariant StructureEditorPainter oldDelegate) {
     return oldDelegate.structure != structure || oldDelegate.cellsHeight != cellsHeight || oldDelegate.cellsWidth != cellsWidth || oldDelegate.selectedCell != selectedCell;
   }
 }

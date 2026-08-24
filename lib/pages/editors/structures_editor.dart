@@ -1,11 +1,10 @@
-import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/generated/rust/api/editor.dart';
 import 'package:idv_map_guides/generated/rust/api/map.dart';
-import 'package:idv_map_guides/painter/structure_painter.dart';
+import 'package:idv_map_guides/painter/structure_editor_painter.dart';
 
 EdgeType getEdgeType(Structure structure, Position position, Direction direction) {
   if (structure.doors.any((d) => d.position == position && d.direction == direction)) return EdgeType.door;
@@ -57,13 +56,17 @@ void removeCell(Structure structure, Position position) {
   structure.holes.removeWhere((d) => d.position == position);
 }
 
-Future<Map<String, Structure>> readStructures(String path) async {
+Future<List<(String, Structure)>> readStructures(String path) async {
   final content = await File(path).readAsBytes();
-  return await loadStructures(content: content);
+  final map = await loadStructures(content: content);
+  final structures = map.entries.map((e) => (e.key, e.value)).toList();
+  structures.sort((a, b) => a.$1.compareTo(b.$1));
+  return structures;
 }
 
-Future<String> writeStructures(Map<String, Structure> structures, String path) async {
-  final content = await saveStructures(structures: structures);
+Future<String> writeStructures(List<(String, Structure)> structures, String path) async {
+  final map = Map.fromEntries(structures.map((entry) => MapEntry(entry.$1, entry.$2)));
+  final content = await saveStructures(structures: map);
   await File(path).writeAsBytes(content);
   return File(path).absolute.path;
 }
@@ -78,49 +81,37 @@ class StructuresEditorPage extends StatefulWidget {
 }
 
 class _StructuresEditorPageState extends State<StructuresEditorPage> {
-  late Map<String, Structure> _structures;
-  String? _selectedName;
+  late List<(String, Structure)> _structures;
+  int? _selectedIndex;
+  String? _currentName;
   Structure? _currentStructure;
 
   final Map<String, int> _canvasWidths = {};
   final Map<String, int> _canvasHeights = {};
-  final Map<String, TextEditingController> _nameControllers = {};
   static const int defaultCanvasWidth = 5;
   static const int defaultCanvasHeight = 5;
 
   Position? _selectedCell;
-  final TextEditingController _addXController = TextEditingController();
-  final TextEditingController _addYController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _structures = {};
+    _structures = [];
     readStructures(widget.savePath).then((value) {
       setState(() {
         _structures = value;
-        _structures.forEach((name, _) {
-          _canvasWidths[name] = defaultCanvasWidth;
-          _canvasHeights[name] = defaultCanvasHeight;
-          _nameControllers[name] = TextEditingController(text: name);
-        });
+        for (var entry in _structures) {
+          final (name, structure) = entry;
+          _canvasWidths[name] = structure.cells.isEmpty ? defaultCanvasWidth : structure.cells.map((p) => p.x).reduce((a, b) => max(a, b)) + 1;
+          _canvasHeights[name] = structure.cells.isEmpty ? defaultCanvasHeight : structure.cells.map((p) => p.y).reduce((a, b) => max(a, b)) + 1;
+        }
         if (_structures.isNotEmpty) {
-          _selectedName = _structures.keys.first;
-          _currentStructure = _structures[_selectedName];
+          _selectedIndex = 0;
+          _currentName = _structures[_selectedIndex!].$1;
+          _currentStructure = _structures[_selectedIndex!].$2;
         }
       });
     });
-  }
-
-  @override
-  void dispose() {
-    _addXController.dispose();
-    _addYController.dispose();
-    _nameControllers.forEach((_, controller) => controller.dispose());
-    _canvasWidths.clear();
-    _canvasHeights.clear();
-    _nameControllers.clear();
-    super.dispose();
   }
 
   @override
@@ -130,13 +121,13 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
         title: const Text('结构编辑器'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: '完成',
+            icon: const Icon(Icons.save),
+            tooltip: '保存',
             onPressed: () => writeStructures(_structures, widget.savePath).then((path) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('保存成功 $path'),
+                    content: SelectableText('保存成功 $path'),
                   ),
                 );
               }
@@ -163,7 +154,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       IconButton(
                         icon: const Icon(Icons.delete),
                         tooltip: '删除当前结构',
-                        onPressed: _selectedName == null ? null : _deleteStructure,
+                        onPressed: _selectedIndex == null ? null : _deleteStructure,
                       ),
                     ],
                   ),
@@ -172,18 +163,17 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                   child: ListView.builder(
                     itemCount: _structures.length,
                     itemBuilder: (context, index) {
-                      final name = _structures.keys.elementAt(index);
-                      final structure = _structures[name]!;
+                      final (name, structure) = _structures[index];
                       final width = _canvasWidths[name] ?? defaultCanvasWidth;
                       final height = _canvasHeights[name] ?? defaultCanvasHeight;
-                      final isSelected = name == _selectedName;
                       return ListTile(
-                        selected: isSelected,
+                        selected: index == _selectedIndex,
                         title: Text(name),
                         subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'}'),
                         onTap: () {
                           setState(() {
-                            _selectedName = name;
+                            _selectedIndex = index;
+                            _currentName = name;
                             _currentStructure = structure;
                             _selectedCell = null;
                           });
@@ -207,11 +197,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   }
 
   Widget _buildEditor() {
-    final name = _selectedName!;
+    final name = _currentName!;
     final structure = _currentStructure!;
-    final canvasWidth = _canvasWidths[name] ?? defaultCanvasWidth;
-    final canvasHeight = _canvasHeights[name] ?? defaultCanvasHeight;
-
+    final canvasWidth = _canvasWidths[name]!;
+    final canvasHeight = _canvasHeights[name]!;
     return Column(
       children: [
         Padding(
@@ -225,24 +214,28 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),
-                  controller: _nameControllers[name],
-                  onChanged: (newName) => _renameStructure(name, newName),
+                  controller: TextEditingController(text: name),
+                  onSubmitted: (newName) {
+                    if (!_renameStructure(newName)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('重命名失败'),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 16),
-              _buildDimensionControl('宽', canvasWidth, (v) => _setCanvasWidth(name, v)),
+              _buildDimensionControl('宽', canvasWidth, _setCanvasWidth),
               const SizedBox(width: 8),
-              _buildDimensionControl('高', canvasHeight, (v) => _setCanvasHeight(name, v)),
+              _buildDimensionControl('高', canvasHeight, _setCanvasHeight),
               const SizedBox(width: 16),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('走廊'),
-                  Switch(
-                    value: structure.isCorridor,
-                    onChanged: (value) => setState(() => structure.isCorridor = value),
-                  ),
-                ],
+              const Text('走廊'),
+              const SizedBox(width: 8),
+              Switch(
+                value: structure.isCorridor,
+                onChanged: (value) => setState(() => structure.isCorridor = value),
               ),
             ],
           ),
@@ -251,45 +244,50 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
           child: Row(
             children: [
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxWidth = constraints.maxWidth;
-                    final maxHeight = constraints.maxHeight;
-                    final cellSize = min(maxWidth / canvasWidth, maxHeight / canvasHeight);
-                    final paintSize = Size(canvasWidth * cellSize, canvasHeight * cellSize);
-                    return InteractiveViewer(
-                      constrained: false,
-                      child: SizedBox(
-                        width: paintSize.width,
-                        height: paintSize.height,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTapUp: (details) => _handleCanvasTap(
-                            details.localPosition,
-                            paintSize,
-                            canvasWidth,
-                            canvasHeight,
-                          ),
-                          child: CustomPaint(
-                            size: paintSize,
-                            painter: StructurePainter(
-                              structure: structure,
-                              cellsWidth: canvasWidth,
-                              cellsHeight: canvasHeight,
-                              selectedCell: _selectedCell,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxWidth = constraints.maxWidth;
+                      final maxHeight = constraints.maxHeight;
+                      final cellSize = min(maxWidth / canvasWidth, maxHeight / canvasHeight);
+                      final paintSize = Size(canvasWidth * cellSize, canvasHeight * cellSize);
+                      return InteractiveViewer(
+                        constrained: false,
+                        child: SizedBox(
+                          width: paintSize.width,
+                          height: paintSize.height,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTapUp: (details) => _handleCanvasTap(
+                              details.localPosition,
+                              paintSize,
+                              canvasWidth,
+                              canvasHeight,
+                            ),
+                            child: CustomPaint(
+                              size: paintSize,
+                              painter: StructureEditorPainter(
+                                structure: structure,
+                                cellsWidth: canvasWidth,
+                                cellsHeight: canvasHeight,
+                                selectedCell: _selectedCell,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
               Container(
                 width: 220,
                 padding: const EdgeInsets.all(12),
                 child: _selectedCell == null
-                    ? _buildAddCellPanel()
+                    ? Center(
+                        child: Text('点击画布空白格子添加单元格'),
+                      )
                     : _buildCellProperties(structure, _selectedCell!),
               ),
             ],
@@ -329,42 +327,6 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     );
   }
 
-  Widget _buildAddCellPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('添加单元格', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _addXController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'X', isDense: true),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _addYController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Y', isDense: true),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton(
-          onPressed: _addCellFromPanel,
-          child: const Text('添加'),
-        ),
-        const SizedBox(height: 16),
-        const Text('提示：点击画布空白格子也可快速添加'),
-      ],
-    );
-  }
-
   Widget _buildCellProperties(Structure structure, Position position) {
     final isStair = getStairInfo(structure, position);
     return Column(
@@ -372,8 +334,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
       children: [
         Row(
           children: [
-            Text('单元格 (${position.x}, ${position.y})',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+                '单元格 (${position.x}, ${position.y})',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             IconButton(
               icon: const Icon(Icons.delete),
               tooltip: '删除此单元格',
@@ -473,7 +437,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     final cellW = size.width / canvasWidth;
     final cellH = size.height / canvasHeight;
     final gx = (localPosition.dx / cellW).floor();
-    final gy = (canvasHeight - 1 - (localPosition.dy / cellH).floor());
+    final gy = canvasHeight - (localPosition.dy / cellH).floor() - 1;
 
     if (gx < 0 || gx >= canvasWidth || gy < 0 || gy >= canvasHeight) return;
 
@@ -487,20 +451,6 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
         }
         _selectedCell = pos;
       }
-    });
-  }
-
-  void _addCellFromPanel() {
-    final x = int.tryParse(_addXController.text.trim());
-    final y = int.tryParse(_addYController.text.trim());
-    if (x == null || y == null || _currentStructure == null) return;
-
-    final pos = Position(x: x, y: y);
-    setState(() {
-      _currentStructure!.cells.add(pos);
-      _selectedCell = pos;
-      _addXController.clear();
-      _addYController.clear();
     });
   }
 
@@ -521,20 +471,22 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             ElevatedButton(
               onPressed: () {
                 final name = controller.text.trim();
-                if (name.isNotEmpty && !_structures.containsKey(name)) {
+                if (name.isNotEmpty && !_structures.any((entry) => entry.$1 == name)) {
                   final newStructure = Structure(
                     isCorridor: false,
-                    cells: HashSet<Position>(),
-                    doors: HashSet<Door>(),
-                    innerWalls: HashSet<Door>(),
-                    stairs: HashSet<Stair>(),
-                    holes: HashSet<Hole>(),
+                    cells: {},
+                    doors: {},
+                    innerWalls: {},
+                    stairs: {},
+                    holes: {},
                   );
                   setState(() {
-                    _structures[name] = newStructure;
+                    _structures.add((name, newStructure));
+                    _structures.sort((a, b) => a.$1.compareTo(b.$1));
+                    _selectedIndex = _structures.indexWhere((entry) => entry.$1 == name);
                     _canvasWidths[name] = defaultCanvasWidth;
                     _canvasHeights[name] = defaultCanvasHeight;
-                    _selectedName = name;
+                    _currentName = name;
                     _currentStructure = newStructure;
                     _selectedCell = null;
                   });
@@ -550,35 +502,39 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   }
 
   void _deleteStructure() {
-    if (_selectedName == null) return;
+    final index = _selectedIndex;
+    if (index == null) return;
+    final name = _structures[index].$1;
     setState(() {
-      _structures.remove(_selectedName);
-      _canvasWidths.remove(_selectedName);
-      _canvasHeights.remove(_selectedName);
-      _selectedName = _structures.isNotEmpty ? _structures.keys.first : null;
-      _currentStructure = _selectedName != null ? _structures[_selectedName] : null;
+      _structures.removeAt(index);
+      _canvasWidths.remove(name);
+      _canvasHeights.remove(name);
+      _selectedIndex = null;
+      _currentStructure = null;
       _selectedCell = null;
     });
   }
 
-  void _renameStructure(String oldName, String newName) {
-    if (newName.isEmpty || newName == oldName || _structures.containsKey(newName)) return;
+  bool _renameStructure(String newName) {
+    final index = _selectedIndex;
+    if (index == null) return true;
+    final (oldName, structure) = _structures[index];
+    if (newName.isEmpty || newName == oldName || _structures.any((entry) => entry.$1 == newName)) return false;
     setState(() {
-      final structure = _structures.remove(oldName)!;
-      _structures[newName] = structure;
-      final width = _canvasWidths.remove(oldName) ?? defaultCanvasWidth;
-      final height = _canvasHeights.remove(oldName) ?? defaultCanvasHeight;
+      _structures[index] = (newName, structure);
+      _structures.sort((a, b) => a.$1.compareTo(b.$1));
+      _selectedIndex = _structures.indexWhere((entry) => entry.$1 == newName);
+      final width = _canvasWidths.remove(oldName)!;
+      final height = _canvasHeights.remove(oldName)!;
       _canvasWidths[newName] = width;
       _canvasHeights[newName] = height;
-      if (_selectedName == oldName) {
-        _selectedName = newName;
-        _currentStructure = structure;
-      }
+      _currentName = newName;
     });
+    return true;
   }
 
-  void _setCanvasWidth(String name, int width) => setState(() => _canvasWidths[name] = width);
-  void _setCanvasHeight(String name, int height) => setState(() => _canvasHeights[name] = height);
+  void _setCanvasWidth(int width) => setState(() => _canvasWidths[_currentName!] = width);
+  void _setCanvasHeight(int height) => setState(() => _canvasHeights[_currentName!] = height);
 
   void _deleteSelectedCell() {
     if (_selectedCell == null || _currentStructure == null) return;
