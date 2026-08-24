@@ -7,7 +7,6 @@
 
 !/lib
 /lib/generated
-!/assets
 !/flutter_rust_bridge.yaml
 !/rust
-/rust/src/frb_generated.rs
+!/assets

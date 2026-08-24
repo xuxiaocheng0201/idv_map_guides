@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::core::data::{Direction, Door, Entrance, Hole, Layer, Position, Rotation, Stair, Structure};
+use crate::core::data::{Direction, Door, Entrance, Hole, Layer, Position, Rotation, Stair, StairTransport, Structure};
 use crate::core::errors::{MapError, MapErrors};
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
@@ -19,8 +19,7 @@ pub enum Cell {
     Structure {
         id: usize,
         is_corridor: bool,
-        is_stair: bool,
-        stair_is_up: bool,
+        is_stair: Option<StairTransport>,
         edge_north: EdgeType,
         edge_east: EdgeType,
         edge_south: EdgeType,
@@ -157,11 +156,11 @@ impl Map {
                 errors.push(MapError::StairOutOfStructure { stair: *stair, });
                 continue;
             }
-            if stair.is_up && layer.up().map_or(true, |n| !self.map.contains_key(&n)) {
+            if stair.stair_transport == StairTransport::GoUp && layer.up().map_or(true, |n| !self.map.contains_key(&n)) {
                 errors.push(MapError::StairMoveOutOfLayer { stair: *stair, });
                 continue;
             }
-            if !stair.is_up && layer.down().map_or(true, |n| !self.map.contains_key(&n)) {
+            if stair.stair_transport == StairTransport::GoDown && layer.down().map_or(true, |n| !self.map.contains_key(&n)) {
                 errors.push(MapError::StairMoveOutOfLayer { stair: *stair, });
                 continue;
             }
@@ -197,8 +196,7 @@ impl Map {
             *cell = Cell::Structure {
                 id: structure_id,
                 is_corridor,
-                is_stair: false,
-                stair_is_up: false,
+                is_stair: None,
                 edge_north: EdgeType::Nothing,
                 edge_east: EdgeType::Nothing,
                 edge_south: EdgeType::Nothing,
@@ -221,9 +219,8 @@ impl Map {
         }
         for stair in &stairs {
             let world_position = stair.position.rotate(rotation).add(origin_x, origin_y);
-            let Cell::Structure { is_stair, stair_is_up, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
-            *is_stair = true;
-            *stair_is_up = stair.is_up;
+            let Cell::Structure { is_stair, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
+            *is_stair = Some(stair.stair_transport);
         }
         for hole in &holes {
             let world_position = hole.position.rotate(rotation).add(origin_x, origin_y);
@@ -249,7 +246,6 @@ impl Map {
                         Cell::Empty => {}
                         Cell::Structure {
                             is_stair,
-                            stair_is_up,
                             ..
                         } => {
                             for door in cell.get_directions(EdgeType::Door) {
@@ -263,15 +259,21 @@ impl Map {
                                     errors.push(MapError::DoorMismatch { world_door, });
                                 }
                             }
-                            if *is_stair {
-                                let layer_moved = if *stair_is_up { layer.up() } else { layer.down() }.expect("checked placing");
-                                let target_cell = self.cell(&layer_moved, x, y).expect("checked placing");
-                                if let Cell::Structure { is_stair: target_is_stair, stair_is_up: target_is_up, .. } = target_cell && *target_is_stair && *target_is_up != *stair_is_up {
-                                } else {
-                                    errors.push(MapError::StairMismatch { world_stair: Stair {
-                                        position: Position { x, y },
-                                        is_up: *stair_is_up,
-                                    }, });
+                            if let Some(stair_transport) = is_stair {
+                                if let Some(stair_is_up) = match stair_transport {
+                                    StairTransport::Nothing => None,
+                                    StairTransport::GoUp => Some(true),
+                                    StairTransport::GoDown => Some(false),
+                                } {
+                                    let layer_moved = if stair_is_up { layer.up() } else { layer.down() }.expect("checked placing");
+                                    let target_cell = self.cell(&layer_moved, x, y).expect("checked placing");
+                                    if let Cell::Structure { is_stair: target_is_stair, .. } = target_cell && *target_is_stair == Some(stair_transport.opposite()) {
+                                    } else {
+                                        errors.push(MapError::StairMismatch { world_stair: Stair {
+                                            position: Position { x, y },
+                                            stair_transport: *stair_transport,
+                                        }, });
+                                    }
                                 }
                             }
                             for hole in cell.get_directions(EdgeType::Hole) {

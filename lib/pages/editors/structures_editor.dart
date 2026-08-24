@@ -5,54 +5,16 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/generated/rust/api/editor.dart';
 import 'package:idv_map_guides/generated/rust/api/map.dart';
-import 'package:idv_map_guides/painter/map_painter.dart';
+import 'package:idv_map_guides/painter/structure_painter.dart';
 
-const gridColor = Color(0x44556677);
-const selectedBorderColor = Color(0xFFFFD700);
-
-final Paint gridPaint = Paint()
-  ..color = gridColor
-  ..strokeWidth = 0.5;
-final Paint selectedBorderPaint = Paint()
-  ..color = selectedBorderColor
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = 2.0;
-
-EdgeType getEdgeTypeFor(Structure structure, Position position, Direction direction) {
-  final door = structure.doors.any((d) => d.position == position && d.direction == direction);
-  final innerWall = structure.innerWalls.any((d) => d.position == position && d.direction == direction);
-  final hole = structure.holes.any((d) => d.position == position && d.direction == direction);
-  if (door) return EdgeType.door;
-  if (innerWall) return EdgeType.innerWall;
-  if (hole) return EdgeType.hole;
+EdgeType getEdgeType(Structure structure, Position position, Direction direction) {
+  if (structure.doors.any((d) => d.position == position && d.direction == direction)) return EdgeType.door;
+  if (structure.innerWalls.any((d) => d.position == position && d.direction == direction)) return EdgeType.innerWall;
+  if (structure.holes.any((d) => d.position == position && d.direction == direction)) return EdgeType.hole;
   return EdgeType.nothing;
 }
 
-(bool, bool) getStairInfo(Structure structure, Position position) {
-  for (final stair in structure.stairs) {
-    if (stair.position == position) {
-      return (true, stair.isUp);
-    }
-  }
-  return (false, false);
-}
-
-void removeCellData(Structure structure, Position position) {
-  structure.cells.remove(position);
-  structure.stairs.removeWhere((s) => s.position == position);
-  structure.doors.removeWhere((d) => d.position == position);
-  structure.innerWalls.removeWhere((d) => d.position == position);
-  structure.holes.removeWhere((d) => d.position == position);
-}
-
-void setCellStair(Structure structure, Position position, bool isStair, bool isUp) {
-  structure.stairs.removeWhere((s) => s.position == position);
-  if (isStair) {
-    structure.stairs.add(Stair(position: position, isUp: isUp));
-  }
-}
-
-void setCellEdge(Structure structure, Position position, Direction direction, EdgeType type) {
+void setEdgeType(Structure structure, Position position, Direction direction, EdgeType type) {
   structure.doors.removeWhere((d) => d.position == position && d.direction == direction);
   structure.innerWalls.removeWhere((d) => d.position == position && d.direction == direction);
   structure.holes.removeWhere((d) => d.position == position && d.direction == direction);
@@ -71,79 +33,28 @@ void setCellEdge(Structure structure, Position position, Direction direction, Ed
   }
 }
 
-class StructurePainter extends CustomPainter {
-  final Structure structure;
-  final int canvasWidth;
-  final int canvasHeight;
-  final Position? selectedCell;
-
-  StructurePainter({
-    required this.structure,
-    required this.canvasWidth,
-    required this.canvasHeight,
-    this.selectedCell,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cellW = size.width / canvasWidth;
-    final cellH = size.height / canvasHeight;
-
-    canvas.drawRect(Offset.zero & size, outsidePaint);
-
-    for (int x = 0; x <= canvasWidth; x++) {
-      final dx = x * cellW;
-      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), gridPaint);
-    }
-    for (int y = 0; y <= canvasHeight; y++) {
-      final dy = y * cellH;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), gridPaint);
-    }
-
-    for (final position in structure.cells) {
-      final gx = position.x;
-      final gy = position.y;
-      if (gx < 0 || gx >= canvasWidth || gy < 0 || gy >= canvasHeight) continue;
-
-      final screenX = gx * cellW;
-      final screenY = size.height - (gy + 1) * cellH;
-      final rect = Rect.fromLTWH(screenX, screenY, cellW, cellH);
-
-      final (isStair, _) = getStairInfo(structure, position);
-      drawCell(canvas, rect, structure.isCorridor, isStair);
-
-      for (final direction in Direction.values) {
-        final edgeType = getEdgeTypeFor(structure, position, direction);
-        switch (edgeType) {
-          case EdgeType.door:
-            drawDoor(canvas, rect, direction, cellW, cellH);
-            break;
-          case EdgeType.innerWall:
-            drawWall(canvas, rect, direction);
-            break;
-          case EdgeType.hole:
-            drawHole(canvas, rect, direction);
-            break;
-          case EdgeType.nothing:
-            break;
-        }
-      }
-    }
-
-    if (selectedCell != null) {
-      final gx = selectedCell!.x;
-      final gy = selectedCell!.y;
-      if (gx >= 0 && gx < canvasWidth && gy >= 0 && gy < canvasHeight) {
-        final screenX = gx * cellW;
-        final screenY = size.height - (gy + 1) * cellH;
-        final rect = Rect.fromLTWH(screenX, screenY, cellW, cellH);
-        canvas.drawRect(rect, selectedBorderPaint);
-      }
+StairTransport? getStairInfo(Structure structure, Position position) {
+  for (final stair in structure.stairs) {
+    if (stair.position == position) {
+      return stair.stairTransport;
     }
   }
+  return null;
+}
 
-  @override
-  bool shouldRepaint(covariant StructurePainter oldDelegate) => true;
+void setStairInfo(Structure structure, Position position, StairTransport? isStair) {
+  structure.stairs.removeWhere((s) => s.position == position);
+  if (isStair != null) {
+    structure.stairs.add(Stair(position: position, stairTransport: isStair));
+  }
+}
+
+void removeCell(Structure structure, Position position) {
+  structure.cells.remove(position);
+  structure.stairs.removeWhere((s) => s.position == position);
+  structure.doors.removeWhere((d) => d.position == position);
+  structure.innerWalls.removeWhere((d) => d.position == position);
+  structure.holes.removeWhere((d) => d.position == position);
 }
 
 Future<Map<String, Structure>> readStructures(String path) async {
@@ -173,6 +84,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
 
   final Map<String, int> _canvasWidths = {};
   final Map<String, int> _canvasHeights = {};
+  final Map<String, TextEditingController> _nameControllers = {};
   static const int defaultCanvasWidth = 5;
   static const int defaultCanvasHeight = 5;
 
@@ -190,6 +102,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
         _structures.forEach((name, _) {
           _canvasWidths[name] = defaultCanvasWidth;
           _canvasHeights[name] = defaultCanvasHeight;
+          _nameControllers[name] = TextEditingController(text: name);
         });
         if (_structures.isNotEmpty) {
           _selectedName = _structures.keys.first;
@@ -203,6 +116,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   void dispose() {
     _addXController.dispose();
     _addYController.dispose();
+    _nameControllers.forEach((_, controller) => controller.dispose());
+    _canvasWidths.clear();
+    _canvasHeights.clear();
+    _nameControllers.clear();
     super.dispose();
   }
 
@@ -308,7 +225,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),
-                  controller: TextEditingController(text: name),
+                  controller: _nameControllers[name],
                   onChanged: (newName) => _renameStructure(name, newName),
                 ),
               ),
@@ -357,8 +274,8 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                             size: paintSize,
                             painter: StructurePainter(
                               structure: structure,
-                              canvasWidth: canvasWidth,
-                              canvasHeight: canvasHeight,
+                              cellsWidth: canvasWidth,
+                              cellsHeight: canvasHeight,
                               selectedCell: _selectedCell,
                             ),
                           ),
@@ -449,7 +366,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   }
 
   Widget _buildCellProperties(Structure structure, Position position) {
-    final (isStair, isUp) = getStairInfo(structure, position);
+    final isStair = getStairInfo(structure, position);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -467,18 +384,32 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
         const Divider(),
         SwitchListTile(
           title: const Text('楼梯'),
-          value: isStair,
-          onChanged: (value) => setState(() => setCellStair(structure, position, value, isUp)),
+          value: isStair != null,
+          onChanged: (value) => setState(() => setStairInfo(structure, position, value ? StairTransport.nothing : null)),
           dense: true,
           contentPadding: EdgeInsets.zero,
         ),
-        if (isStair)
-          SwitchListTile(
-            title: const Text('楼梯向上'),
-            value: isUp,
-            onChanged: (value) => setState(() => setCellStair(structure, position, true, value)),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
+        if (isStair != null)
+          Row(
+            children: [
+              SizedBox(width: 50, child: Text('楼梯朝向')),
+              Expanded(
+                child: DropdownButton<StairTransport>(
+                  value: isStair,
+                  items: StairTransport.values.map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(_stairTransportName(type)),
+                    );
+                  }).toList(),
+                  onChanged: (type) {
+                    if (type != null) {
+                      setState(() => setStairInfo(structure, position, type));
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         const SizedBox(height: 8),
         const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -490,7 +421,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                 SizedBox(width: 50, child: Text(_directionName(direction))),
                 Expanded(
                   child: DropdownButton<EdgeType>(
-                    value: getEdgeTypeFor(structure, position, direction),
+                    value: getEdgeType(structure, position, direction),
                     items: EdgeType.values.map((type) {
                       return DropdownMenuItem(
                         value: type,
@@ -499,7 +430,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                     }).toList(),
                     onChanged: (type) {
                       if (type != null) {
-                        setState(() => setCellEdge(structure, position, direction, type));
+                        setState(() => setEdgeType(structure, position, direction, type));
                       }
                     },
                   ),
@@ -526,6 +457,14 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
       case EdgeType.door: return '门';
       case EdgeType.innerWall: return '内墙';
       case EdgeType.hole: return '洞';
+    }
+  }
+
+  String _stairTransportName(StairTransport type) {
+    switch (type) {
+      case StairTransport.nothing: return '无';
+      case StairTransport.goUp: return '上';
+      case StairTransport.goDown: return '下';
     }
   }
 
@@ -645,7 +584,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     if (_selectedCell == null || _currentStructure == null) return;
     final pos = _selectedCell!;
     setState(() {
-      removeCellData(_currentStructure!, pos);
+      removeCell(_currentStructure!, pos);
       _selectedCell = null;
     });
   }

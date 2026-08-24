@@ -32,10 +32,10 @@ final Paint stairPaint = Paint()
   ..color = stairGridColor
   ..strokeWidth = 0.7;
 
-void drawCell(Canvas canvas, Rect rect, bool isCorridor, bool isStair) {
+void drawCell(Canvas canvas, Rect rect, bool isCorridor, StairTransport? isStair) {
   canvas.drawRect(rect, isCorridor ? corridorPaint : roomPaint);
-  if (isStair) {
-    const divisions = 4;
+  if (isStair != null) {
+    const divisions = 8;
     for (int i = 1; i < divisions; i++) {
       final x = rect.left + rect.width * i / divisions;
       canvas.drawLine(

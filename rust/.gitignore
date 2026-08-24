@@ -3,4 +3,5 @@
 !/.gitignore
 !/Cargo.toml
 !/src
+/src/frb_generated.rs
 !/map_core

@@ -135,9 +135,26 @@ pub struct Entrance {
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum StairTransport {
+    Nothing,
+    GoUp,
+    GoDown,
+}
+
+impl StairTransport {
+    pub fn opposite(&self) -> StairTransport {
+        match self {
+            StairTransport::Nothing => StairTransport::Nothing,
+            StairTransport::GoUp => StairTransport::GoDown,
+            StairTransport::GoDown => StairTransport::GoUp,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Stair {
     pub position: Position,
-    pub is_up: bool, // true is go up, false is go down
+    pub stair_transport: StairTransport,
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]

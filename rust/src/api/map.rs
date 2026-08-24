@@ -73,11 +73,21 @@ pub struct Entrance {
 
 #[flutter_rust_bridge::frb(unignore, non_opaque)]
 #[derive(o2o::o2o, Copy, Clone, Eq, PartialEq, Hash)]
+#[map_owned(map_core::core::data::StairTransport)]
+pub enum StairTransport {
+    Nothing,
+    GoUp,
+    GoDown,
+}
+
+#[flutter_rust_bridge::frb(unignore, non_opaque)]
+#[derive(o2o::o2o, Copy, Clone, Eq, PartialEq, Hash)]
 #[map_owned(map_core::core::data::Stair)]
 pub struct Stair {
     #[map(~.into())]
     pub position: Position,
-    pub is_up: bool,
+    #[map(~.into())]
+    pub stair_transport: StairTransport,
 }
 
 #[flutter_rust_bridge::frb(unignore, non_opaque)]
@@ -126,8 +136,8 @@ pub enum CellInfo {
     Structure {
         id: usize,
         is_corridor: bool,
-        is_stair: bool,
-        stair_is_up: bool,
+        #[map(~.map(Into::into))]
+        is_stair: Option<StairTransport>,
         #[map(~.into())]
         edge_north: EdgeType,
         #[map(~.into())]
