@@ -5,6 +5,14 @@ use serde::{Deserialize, Serialize};
 use crate::core::data::{Direction, Door, Entrance, Hole, Layer, Position, Rotation, Stair, Structure};
 use crate::core::errors::{MapError, MapErrors};
 
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum EdgeType {
+    Nothing,
+    Door,
+    InnerWall,
+    Hole,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub enum Cell {
     Empty,
@@ -13,21 +21,53 @@ pub enum Cell {
         is_corridor: bool,
         is_stair: bool,
         stair_is_up: bool,
-        doors: HashSet<Direction>,
-        inner_walls: HashSet<Direction>,
-        holes: HashSet<Direction>,
+        edge_north: EdgeType,
+        edge_east: EdgeType,
+        edge_south: EdgeType,
+        edge_west: EdgeType,
     },
+}
+
+impl Cell {
+    fn set_edge_type(&mut self, direction: Direction, r#type: EdgeType) {
+        match self {
+            Cell::Empty => {},
+            Cell::Structure { edge_north, edge_east, edge_south, edge_west, .. } => match direction {
+                Direction::North => *edge_north = r#type,
+                Direction::East => *edge_east = r#type,
+                Direction::South => *edge_south = r#type,
+                Direction::West => *edge_west = r#type,
+            },
+        }
+    }
+
+    pub fn get_directions(&self, target: EdgeType) -> HashSet<Direction> {
+        let mut edges = HashSet::new();
+        match self {
+            Cell::Empty => {},
+            Cell::Structure { edge_north, edge_east, edge_south, edge_west, .. } => {
+                if *edge_north == target { edges.insert(Direction::North); }
+                if *edge_east == target { edges.insert(Direction::East); }
+                if *edge_south == target { edges.insert(Direction::South); }
+                if *edge_west == target { edges.insert(Direction::West); }
+            },
+        }
+        edges
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Map {
+    pub min_x: i32,
+    pub max_x: i32,
+    pub min_y: i32,
+    pub max_y: i32,
     pub x_width: usize,
     pub y_height: usize,
     pub origin_x: usize,
     pub origin_y: usize,
     pub map: HashMap<Layer, Vec<Vec<Cell>>>,
     pub entrances: HashSet<Entrance>,
-    pub min_x: i32, pub max_x: i32, pub min_y: i32, pub max_y: i32,
     next_structure_id: usize,
 }
 
@@ -38,6 +78,7 @@ impl Map {
         let origin_x = (-min_x) as usize;
         let origin_y = (-min_y) as usize;
         Self {
+            min_x, max_x, min_y, max_y,
             x_width: width,
             y_height: height,
             origin_x, origin_y,
@@ -45,7 +86,6 @@ impl Map {
                 .map(|layer| (layer, vec![vec![Cell::Empty; height]; width]))
                 .collect(),
             entrances: HashSet::new(),
-            min_x, max_x, min_y, max_y,
             next_structure_id: 0,
         }
     }
@@ -159,24 +199,25 @@ impl Map {
                 is_corridor,
                 is_stair: false,
                 stair_is_up: false,
-                doors: HashSet::new(),
-                inner_walls: HashSet::new(),
-                holes: HashSet::new(),
+                edge_north: EdgeType::Nothing,
+                edge_east: EdgeType::Nothing,
+                edge_south: EdgeType::Nothing,
+                edge_west: EdgeType::Nothing,
             };
         }
         for door in &doors {
             let world_position = door.position.rotate(rotation).add(origin_x, origin_y);
-            let Cell::Structure { doors, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
-            doors.insert(door.direction.rotate(rotation));
+            let cell = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above");
+            cell.set_edge_type(door.direction.rotate(rotation), EdgeType::Door);
         }
         for inner_wall in &inner_walls {
             let world_position = inner_wall.position.rotate(rotation).add(origin_x, origin_y);
-            let Cell::Structure { inner_walls, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
-            inner_walls.insert(inner_wall.direction.rotate(rotation));
+            let cell = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above");
+            cell.set_edge_type(inner_wall.direction.rotate(rotation), EdgeType::InnerWall);
             let inner_wall = inner_wall.opposite();
             let world_position = inner_wall.position.rotate(rotation).add(origin_x, origin_y);
-            let Cell::Structure { inner_walls, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
-            inner_walls.insert(inner_wall.direction.rotate(rotation));
+            let cell = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above");
+            cell.set_edge_type(inner_wall.direction.rotate(rotation), EdgeType::InnerWall);
         }
         for stair in &stairs {
             let world_position = stair.position.rotate(rotation).add(origin_x, origin_y);
@@ -186,8 +227,8 @@ impl Map {
         }
         for hole in &holes {
             let world_position = hole.position.rotate(rotation).add(origin_x, origin_y);
-            let Cell::Structure { holes, .. } = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above") else { panic!("set above"); };
-            holes.insert(hole.direction.rotate(rotation));
+            let cell = self.cell_mut(&layer, world_position.x, world_position.y).expect("checked above");
+            cell.set_edge_type(hole.direction.rotate(rotation), EdgeType::Hole);
         }
         Ok(())
     }
@@ -207,20 +248,18 @@ impl Map {
                     match cell {
                         Cell::Empty => {}
                         Cell::Structure {
-                            doors,
                             is_stair,
                             stair_is_up,
-                            holes,
                             ..
                         } => {
-                            for door in doors {
+                            for door in cell.get_directions(EdgeType::Door) {
                                 let world_door = Door {
                                     position: Position { x, y },
-                                    direction: *door,
+                                    direction: door,
                                 };
                                 let opposite = world_door.opposite();
                                 let opposite_cell = self.cell(&layer, opposite.position.x, opposite.position.y); // opposite may out of bound
-                                if let Some(Cell::Structure { doors, .. }) = opposite_cell && !doors.contains(&opposite.direction) {
+                                if let Some(Cell::Structure { .. }) = opposite_cell && !opposite_cell.unwrap().get_directions(EdgeType::Door).contains(&opposite.direction) {
                                     errors.push(MapError::DoorMismatch { world_door, });
                                 }
                             }
@@ -235,10 +274,10 @@ impl Map {
                                     }, });
                                 }
                             }
-                            for hole in holes {
+                            for hole in cell.get_directions(EdgeType::Hole) {
                                 let world_hole = Hole {
                                     position: Position { x, y },
-                                    direction: *hole,
+                                    direction: hole,
                                 };
                                 let layer_moved = layer.down().expect("checked placing");
                                 let target = world_hole.target();

@@ -5,12 +5,15 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:idv_map_guides/bloc/map_cubit.dart';
 import 'package:idv_map_guides/bloc/setting_cubit.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/generated/rust/frb_generated.dart';
 import 'package:idv_map_guides/pages/home_page.dart';
+import 'package:idv_map_guides/pages/editors/structures_editor.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   if (kDebugMode) {
     runApp(const MyApp());
   } else {
@@ -51,9 +54,11 @@ class MyApp extends StatelessWidget {
             ],
             supportedLocales: S.delegate.supportedLocales,
             onGenerateTitle: (context) => S.of(context).title,
-            initialRoute: Routes.home,
+            initialRoute: Routes.editorStructure,
             routes: {
               Routes.home: (context) => const HomePage(),
+
+              Routes.editorStructure: (context) => StructuresEditorPage(),
             },
           ),
         ),

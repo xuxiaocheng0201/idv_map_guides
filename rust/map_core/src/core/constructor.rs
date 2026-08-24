@@ -6,11 +6,6 @@ use crate::core::data::{Door, Layer, Position, Rotation, Structure};
 use crate::core::errors::{MapError, MapErrors};
 use crate::core::map::Map;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MapFile {
-    pub structures: Vec<StructureInstance>,
-}
-
 fn default_rotation() -> Rotation {
     Rotation::CW0
 }
@@ -54,10 +49,10 @@ fn resolve_structure(
 }
 
 pub fn construct_map(
-    map: MapFile,
+    map: &[StructureInstance],
     structures: &HashMap<String, Structure>,
 ) -> Result<Map, MapErrors> {
-    if map.structures.is_empty() {
+    if map.is_empty() {
         return Err(MapError::EmptyMap.into());
     }
 
@@ -67,7 +62,7 @@ pub fn construct_map(
     let mut min_y = i32::MAX;
     let mut max_y = i32::MIN;
     let mut errors = MapErrors::new();
-    for instance in &map.structures {
+    for instance in map {
         layers.insert(instance.layer);
         let structure = match resolve_structure(instance, structures) {
             Ok(s) => s,
@@ -89,7 +84,7 @@ pub fn construct_map(
     }
     let mut world = Map::new(layers, min_x, max_x, min_y, max_y);
 
-    for instance in map.structures {
+    for instance in map {
         let structure = resolve_structure(&instance, &structures).expect("checked above");
         match world.add_single_layer(
             instance.layer,

@@ -1,4 +1,5 @@
 pub mod map;
+pub mod editor;
 
 #[flutter_rust_bridge::frb(init)]
 pub fn initialize() {
