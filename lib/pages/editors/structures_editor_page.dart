@@ -12,6 +12,8 @@ import 'package:toastification/toastification.dart';
 const int defaultCanvasWidth = 5;
 const int defaultCanvasHeight = 5;
 
+const defaultStructuresSavePath = 'structures.json';
+
 class _StructuresRegistry {
   final File file;
   Map<String, Structure> structures = <String, Structure>{};
@@ -97,9 +99,10 @@ class _StructuresRegistry {
 }
 
 class StructuresEditorPage extends StatefulWidget {
-  final String savePath;
+  final String structuresPath;
 
-  const StructuresEditorPage({super.key, String? savePath}): savePath = savePath ?? 'structures.json';
+  const StructuresEditorPage({super.key, String? structuresPath}):
+        structuresPath = structuresPath ?? defaultStructuresSavePath;
 
   @override
   State<StructuresEditorPage> createState() => _StructuresEditorPageState();
@@ -113,7 +116,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   @override
   void initState() {
     super.initState();
-    _registry = _StructuresRegistry(path: widget.savePath);
+    _registry = _StructuresRegistry(path: widget.structuresPath);
     _registry.read(setState);
     _selectedIndex = null;
     _selectedCell = null;
@@ -159,7 +162,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8),
                   child: Row(
                     children: [
                       ElevatedButton.icon(
@@ -212,7 +215,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   }
 
   void _addStructure(BuildContext context) {
-    showDialog<String>(
+    showDialog<void>(
       context: context,
       builder: (context) {
         final controller = TextEditingController();
@@ -237,6 +240,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                   );
                 } else {
                   Navigator.pop(context);
+                  setState(() {
+                    _selectedIndex = index;
+                    _selectedCell = null;
+                  });
                 }
               },
               child: const Text('创建'),
@@ -277,7 +284,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                   border: OutlineInputBorder(),
                 ),
                 controller: TextEditingController(text: name),
-                onSubmitted: _renameStructure,
+                onSubmitted: (newName) => _renameStructure(newName.trim()),
               ),
             ),
             const SizedBox(width: 16),
@@ -355,10 +362,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               const VerticalDivider(width: 1),
               SizedBox(
                 width: 240,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: _buildCellProperties(context, structure),
-                ),
+                child: _buildCellProperties(context, structure),
               ),
             ],
           ),
@@ -408,79 +412,81 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
       );
     }
     final cell = structure.cells[position]!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-                '单元格 (${position.x}, ${position.y})',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: '删除此单元格',
-              onPressed: () => setState(() {
-                structure.cells.remove(position);
-                _selectedCell = null;
-              }),
-            ),
-          ],
-        ),
-        const Divider(),
-        SwitchListTile(
-          title: const Text('楼梯', style: TextStyle(fontWeight: FontWeight.bold)),
-          value: cell.isStair != null,
-          onChanged: (value) => setState(() => structure.cells[position] = cell.copyWith(isStair: value ? StairTransport.nothing : null)),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-        ),
-        if (cell.isStair != null)
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
           Row(
             children: [
-              const Text('楼梯朝向'),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButton(
-                  value: cell.isStair,
-                  items: StairTransport.values.map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(type.label(context)),
-                  )).toList(),
-                  onChanged: (type) {
-                    if (type != null) setState(() => structure.cells[position] = cell.copyWith(isStair: type));
-                  },
-                ),
+              Text(
+                  '单元格 (${position.x}, ${position.y})',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: '删除此单元格',
+                onPressed: () => setState(() {
+                  structure.cells.remove(position);
+                  _selectedCell = null;
+                }),
               ),
             ],
           ),
-        const SizedBox(height: 8),
-        const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
-        for (final direction in Direction.values)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
+          const Divider(),
+          SwitchListTile(
+            title: const Text('楼梯', style: TextStyle(fontWeight: FontWeight.bold)),
+            value: cell.isStair != null,
+            onChanged: (value) => setState(() => structure.cells[position] = cell.copyWith(isStair: value ? StairTransport.nothing : null)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          if (cell.isStair != null)
+            Row(
               children: [
-                Text(direction.label(context)),
+                const Text('楼梯朝向'),
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButton(
-                    value: cell.getEdgeType(direction),
-                    items: EdgeType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type.label(context)),
-                      );
-                    }).toList(),
+                    value: cell.isStair,
+                    items: StairTransport.values.map((type) => DropdownMenuItem(
+                      value: type,
+                      child: Text(type.label(context)),
+                    )).toList(),
                     onChanged: (type) {
-                      if (type != null) setState(() => structure.cells[position] = cell.setEdgeType(direction, type));
+                      if (type != null) setState(() => structure.cells[position] = cell.copyWith(isStair: type));
                     },
                   ),
                 ),
               ],
             ),
-          ),
-      ],
+          const SizedBox(height: 8),
+          const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
+          for (final direction in Direction.values)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Text(direction.label(context)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButton(
+                      value: cell.getEdgeType(direction),
+                      items: EdgeType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type.label(context)),
+                        );
+                      }).toList(),
+                      onChanged: (type) {
+                        if (type != null) setState(() => structure.cells[position] = cell.setEdgeType(direction, type));
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

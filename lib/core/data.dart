@@ -165,6 +165,19 @@ abstract class CellInfo with _$CellInfo {
     Direction.south => copyWith(edgeSouth: type),
     Direction.west => copyWith(edgeWest: type),
   };
+
+  CellInfo rotation(Rotation rotation) {
+    var result = this;
+    for (var i = 0; i < rotation.times(); i++) {
+      result = result.copyWith(
+        edgeNorth: result.edgeWest,
+        edgeEast: result.edgeNorth,
+        edgeSouth: result.edgeEast,
+        edgeWest: result.edgeSouth,
+      );
+    }
+    return result;
+  }
 }
 
 @freezed

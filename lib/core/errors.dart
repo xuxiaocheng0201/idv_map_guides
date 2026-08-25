@@ -29,7 +29,7 @@ sealed class WorldError with _$WorldError {
 abstract class WorldErrors with _$WorldErrors implements Exception {
   const WorldErrors._();
   const factory WorldErrors({
-    @Default(<WorldError>[]) List<WorldError> errors,
+    required List<WorldError> errors,
   }) = _WorldErrors;
 
   void push(WorldError e) => errors.add(e);

@@ -6,6 +6,7 @@ import 'package:idv_map_guides/bloc/map_cubit.dart';
 import 'package:idv_map_guides/bloc/setting_cubit.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
+import 'package:idv_map_guides/pages/editors/world_editor_page.dart';
 import 'package:idv_map_guides/pages/home_page.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -54,11 +55,12 @@ class MyApp extends StatelessWidget {
               ],
               supportedLocales: S.delegate.supportedLocales,
               onGenerateTitle: (context) => S.of(context).title,
-              initialRoute: Routes.editorStructure,
+              initialRoute: Routes.editorWorld,
               routes: {
                 Routes.home: (context) => const HomePage(),
 
                 if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
+                if (kDebugMode) Routes.editorWorld: (context) => WorldEditorPage(),
               },
             ),
           ),
