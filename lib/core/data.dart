@@ -92,18 +92,33 @@ enum Direction {
   }
 }
 
-@freezed
+@Freezed(fromJson: false, toJson: false, toStringOverride: false)
 abstract class Position with _$Position {
   const Position._();
   const factory Position({
     required int x,
     required int y,
   }) = _Position;
-  factory Position.fromJson(Map<String, dynamic> json) => _$PositionFromJson(json);
+  factory Position.fromJson(List<dynamic> json) => Position(
+    x: (json[0] as num).toInt(),
+    y: (json[1] as num).toInt(),
+  );
+  List<int> toJson() => [x, y];
+
+  @override String toString() => '$x,$y';
+  factory Position.parse(String key) {
+    final parts = key.split(',');
+    return Position(
+      x: int.parse(parts[0]),
+      y: int.parse(parts[1]),
+    );
+  }
+
+  Position toWorld(Rotation rotation, int dx, int dy) => _rotate(rotation).add(dx, dy);
 
   Position add(int dx, int dy) => Position(x: x + dx, y: y + dy);
 
-  Position rotate(Rotation rotation) {
+  Position _rotate(Rotation rotation) {
     var result = this;
     for (var i = 0; i < rotation.times(); i++) {
       result = Position(x: result.y, y: -result.x);
@@ -112,18 +127,58 @@ abstract class Position with _$Position {
   }
 }
 
+enum StairTransport {
+  nothing,
+  goUp,
+  goDown;
+}
+
+enum EdgeType {
+  nothing,
+  door,
+  innerWall,
+  hole,
+}
+
 @freezed
-abstract class Door with _$Door {
-  const Door._();
-  const factory Door({
+abstract class CellInfo with _$CellInfo {
+  const CellInfo._();
+  const factory CellInfo({
+    required StairTransport? isStair,
+    required EdgeType edgeNorth,
+    required EdgeType edgeEast,
+    required EdgeType edgeSouth,
+    required EdgeType edgeWest,
+  }) = _CellInfo;
+  factory CellInfo.fromJson(Map<String, dynamic> json) => _$CellInfoFromJson(json);
+
+  EdgeType getEdgeType(Direction direction) => switch (direction) {
+    Direction.north => edgeNorth,
+    Direction.east => edgeEast,
+    Direction.south => edgeSouth,
+    Direction.west => edgeWest,
+  };
+
+  CellInfo setEdgeType(Direction direction, EdgeType type) => switch (direction) {
+    Direction.north => copyWith(edgeNorth: type),
+    Direction.east => copyWith(edgeEast: type),
+    Direction.south => copyWith(edgeSouth: type),
+    Direction.west => copyWith(edgeWest: type),
+  };
+}
+
+@freezed
+abstract class Edge with _$Edge {
+  const Edge._();
+  const factory Edge({
     required Position position,
     required Direction direction,
-  }) = _Door;
-  factory Door.fromJson(Map<String, dynamic> json) => _$DoorFromJson(json);
+  }) = _Edge;
+  factory Edge.fromJson(Map<String, dynamic> json) => _$EdgeFromJson(json);
 
-  Door opposite() {
+  Edge opposite() {
     final (dx, dy) = direction.dxy;
-    return Door(
+    return Edge(
       position: position.add(dx, dy),
       direction: direction.rotate(Rotation.cw180),
     );
@@ -140,46 +195,18 @@ abstract class Entrance with _$Entrance {
   factory Entrance.fromJson(Map<String, dynamic> json) => _$EntranceFromJson(json);
 }
 
-enum StairTransport {
-  nothing,
-  goUp,
-  goDown;
+class CellsMapConverter extends JsonConverter<Map<Position, CellInfo>, Map<String, dynamic>> {
+  const CellsMapConverter();
 
-  StairTransport opposite() {
-    switch (this) {
-      case StairTransport.nothing:
-        return StairTransport.nothing;
-      case StairTransport.goUp:
-        return StairTransport.goDown;
-      case StairTransport.goDown:
-        return StairTransport.goUp;
-    }
-  }
-}
+  @override
+  Map<Position, CellInfo> fromJson(Map<String, dynamic> json) => json.map((key, value) {
+    return MapEntry(Position.parse(key), CellInfo.fromJson(value as Map<String, dynamic>));
+  });
 
-@freezed
-abstract class Stair with _$Stair {
-  const Stair._();
-  const factory Stair({
-    required Position position,
-    required StairTransport stairTransport,
-  }) = _Stair;
-  factory Stair.fromJson(Map<String, dynamic> json) => _$StairFromJson(json);
-}
-
-@freezed
-abstract class Hole with _$Hole {
-  const Hole._();
-  const factory Hole({
-    required Position position,
-    required Direction direction,
-  }) = _Hole;
-  factory Hole.fromJson(Map<String, dynamic> json) => _$HoleFromJson(json);
-
-  Position target() {
-    final (dx, dy) = direction.dxy;
-    return position.add(dx, dy);
-  }
+  @override
+  Map<String, dynamic> toJson(Map<Position, CellInfo> object) => object.map((key, value) {
+    return MapEntry(key.toString(), value.toJson());
+  });
 }
 
 @Freezed(addImplicitFinal: false, makeCollectionsUnmodifiable: false)
@@ -187,11 +214,7 @@ abstract class Structure with _$Structure {
   Structure._();
   factory Structure({
     required bool isCorridor,
-    required Set<Position> cells,
-    required Set<Door> doors,
-    required Set<Door> innerWalls,
-    required Set<Stair> stairs,
-    required Set<Hole> holes,
+    @CellsMapConverter() required Map<Position, CellInfo> cells,
   }) = _Structure;
   factory Structure.fromJson(Map<String, dynamic> json) => _$StructureFromJson(json);
 }

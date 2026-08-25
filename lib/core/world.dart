@@ -5,60 +5,20 @@ import 'package:idv_map_guides/core/errors.dart';
 part 'world.freezed.dart';
 part 'world.g.dart';
 
-enum EdgeType {
-  nothing,
-  door,
-  innerWall,
-  hole,
-}
-
-@freezed
-sealed class Cell with _$Cell {
-  const Cell._();
-  const factory Cell.empty() = CellEmpty;
-  const factory Cell.structure({
-    required int id,
-    required bool isCorridor,
-    required StairTransport? isStair,
-    required EdgeType edgeNorth,
-    required EdgeType edgeEast,
-    required EdgeType edgeSouth,
-    required EdgeType edgeWest,
-  }) = CellStructure;
-
-  Cell setEdgeType(Direction direction, EdgeType type) {
-    if (this is CellEmpty) return this;
-    final s = this as CellStructure;
-    return switch (direction) {
-      Direction.north => s.copyWith(edgeNorth: type),
-      Direction.east => s.copyWith(edgeEast: type),
-      Direction.south => s.copyWith(edgeSouth: type),
-      Direction.west => s.copyWith(edgeWest: type),
-    };
-  }
-
-  EdgeType getEdgeType(Direction direction) {
-    if (this is CellEmpty) return EdgeType.nothing;
-    final s = this as CellStructure;
-    return switch (direction) {
-      Direction.north => s.edgeNorth,
-      Direction.east => s.edgeEast,
-      Direction.south => s.edgeSouth,
-      Direction.west => s.edgeWest,
-    };
-  }
-
-  @Deprecated('method too complex')
-  Set<Direction> getDirections(EdgeType target) {
-    if (this is CellEmpty) return <Direction>{};
-    final s = this as CellStructure;
-    return {
-      if (s.edgeNorth == target) Direction.north,
-      if (s.edgeEast == target) Direction.east,
-      if (s.edgeSouth == target) Direction.south,
-      if (s.edgeWest == target) Direction.west,
-    };
-  }
+@Freezed(addImplicitFinal: false)
+abstract class Cell with _$Cell {
+  Cell._();
+  factory Cell({
+    int? id,
+    @Default(false) bool isCorridor,
+    @Default(CellInfo(
+      isStair: null,
+      edgeNorth: EdgeType.nothing,
+      edgeEast: EdgeType.nothing,
+      edgeSouth: EdgeType.nothing,
+      edgeWest: EdgeType.nothing,
+    )) CellInfo info,
+  }) = _Cell;
 }
 
 class World {
@@ -75,7 +35,7 @@ class World {
     required this.maxY,
   }): map = {
         for (final layer in layers)
-          layer: List.generate(maxX - minX + 1, (_) => List.generate(maxY - minY + 1, (_) => const Cell.empty())),
+          layer: List.generate(maxX - minX + 1, (_) => List.generate(maxY - minY + 1, (_) => Cell())),
       },
       entrances = <Entrance>{},
       _nextStructureId = 0;
@@ -91,11 +51,6 @@ class World {
     return map[layer]?[x - minX][y - minY];
   }
 
-  void _setCell(GroundLayer layer, int x, int y, Cell newCell) {
-    if (_isOutOfWorld(x, y)) return;
-    map[layer]?[x - minX][y - minY] = newCell;
-  }
-
 
   void _addEntrance(Entrance entrance) {
     if (!map.containsKey(entrance.layer) || _isOutOfWorld(entrance.position.x, entrance.position.y)) {
@@ -105,124 +60,81 @@ class World {
   }
 
   void _placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
-    // ---- validate ----
+    // validate
     final errors = WorldErrors();
-    for (final cell in structure.cells) {
-      final worldPosition = cell.add(originX, originY).rotate(rotation);
-      final existing = this.cell(layer, worldPosition.x, worldPosition.y);
+    final downLayer = switch (layer.down()) { final k? => map.containsKey(k) ? k : null, _ => null };
+    final upLayer = switch (layer.up()) { final k? => map.containsKey(k) ? k : null, _ => null };
+    for (final entry in structure.cells.entries) {
+      final (position, info) = (entry.key, entry.value);
+      final worldPosition = position.toWorld(rotation, originX, originY);
+      final existing = cell(layer, worldPosition.x, worldPosition.y);
       switch (existing) {
         case null:
-          errors.push(WorldError.cellOutOfWorld(worldPosition: worldPosition, cell: cell));
-        case CellStructure():
-          errors.push(WorldError.cellOverlap(worldPosition: worldPosition, cell: cell));
-        case CellEmpty():
+          errors.push(WorldError.cellOutOfWorld(worldPosition: worldPosition));
           break;
-      }
-    }
-    for (final door in structure.doors) {
-      if (!structure.cells.contains(door.position)) {
-        errors.push(WorldError.doorOutOfStructure(door: door));
-        continue;
-      }
-      if (structure.cells.contains(door.opposite().position)) {
-        errors.push(WorldError.doorNotAtBoundary(door: door));
-        continue;
-      }
-    }
-    for (final wall in structure.innerWalls) {
-      if (!structure.cells.contains(wall.position)) {
-        errors.push(WorldError.innerWallOutOfStructure(wall: wall));
-        continue;
-      }
-      if (!structure.cells.contains(wall.opposite().position)) {
-        errors.push(WorldError.innerWallAtBoundary(wall: wall));
-        continue;
-      }
-    }
-    final placedStairs = <Position>{};
-    for (final stair in structure.stairs) {
-      if (!structure.cells.contains(stair.position)) {
-        errors.push(WorldError.stairOutOfStructure(stair: stair));
-        continue;
-      }
-      if (stair.stairTransport == StairTransport.goUp && (layer.up() == null || !map.containsKey(layer.up()!))) {
-        errors.push(WorldError.stairMoveOutOfLayer(stair: stair));
-        continue;
-      }
-      if (stair.stairTransport == StairTransport.goDown && (layer.down() == null || !map.containsKey(layer.down()!))) {
-        errors.push(WorldError.stairMoveOutOfLayer(stair: stair));
-        continue;
-      }
-      if (!placedStairs.add(stair.position)) {
-        errors.push(WorldError.stairOverlap(stair: stair));
-        continue;
-      }
-    }
-    for (final hole in structure.holes) {
-      if (!structure.cells.contains(hole.position)) {
-        errors.push(WorldError.holeOutOfStructure(hole: hole));
-        continue;
-      }
-      final downLayer = layer.down();
-      if (downLayer == null || !map.containsKey(downLayer)) {
-        errors.push(WorldError.holeMoveOutOfLayer(hole: hole));
-        continue;
-      }
-      final holeTarget = hole.target();
-      final worldTarget = holeTarget.add(originX, originY).rotate(rotation);
-      if (_isOutOfWorld(worldTarget.x, worldTarget.y)) {
-        errors.push(WorldError.holeOutOfWorld(worldTarget: worldTarget, hole: hole));
-        continue;
+        case Cell(:final id):
+          if (id != null) {
+            errors.push(WorldError.cellOverlap(worldPosition: worldPosition));
+            break;
+          }
+          for (final direction in Direction.values) {
+            final edge = Edge(position: position, direction: direction);
+            final worldEdge = Edge(position: worldPosition, direction: direction);
+            switch (info.getEdgeType(direction)) {
+              case EdgeType.nothing:
+                break;
+              case EdgeType.door:
+                if (structure.cells.containsKey(edge.opposite().position)) {
+                  errors.push(WorldError.doorNotAtBoundary(worldDoor: worldEdge));
+                }
+                break;
+              case EdgeType.innerWall:
+                if (!structure.cells.containsKey(edge.opposite().position)) {
+                  errors.push(WorldError.innerWallAtBoundary(worldWall: worldEdge));
+                }
+                break;
+              case EdgeType.hole:
+                if (downLayer == null) {
+                  errors.push(WorldError.holeMoveOutOfLayer(worldHole: worldEdge));
+                }
+                final worldTarget = worldEdge.opposite().position;
+                if (_isOutOfWorld(worldTarget.x, worldTarget.y)) {
+                  errors.push(WorldError.holeOutOfWorld(worldHole: worldEdge));
+                }
+                break;
+            }
+          }
+          switch (info.isStair) {
+            case null:
+              break;
+            case StairTransport.nothing:
+              break;
+            case StairTransport.goUp:
+              if (upLayer == null) {
+                errors.push(WorldError.stairMoveOutOfLayer(worldStair: worldPosition));
+              }
+              break;
+            case StairTransport.goDown:
+              if (downLayer == null) {
+                errors.push(WorldError.stairMoveOutOfLayer(worldStair: worldPosition));
+              }
+              break;
+          }
+          break;
       }
     }
     if (!errors.isEmpty) {
       throw errors;
     }
-
-    // ---- place ----
+    // place
     final structureId = _nextStructureId++;
-    for (final cell in structure.cells) {
-      final worldPosition = cell.add(originX, originY).rotate(rotation);
-      _setCell(
-          layer,
-          worldPosition.x,
-          worldPosition.y,
-          Cell.structure(
-            id: structureId,
-            isCorridor: structure.isCorridor,
-            isStair: null,
-            edgeNorth: EdgeType.nothing,
-            edgeEast: EdgeType.nothing,
-            edgeSouth: EdgeType.nothing,
-            edgeWest: EdgeType.nothing,
-          ),
-      );
-    }
-    for (final door in structure.doors) {
-      final worldPosition = door.position.add(originX, originY).rotate(rotation);
-      final current = cell(layer, worldPosition.x, worldPosition.y)! as CellStructure;
-      final updated = current.setEdgeType(door.direction.rotate(rotation), EdgeType.door);
-      _setCell(layer, worldPosition.x, worldPosition.y, updated);
-    }
-    for (final innerWall in structure.innerWalls) {
-      for (final wall in [innerWall, innerWall.opposite()]) {
-        final worldPosition = wall.position.add(originX, originY).rotate(rotation);
-        final current = cell(layer, worldPosition.x, worldPosition.y)! as CellStructure;
-        final updated = current.setEdgeType(wall.direction.rotate(rotation), EdgeType.innerWall);
-        _setCell(layer, worldPosition.x, worldPosition.y, updated);
-      }
-    }
-    for (final stair in structure.stairs) {
-      final worldPosition = stair.position.add(originX, originY).rotate(rotation);
-      final current = cell(layer, worldPosition.x, worldPosition.y)! as CellStructure;
-      final updated = current.copyWith(isStair: stair.stairTransport);
-      _setCell(layer, worldPosition.x, worldPosition.y, updated);
-    }
-    for (final hole in structure.holes) {
-      final worldPosition = hole.position.add(originX, originY).rotate(rotation);
-      final current = cell(layer, worldPosition.x, worldPosition.y)! as CellStructure;
-      final updated = current.setEdgeType(hole.direction.rotate(rotation), EdgeType.hole);
-      _setCell(layer, worldPosition.x, worldPosition.y, updated);
+    for (final entry in structure.cells.entries) {
+      final (position, info) = (entry.key, entry.value);
+      final worldPosition = position.toWorld(rotation, originX, originY);
+      final existing = cell(layer, worldPosition.x, worldPosition.y)!;
+      existing.id = structureId;
+      existing.isCorridor = structure.isCorridor;
+      existing.info = info;
     }
   }
 
@@ -230,67 +142,62 @@ class World {
     final errors = WorldErrors();
     for (final entrance in entrances) {
       final c = cell(entrance.layer, entrance.position.x, entrance.position.y);
-      if (c == null || c is CellEmpty) {
+      if (c == null || c.id == null) {
         errors.push(WorldError.entranceInEmpty(entrance: entrance));
       }
     }
     for (final layer in map.keys) {
       for (var x = minX; x <= maxX; x++) {
         for (var y = minY; y <= maxY; y++) {
+          final worldPosition = Position(x: x, y: y);
           final c = cell(layer, x, y)!;
-          switch (c) {
-            case CellEmpty():
+          for (final direction in Direction.values) {
+            final worldEdge = Edge(position: worldPosition, direction: direction);
+            switch (c.info.getEdgeType(direction)) {
+              case EdgeType.nothing:
+                break;
+              case EdgeType.door:
+                final oppositeDoor = worldEdge.opposite();
+                final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
+                if (oppositeCell != null && oppositeCell.id != null && oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
+                  errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
+                }
+                break;
+              case EdgeType.innerWall:
+                break;
+              case EdgeType.hole:
+                final downLayer = layer.down()!;
+                final targetPosition = worldEdge.opposite().position;
+                final targetCell = cell(layer, targetPosition.x, targetPosition.y)!;
+                if (targetCell.id == null) {
+                  errors.push(WorldError.holeMismatch(worldHole: worldEdge));
+                }
+                final targetMovedCell = cell(downLayer, targetPosition.x, targetPosition.y)!;
+                if (targetMovedCell.id == null) {
+                  errors.push(WorldError.holeMovedMismatch(worldHole: worldEdge));
+                }
+                break;
+            }
+          }
+          switch (c.info.isStair) {
+            case null:
               break;
-            case CellStructure():
-              for (final direction in Direction.values) {
-                switch (c.getEdgeType(direction)) {
-                  case EdgeType.nothing:
-                    break;
-                  case EdgeType.door:
-                    final worldDoor = Door(position: Position(x: x, y: y), direction: direction);
-                    final oppositeDoor = worldDoor.opposite();
-                    final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
-                    if (oppositeCell != null && oppositeCell is CellStructure) {
-                      if (oppositeCell.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
-                        errors.push(WorldError.doorMismatch(worldDoor: worldDoor));
-                      }
-                    }
-                    break;
-                  case EdgeType.innerWall:
-                    break;
-                  case EdgeType.hole:
-                    final worldHole = Hole(position: Position(x: x, y: y), direction: direction);
-                    final downLayer = layer.down();
-                    if (downLayer == null) {
-                      errors.push(WorldError.holeMovedMismatch(worldHole: worldHole));
-                    } else {
-                      final target = worldHole.target();
-                      final targetCell = cell(layer, target.x, target.y);
-                      if (targetCell is CellStructure) {
-                        errors.push(WorldError.holeMismatch(worldHole: worldHole));
-                      }
-                      final targetMovedCell = cell(downLayer, target.x, target.y);
-                      if (targetMovedCell == null || targetMovedCell is CellEmpty) {
-                        errors.push(WorldError.holeMovedMismatch(worldHole: worldHole));
-                      }
-                    }
-                    break;
-                }
+            case StairTransport.nothing:
+              break;
+            case StairTransport.goUp:
+              final upLayer = layer.up()!;
+              final targetCell = cell(upLayer, worldPosition.x, worldPosition.y)!;
+              if (targetCell.id == null || targetCell.info.isStair != StairTransport.goDown) {
+                errors.push(WorldError.stairMismatch(worldStair: worldPosition));
               }
-              final isStair = c.isStair;
-              if (isStair != null && isStair != StairTransport.nothing) {
-                final worldStair = Stair(position: Position(x: x, y: y), stairTransport: isStair);
-                final stairIsUp = isStair == StairTransport.goUp;
-                final layerMoved = stairIsUp ? layer.up() : layer.down();
-                if (layerMoved == null) {
-                  errors.push(WorldError.stairMismatch(worldStair: worldStair));
-                } else {
-                  final targetCell = cell(layerMoved, x, y);
-                  if (!(targetCell is CellStructure && targetCell.isStair == isStair.opposite())) {
-                    errors.push(WorldError.stairMismatch(worldStair: worldStair));
-                  }
-                }
+              break;
+            case StairTransport.goDown:
+              final downLayer = layer.down()!;
+              final targetCell = cell(downLayer, worldPosition.x, worldPosition.y)!;
+              if (targetCell.id == null || targetCell.info.isStair != StairTransport.goUp) {
+                errors.push(WorldError.stairMismatch(worldStair: worldPosition));
               }
+              break;
           }
         }
       }
@@ -310,9 +217,7 @@ abstract class StructureInstance with _$StructureInstance {
     required int originX,
     required int originY,
     @Default(Rotation.cw0) Rotation rotation,
-    Set<Position>? cells,
-    Set<Door>? doors,
-    Set<Door>? innerWalls,
+    @CellsMapConverter() Map<Position, CellInfo>? cells,
   }) = _StructureInstance;
   factory StructureInstance.fromJson(Map<String, dynamic> json) => _$StructureInstanceFromJson(json);
 }
@@ -326,10 +231,6 @@ Structure _resolveStructure(StructureInstance instance, Map<String, Structure> s
     return Structure(
       isCorridor: true,
       cells: cells,
-      doors: instance.doors ?? <Door>{},
-      innerWalls: instance.innerWalls ?? <Door>{},
-      stairs: <Stair>{},
-      holes: <Hole>{},
     );
   }
   final structure = structures[instance.typeName];
@@ -343,6 +244,7 @@ World constructWorld(Map<String, Structure> structures, List<StructureInstance> 
   if (instances.isEmpty) {
     throw WorldErrors(errors: [WorldError.emptyMap()]);
   }
+
   final layers = <GroundLayer>{};
   int? minX, maxX, minY, maxY;
   final errors = WorldErrors();
@@ -355,8 +257,8 @@ World constructWorld(Map<String, Structure> structures, List<StructureInstance> 
       errors.push(e);
       continue;
     }
-    for (final cell in structure.cells) {
-      final worldPosition = cell.add(instance.originX, instance.originY).rotate(instance.rotation);
+    for (final cell in structure.cells.keys) {
+      final worldPosition = cell.toWorld(instance.rotation, instance.originX, instance.originY);
       if (minX == null || worldPosition.x < minX) minX = worldPosition.x;
       if (maxX == null || worldPosition.x > maxX) maxX = worldPosition.x;
       if (minY == null || worldPosition.y < minY) minY = worldPosition.y;

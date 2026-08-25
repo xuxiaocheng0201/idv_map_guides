@@ -1,7 +1,6 @@
 {
   "@@locale": "en",
   "title": "IDV Cryptic Notes Map Guides",
-  "mapChoose": "Choose map",
   "mapTheBringerOfDoom": "The Bringer Of Doom",
   "difficultyChoose": "Choose difficulty",
   "difficultyNovice": "Novice",
@@ -9,5 +8,25 @@
   "difficultyNormal": "Normal",
   "difficultyHard": "Hard",
   "difficultyInsane": "Insane",
+  "layerBasement": "Basement",
+  "layerGround": "Ground",
+  "layerSecond": "Second",
+  "rotation0cw": "0",
+  "rotation90cw": "90",
+  "rotation180cw": "180",
+  "rotation270cw": "270",
+  "directionNorth": "North(up) ↑",
+  "directionEast": "East(right) →",
+  "directionSouth": "South(down) ↓",
+  "directionWest": "West(left) ←",
+  "stairTransportNothing": "Nothing",
+  "stairTransportGoUp": "Up",
+  "stairTransportGoDown": "Down",
+  "edgeTypeNothing": "Nothing",
+  "edgeTypeDoor": "Door",
+  "edgeTypeInnerWall": "Wall",
+  "edgeTypeHole": "Hole",
+
+  "mapChoose": "Choose map",
   "enter": "Enter"
 }

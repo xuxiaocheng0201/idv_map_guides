@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class SettingState {
-  final ThemeMode theme;
-  final Locale? locale;
+part 'setting_cubit.freezed.dart';
 
-  const SettingState({
-    this.theme = ThemeMode.system,
-    this.locale,
-  });
+@freezed
+abstract class SettingState with _$SettingState {
+  const SettingState._();
+  const factory SettingState({
+    @Default(ThemeMode.system) ThemeMode theme,
+    Locale? locale,
+  }) = _SettingState;
 }
 
 class SettingCubit extends Cubit<SettingState> {
   SettingCubit(): super(const SettingState());
 
   void setTheme(ThemeMode theme) {
-    emit(SettingState(
-      theme: theme,
-      locale: state.locale,
-    ));
+    emit(state.copyWith(theme: theme));
   }
 
   void setLocale(Locale? locale) {
-    emit(SettingState(
-      theme: state.theme,
-      locale: locale,
-    ));
+    emit(state.copyWith(locale: locale));
   }
 }

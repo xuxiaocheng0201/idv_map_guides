@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  intl: any
   sentry_flutter: ^9.27.0
   flutter_bloc: ^9.1.1
   freezed_annotation: ^3.1.0

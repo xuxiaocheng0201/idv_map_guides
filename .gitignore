@@ -4,9 +4,10 @@
 !/pubspec.yaml
 !/pubspec.lock
 !/README.md
+!/analysis_options.yaml
 
 !/lib
 /lib/generated
-lib/**/*.freezed.dart
-lib/**/*.g.dart
+/lib/**/*.freezed.dart
+/lib/**/*.g.dart
 !/assets

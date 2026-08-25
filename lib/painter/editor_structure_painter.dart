@@ -46,43 +46,38 @@ class EditorStructurePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cellSize = min(size.width / width, size.height / height);
     drawBackground(canvas, width, height, cellSize);
-    for (final position in structure.cells) {
-      final gx = position.x;
-      final gy = position.y;
-      if (gx < 0 || width <= gx || gy < 0 || height <= gy) continue;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
+    for (final entry in structure.cells.entries) {
+      final (position, info) = (entry.key, entry.value);
+      final rect = Rect.fromLTWH(position.x * cellSize, (height - position.y - 1) * cellSize, cellSize, cellSize);
       drawCell(canvas, rect, structure.isCorridor, cellSize);
+      if (info.isStair != null) {
+        drawStair(canvas, rect, info.isStair!, cellSize);
+      }
     }
     drawGrid(canvas, width, height, cellSize);
-    for (final door in structure.doors) {
-      final gx = door.position.x;
-      final gy = door.position.y;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
-      drawDoor(canvas, rect, door.direction, cellSize);
-    }
-    for (final wall in structure.innerWalls) {
-      final gx = wall.position.x;
-      final gy = wall.position.y;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
-      drawWall(canvas, rect, wall.direction, cellSize);
-    }
-    for (final stair in structure.stairs) {
-      final gx = stair.position.x;
-      final gy = stair.position.y;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
-      drawStair(canvas, rect, stair.stairTransport, cellSize);
-    }
-    for (final hole in structure.holes) {
-      final gx = hole.position.x;
-      final gy = hole.position.y;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
-      drawWall(canvas, rect, hole.direction, cellSize);
-    }
     if (selectedCell != null) {
-      final gx = selectedCell!.x;
-      final gy = selectedCell!.y;
-      final rect = Rect.fromLTWH(gx * cellSize, (height - gy - 1) * cellSize, cellSize, cellSize);
+      final rect = Rect.fromLTWH(selectedCell!.x * cellSize, (height - selectedCell!.y - 1) * cellSize, cellSize, cellSize);
       drawSelectedBorder(canvas, rect, cellSize);
+    }
+    for (final entry in structure.cells.entries) {
+      final (position, info) = (entry.key, entry.value);
+      final rect = Rect.fromLTWH(position.x * cellSize, (height - position.y - 1) * cellSize, cellSize, cellSize);
+      for (final direction in Direction.values) {
+        switch (info.getEdgeType(direction)) {
+          case EdgeType.nothing:
+            break;
+          case EdgeType.door:
+            drawDoor(canvas, rect, direction, cellSize);
+            break;
+          case EdgeType.innerWall:
+            drawWall(canvas, rect, direction, cellSize);
+            break;
+          case EdgeType.hole:
+            drawHole(canvas, rect, direction, cellSize);
+            break;
+        }
+      }
+      drawCell(canvas, rect, structure.isCorridor, cellSize);
     }
   }
 

@@ -148,46 +148,32 @@ class MapPainter extends CustomPainter {
     drawBackground(canvas, map.width, map.height, cellSize);
     for (int x = map.minX; x <= map.maxX; x++) {
       for (int y = map.minY; y <= map.maxY; y++) {
-        final cell = map.cell(layer, x, y);
-        switch (cell) {
-          case null:
-          case CellEmpty():
-            continue;
-          case CellStructure(
-              :final id,
-              :final isCorridor,
-              :final isStair,
-          ):
-            final rect = Rect.fromLTWH((x - map.minX) * cellSize, (map.maxY  - y) * cellSize, cellSize, cellSize);
-            drawCell(canvas, rect, isCorridor, cellSize);
-            if (isStair != null) {
-              drawStair(canvas, rect, isStair, cellSize);
-            }
-            for (final direction in Direction.values) {
-              switch (cell.getEdgeType(direction)) {
-                case EdgeType.nothing:
-                  final (dx, dy) = direction.dxy;
-                  final neighbor = map.cell(layer, x + dx, y + dy);
-                  final isBoundary = switch (neighbor) {
-                    null => true,
-                    CellEmpty() => true,
-                    CellStructure(id: final neighborId) => id != neighborId,
-                  };
-                  if (isBoundary) {
-                    drawWall(canvas, rect, direction, cellSize);
-                  }
-                  break;
-                case EdgeType.door:
-                  drawDoor(canvas, rect, direction, cellSize);
-                  break;
-                case EdgeType.innerWall:
-                  drawWall(canvas, rect, direction, cellSize);
-                  break;
-                case EdgeType.hole:
-                  drawHole(canvas, rect, direction, cellSize);
-                  break;
+        final cell = map.cell(layer, x, y)!;
+        if (cell.id == null) continue;
+        final rect = Rect.fromLTWH((x - map.minX) * cellSize, (map.maxY  - y) * cellSize, cellSize, cellSize);
+        drawCell(canvas, rect, cell.isCorridor, cellSize);
+        if (cell.info.isStair != null) {
+          drawStair(canvas, rect, cell.info.isStair!, cellSize);
+        }
+        for (final direction in Direction.values) {
+          switch (cell.info.getEdgeType(direction)) {
+            case EdgeType.nothing:
+              final (dx, dy) = direction.dxy;
+              final neighbor = map.cell(layer, x + dx, y + dy);
+              if (neighbor != null && neighbor.id != cell.id) {
+                drawWall(canvas, rect, direction, cellSize);
               }
-            }
+              break;
+            case EdgeType.door:
+              drawDoor(canvas, rect, direction, cellSize);
+              break;
+            case EdgeType.innerWall:
+              drawWall(canvas, rect, direction, cellSize);
+              break;
+            case EdgeType.hole:
+              drawHole(canvas, rect, direction, cellSize);
+              break;
+          }
         }
       }
     }

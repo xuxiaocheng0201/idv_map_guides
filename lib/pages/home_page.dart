@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:idv_map_guides/bloc/map_cubit.dart';
+import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/maps.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 
@@ -28,7 +29,7 @@ class HomePage extends StatelessWidget {
               builder: (context, state) => Wrap(
                 spacing: 12,
                 children: MapType.values.map((map) {
-                  final isSelected = state.selectedMap == map;
+                  final isSelected = state.map == map;
                   return ChoiceChip(
                     label: Text(map.label(context)),
                     selected: isSelected,
@@ -46,7 +47,7 @@ class HomePage extends StatelessWidget {
               builder: (context, state) => Wrap(
                   spacing: 12,
                   children: MapDifficulty.values.map((difficulty) {
-                    final isSelected = state.selectedDifficulty == difficulty;
+                    final isSelected = state.difficulty == difficulty;
                     return ChoiceChip(
                       label: Text(difficulty.label(context)),
                       selected: isSelected,
@@ -64,7 +65,7 @@ class HomePage extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Enter ${state.selectedMap.label(context)} - ${state.selectedDifficulty.label(context)}',
+                      'Enter ${state.map.label(context)} - ${state.difficulty.label(context)}',
                     ),
                   ),
                 );

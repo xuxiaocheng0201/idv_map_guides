@@ -1,7 +1,6 @@
 {
   "@@locale": "zh",
   "title": "第五人格加页手记小抄",
-  "mapChoose": "选择地图",
   "mapTheBringerOfDoom": "厄运之女",
   "difficultyChoose": "选择难度",
   "difficultyNovice": "新手",
@@ -9,5 +8,25 @@
   "difficultyNormal": "普通",
   "difficultyHard": "困难",
   "difficultyInsane": "噩梦",
+  "layerBasement": "地下室",
+  "layerGround": "一楼",
+  "layerSecond": "二楼",
+  "rotation0cw": "0",
+  "rotation90cw": "90",
+  "rotation180cw": "180",
+  "rotation270cw": "270",
+  "directionNorth": "北(上) ↑",
+  "directionEast": "东(右) →",
+  "directionSouth": "南(下) ↓",
+  "directionWest": "西(左) ←",
+  "stairTransportNothing": "仅装饰",
+  "stairTransportGoUp": "向上",
+  "stairTransportGoDown": "向下",
+  "edgeTypeNothing": "无",
+  "edgeTypeDoor": "门",
+  "edgeTypeInnerWall": "墙",
+  "edgeTypeHole": "洞",
+
+  "mapChoose": "选择地图",
   "enter": "进入"
 }
