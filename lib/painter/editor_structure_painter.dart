@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/painter/map_painter.dart';
+import 'package:idv_map_guides/painter/world_painter.dart';
 
 const gridColor = Color(0x44556677);
 const selectedBorderColor = Color(0xFFFFD700);
@@ -10,6 +10,7 @@ const selectedBorderColor = Color(0xFFFFD700);
 void drawGrid(Canvas canvas, int width, int height, double cellSize) {
   final Paint paint = Paint()
     ..color = gridColor
+    ..style = PaintingStyle.stroke
     ..strokeWidth = cellSize * 0.01;
   for (int x = 0; x <= width; x++) {
     final dx = x * cellSize;

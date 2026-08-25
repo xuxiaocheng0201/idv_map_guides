@@ -24,7 +24,7 @@ abstract class Cell with _$Cell {
 class World {
   final int minX, maxX, minY, maxY;
   Map<GroundLayer, List<List<Cell>>> map;
-  Set<Entrance> entrances;
+  Map<GroundLayer, Set<Position>> entrances;
   int _nextStructureId;
 
   World({
@@ -37,7 +37,7 @@ class World {
         for (final layer in layers)
           layer: List.generate(maxX - minX + 1, (_) => List.generate(maxY - minY + 1, (_) => Cell())),
       },
-      entrances = <Entrance>{},
+      entrances = <GroundLayer, Set<Position>>{},
       _nextStructureId = 0;
 
   Set<GroundLayer> get layers => map.keys.toSet();
@@ -52,14 +52,14 @@ class World {
   }
 
 
-  void _addEntrance(Entrance entrance) {
-    if (!map.containsKey(entrance.layer) || _isOutOfWorld(entrance.position.x, entrance.position.y)) {
+  void addEntrance(GroundLayer layer, Position entrance) {
+    if (!map.containsKey(layer) || _isOutOfWorld(entrance.x, entrance.y)) {
       throw WorldError.entranceOutOfWorld(entrance: entrance);
     }
-    entrances.add(entrance);
+    entrances.putIfAbsent(layer, () => <Position>{}).add(entrance);
   }
 
-  void _placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
+  void placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
     // validate
     final errors = WorldErrors();
     final downLayer = switch (layer.down()) { final k? => map.containsKey(k) ? k : null, _ => null };
@@ -138,10 +138,10 @@ class World {
     }
   }
 
-  void _validate() {
+  void validate() {
     final errors = WorldErrors();
-    for (final entrance in entrances) {
-      final c = cell(entrance.layer, entrance.position.x, entrance.position.y);
+    for (final (layer, entrance) in entrances.entries.expand((entry) => entry.value.map((p) => (entry.key, p)))) {
+      final c = cell(layer, entrance.x, entrance.y);
       if (c == null || c.id == null) {
         errors.push(WorldError.entranceInEmpty(entrance: entrance));
       }
@@ -222,7 +222,7 @@ abstract class StructureInstance with _$StructureInstance {
   factory StructureInstance.fromJson(Map<String, dynamic> json) => _$StructureInstanceFromJson(json);
 }
 
-Structure _resolveStructure(StructureInstance instance, Map<String, Structure> structures) {
+Structure resolveStructure(StructureInstance instance, Map<String, Structure> structures) {
   if (instance.typeName == 'corridor') {
     final cells = instance.cells;
     if (cells == null) {
@@ -240,19 +240,28 @@ Structure _resolveStructure(StructureInstance instance, Map<String, Structure> s
   return structure;
 }
 
-World constructWorld(Map<String, Structure> structures, List<StructureInstance> instances, Set<Entrance> entrances) {
-  if (instances.isEmpty) {
+@Freezed(addImplicitFinal: false, makeCollectionsUnmodifiable: false)
+abstract class WorldFile with _$WorldFile {
+  WorldFile._();
+  factory WorldFile({
+    @Default(<StructureInstance>[]) List<StructureInstance> instances,
+    @Default(<GroundLayer, Set<Position>>{}) Map<GroundLayer, Set<Position>> entrances,
+  }) = _WorldFile;
+}
+
+World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
+  if (worldFile.instances.isEmpty) {
     throw WorldErrors(errors: [WorldError.emptyMap()]);
   }
 
   final layers = <GroundLayer>{};
   int? minX, maxX, minY, maxY;
   final errors = WorldErrors();
-  for (final instance in instances) {
+  for (final instance in worldFile.instances) {
     layers.add(instance.layer);
     Structure structure;
     try {
-      structure = _resolveStructure(instance, structures);
+      structure = resolveStructure(instance, structures);
     } on WorldError catch (e) {
       errors.push(e);
       continue;
@@ -270,23 +279,23 @@ World constructWorld(Map<String, Structure> structures, List<StructureInstance> 
   }
 
   final world = World(layers: layers, minX: minX!, maxX: maxX!, minY:minY!, maxY: maxY!);
-  for (final instance in instances) {
-    final structure = _resolveStructure(instance, structures);
+  for (final instance in worldFile.instances) {
+    final structure = resolveStructure(instance, structures);
     try {
-      world._placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
+      world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
     } on WorldErrors catch (e) {
       errors.merge(e);
     }
   }
-  for (final entrance in entrances) {
+  for (final (layer, entrance) in worldFile.entrances.entries.expand((entry) => entry.value.map((p) => (entry.key, p)))) {
     try {
-      world._addEntrance(entrance);
+      world.addEntrance(layer, entrance);
     } on WorldError catch (e) {
       errors.push(e);
     }
   }
   try {
-    world._validate();
+    world.validate();
   } on WorldErrors catch (e) {
     errors.merge(e);
   }

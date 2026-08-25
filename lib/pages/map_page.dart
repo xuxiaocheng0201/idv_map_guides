@@ -2,19 +2,20 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
-import 'package:idv_map_guides/painter/map_painter.dart';
+import 'package:idv_map_guides/painter/world_painter.dart';
 
-class MapScreen extends StatefulWidget {
-  final World map;
+class MapPage extends StatefulWidget {
+  final World world;
 
-  const MapScreen({super.key, required this.map});
+  const MapPage({super.key, required this.world});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<MapPage> createState() => _MapPageState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapPageState extends State<MapPage> {
   late GroundLayer _activeLayer;
 
   @override
@@ -23,21 +24,9 @@ class _MapScreenState extends State<MapScreen> {
     _activeLayer = GroundLayer.ground;
   }
 
-  String _layerLabel(GroundLayer layer) {
-    switch (layer) {
-      case GroundLayer.basement:
-        return '地下室';
-      case GroundLayer.ground:
-        return '一层';
-      case GroundLayer.second:
-        return '二层';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final layers = widget.map.layers;
-
+    final layers = widget.world.layers;
     return Scaffold(
       appBar: AppBar(
         title: const Text('地图展示'),
@@ -45,15 +34,13 @@ class _MapScreenState extends State<MapScreen> {
           PopupMenuButton<GroundLayer>(
             initialValue: _activeLayer,
             onSelected: (layer) {
-              setState(() {
-                _activeLayer = layer;
-              });
+              setState(() => _activeLayer = layer);
             },
             itemBuilder: (context) => [
               for (final layer in layers)
                 PopupMenuItem(
                   value: layer,
-                  child: Text(_layerLabel(layer)),
+                  child: Text(layer.label(context)),
                 ),
             ],
             child: Padding(
@@ -65,7 +52,7 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _layerLabel(_activeLayer),
+                    _activeLayer.label(context),
                     style: const TextStyle(color: Colors.white),
                   ),
                   const Icon(
@@ -78,30 +65,21 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final availableWidth = constraints.maxWidth;
-          final availableHeight = constraints.maxHeight;
-
-          final cellSize = min(
-            availableWidth / widget.map.width.toDouble(),
-            availableHeight / widget.map.height.toDouble(),
-          );
-
-          final mapWidth = widget.map.width.toDouble() * cellSize;
-          final mapHeight = widget.map.height.toDouble() * cellSize;
-
-          return InteractiveViewer(
-            constrained: false,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+      body: Padding(
+        padding: const EdgeInsets.all(8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cellSize = min(constraints.maxWidth / widget.world.width, constraints.maxHeight / widget.world.height);
+            final paintSize = Size(widget.world.width * cellSize, widget.world.height * cellSize);
+            return InteractiveViewer(
+              constrained: false,
               child: CustomPaint(
-                size: Size(mapWidth, mapHeight),
-                painter: MapPainter(widget.map, _activeLayer),
+                size: paintSize,
+                painter: WorldPainter(world: widget.world, layer: _activeLayer),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

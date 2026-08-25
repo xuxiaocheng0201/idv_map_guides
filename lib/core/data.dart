@@ -185,16 +185,6 @@ abstract class Edge with _$Edge {
   }
 }
 
-@freezed
-abstract class Entrance with _$Entrance {
-  const Entrance._();
-  const factory Entrance({
-    required GroundLayer layer,
-    required Position position,
-  }) = _Entrance;
-  factory Entrance.fromJson(Map<String, dynamic> json) => _$EntranceFromJson(json);
-}
-
 class CellsMapConverter extends JsonConverter<Map<Position, CellInfo>, Map<String, dynamic>> {
   const CellsMapConverter();
 

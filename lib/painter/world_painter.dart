@@ -11,6 +11,7 @@ const wallColor = Color(0xFF778899);
 const doorColor = Color(0xFFFFDD33);
 const holeColor = Color(0xFFFF6F61);
 const stairGridColor = Color(0xFFBDBDBD);
+const entranceColor = Color(0xFF00CC55);
 
 void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
@@ -24,6 +25,7 @@ void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize) {
 void drawStair(Canvas canvas, Rect rect, StairTransport stair, double cellSize) {
   final Paint paint = Paint()
     ..color = stairGridColor
+    ..style = PaintingStyle.stroke
     ..strokeWidth = cellSize * 0.01;
   const divisions = 8;
   for (int i = 1; i < divisions; i++) {
@@ -65,6 +67,7 @@ void drawWall(Canvas canvas, Rect rect, Direction direction, double cellSize) {
 void drawDoor(Canvas canvas, Rect rect, Direction direction, double cellSize) {
   final Paint paint = Paint()
     ..color = doorColor
+    ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
     ..strokeWidth = cellSize * 0.02;
   final Offset p1;
@@ -136,21 +139,31 @@ void drawHole(Canvas canvas, Rect rect, Direction direction, double cellSize) {
   }
 }
 
-class MapPainter extends CustomPainter {
-  final World map;
+void drawEntrance(Canvas canvas, Rect rect, double cellSize) {
+  final Paint paint = Paint()
+    ..color = entranceColor
+    ..style = PaintingStyle.fill;
+  final Offset center = rect.center;
+  final double radius = cellSize * 0.3;
+  canvas.drawCircle(center, radius, paint);
+}
+
+class WorldPainter extends CustomPainter {
+  final World world;
   final GroundLayer layer;
 
-  MapPainter(this.map, this.layer);
+  WorldPainter({required this.world, required this.layer});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = min(size.width / map.width, size.height / map.height);
-    drawBackground(canvas, map.width, map.height, cellSize);
-    for (int x = map.minX; x <= map.maxX; x++) {
-      for (int y = map.minY; y <= map.maxY; y++) {
-        final cell = map.cell(layer, x, y)!;
+    final cellSize = min(size.width / world.width, size.height / world.height);
+    drawBackground(canvas, world.width, world.height, cellSize);
+    final entrances = world.entrances[layer] ?? <Position>{};
+    for (int x = world.minX; x <= world.maxX; x++) {
+      for (int y = world.minY; y <= world.maxY; y++) {
+        final cell = world.cell(layer, x, y)!;
         if (cell.id == null) continue;
-        final rect = Rect.fromLTWH((x - map.minX) * cellSize, (map.maxY  - y) * cellSize, cellSize, cellSize);
+        final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
         drawCell(canvas, rect, cell.isCorridor, cellSize);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
@@ -159,7 +172,7 @@ class MapPainter extends CustomPainter {
           switch (cell.info.getEdgeType(direction)) {
             case EdgeType.nothing:
               final (dx, dy) = direction.dxy;
-              final neighbor = map.cell(layer, x + dx, y + dy);
+              final neighbor = world.cell(layer, x + dx, y + dy);
               if (neighbor != null && neighbor.id != cell.id) {
                 drawWall(canvas, rect, direction, cellSize);
               }
@@ -175,12 +188,15 @@ class MapPainter extends CustomPainter {
               break;
           }
         }
+        if (entrances.contains(Position(x: x, y: y))) {
+          drawEntrance(canvas, rect, cellSize);
+        }
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant MapPainter oldDelegate) {
-    return oldDelegate.map != map || oldDelegate.layer != layer;
+  bool shouldRepaint(covariant WorldPainter oldDelegate) {
+    return oldDelegate.world != world || oldDelegate.layer != layer;
   }
 }

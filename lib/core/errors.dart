@@ -5,7 +5,7 @@ part 'errors.freezed.dart';
 
 @freezed
 sealed class WorldError with _$WorldError {
-  const factory WorldError.entranceOutOfWorld({required Entrance entrance}) = WorldError_EntranceOutOfWorld;
+  const factory WorldError.entranceOutOfWorld({required Position entrance}) = WorldError_EntranceOutOfWorld;
   const factory WorldError.cellOutOfWorld({required Position worldPosition}) = WorldError_CellOutOfWorld;
   const factory WorldError.cellOverlap({required Position worldPosition}) = WorldError_CellOverlap;
   const factory WorldError.doorNotAtBoundary({required Edge worldDoor}) = WorldError_DoorNotAtBoundary;
@@ -14,7 +14,7 @@ sealed class WorldError with _$WorldError {
   const factory WorldError.holeMoveOutOfLayer({required Edge worldHole}) = WorldError_HoleMoveOutOfLayer;
   const factory WorldError.holeOutOfWorld({required Edge worldHole}) = WorldError_HoleOutOfWorld;
 
-  const factory WorldError.entranceInEmpty({required Entrance entrance}) = WorldError_EntranceInEmpty;
+  const factory WorldError.entranceInEmpty({required Position entrance}) = WorldError_EntranceInEmpty;
   const factory WorldError.doorMismatch({required Edge worldDoor}) = WorldError_DoorMismatch;
   const factory WorldError.stairMismatch({required Position worldStair}) = WorldError_StairMismatch;
   const factory WorldError.holeMismatch({required Edge worldHole}) = WorldError_HoleMismatch;

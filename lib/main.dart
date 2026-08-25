@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:idv_map_guides/bloc/map_cubit.dart';
 import 'package:idv_map_guides/bloc/setting_cubit.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/pages/editors/structures_editor.dart';
+import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/pages/home_page.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
               routes: {
                 Routes.home: (context) => const HomePage(),
 
-                Routes.editorStructure: (context) => StructuresEditorPage(),
+                if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
               },
             ),
           ),
