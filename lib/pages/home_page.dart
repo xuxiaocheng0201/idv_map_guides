@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:idv_map_guides/bloc/map_cubit.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/maps.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/routes.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -11,6 +13,33 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: kDebugMode ? FloatingActionButton(
+        child: const Icon(Icons.edit),
+        onPressed: () {
+          showDialog<void>(
+            context: context,
+            builder: (context) => Dialog(
+              child: SizedBox(
+                width: 300,
+                height: 240,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      child: const Text('结构编辑'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, Routes.editorStructure),
+                    ),
+                    TextButton(
+                      child: const Text('地图编辑'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, Routes.editorWorld),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ) : null,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

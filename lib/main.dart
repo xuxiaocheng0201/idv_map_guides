@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
               ],
               supportedLocales: S.delegate.supportedLocales,
               onGenerateTitle: (context) => S.of(context).title,
-              initialRoute: Routes.editorWorld,
+              initialRoute: Routes.home,
               routes: {
                 Routes.home: (context) => const HomePage(),
 
