@@ -22,7 +22,7 @@ void drawGrid(Canvas canvas, int width, int height, double cellSize) {
   }
 }
 
-void drawSelectedBorder(Canvas canvas, Rect rect, double cellSize) {
+void drawCellSelectedBorder(Canvas canvas, Rect rect, double cellSize) {
   final Paint paint = Paint()
     ..color = selectedBorderColor
     ..style = PaintingStyle.stroke
@@ -58,7 +58,7 @@ class EditorStructurePainter extends CustomPainter {
     drawGrid(canvas, width, height, cellSize);
     if (selectedCell != null) {
       final rect = Rect.fromLTWH(selectedCell!.x * cellSize, (height - selectedCell!.y - 1) * cellSize, cellSize, cellSize);
-      drawSelectedBorder(canvas, rect, cellSize);
+      drawCellSelectedBorder(canvas, rect, cellSize);
     }
     for (final entry in structure.cells.entries) {
       final (position, info) = (entry.key, entry.value);
@@ -83,6 +83,9 @@ class EditorStructurePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant EditorStructurePainter oldDelegate) {
-    return oldDelegate.structure != structure || oldDelegate.height != height || oldDelegate.width != width || oldDelegate.selectedCell != selectedCell;
+    return oldDelegate.structure != structure ||
+        oldDelegate.height != height ||
+        oldDelegate.width != width ||
+        oldDelegate.selectedCell != selectedCell;
   }
 }
