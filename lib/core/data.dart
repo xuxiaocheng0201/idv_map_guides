@@ -144,11 +144,11 @@ enum EdgeType {
 abstract class CellInfo with _$CellInfo {
   const CellInfo._();
   const factory CellInfo({
-    required StairTransport? isStair,
-    required EdgeType edgeNorth,
-    required EdgeType edgeEast,
-    required EdgeType edgeSouth,
-    required EdgeType edgeWest,
+    StairTransport? isStair,
+    @Default(EdgeType.nothing) EdgeType edgeNorth,
+    @Default(EdgeType.nothing) EdgeType edgeEast,
+    @Default(EdgeType.nothing) EdgeType edgeSouth,
+    @Default(EdgeType.nothing) EdgeType edgeWest,
   }) = _CellInfo;
   factory CellInfo.fromJson(Map<String, dynamic> json) => _$CellInfoFromJson(json);
 

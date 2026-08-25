@@ -9,6 +9,7 @@ import 'package:idv_map_guides/pages/editors/structures_editor.dart';
 import 'package:idv_map_guides/pages/home_page.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:toastification/toastification.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,25 +40,27 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => MapCubit()),
       ],
       child: BlocBuilder<SettingCubit, SettingState>(
-        builder: (context, state) => SafeArea(
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            themeMode: state.theme,
-            locale: state.locale,
-            localizationsDelegates: const [
-              S.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: S.delegate.supportedLocales,
-            onGenerateTitle: (context) => S.of(context).title,
-            initialRoute: Routes.editorStructure,
-            routes: {
-              Routes.home: (context) => const HomePage(),
+        builder: (context, state) => ToastificationWrapper(
+          child: SafeArea(
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              themeMode: state.theme,
+              locale: state.locale,
+              localizationsDelegates: const [
+                S.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: S.delegate.supportedLocales,
+              onGenerateTitle: (context) => S.of(context).title,
+              initialRoute: Routes.editorStructure,
+              routes: {
+                Routes.home: (context) => const HomePage(),
 
-              Routes.editorStructure: (context) => StructuresEditorPage(),
-            },
+                Routes.editorStructure: (context) => StructuresEditorPage(),
+              },
+            ),
           ),
         ),
       ),

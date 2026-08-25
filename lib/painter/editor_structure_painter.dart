@@ -77,7 +77,6 @@ class EditorStructurePainter extends CustomPainter {
             break;
         }
       }
-      drawCell(canvas, rect, structure.isCorridor, cellSize);
     }
   }
 
