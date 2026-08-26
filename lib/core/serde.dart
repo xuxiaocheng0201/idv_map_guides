@@ -1,31 +1,302 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:messagepack/messagepack.dart';
 
-// TODO: pro_mpack: ^3.2.0
+extension _GroundLayerSerde on GroundLayer {
+  static GroundLayer unpack(Unpacker unpacker) {
+    return switch (unpacker.unpackInt()) {
+      0 => GroundLayer.basement,
+      1 => GroundLayer.ground,
+      2 => GroundLayer.second,
+      _ => throw FormatException(),
+    };
+  }
+  void pack(Packer packer) {
+    packer.packInt(switch (this) {
+      GroundLayer.basement => 0,
+      GroundLayer.ground => 1,
+      GroundLayer.second => 2,
+    });
+  }
+}
+
+extension _RotationSerde on Rotation {
+  static Rotation unpack(Unpacker unpacker) {
+    return switch (unpacker.unpackInt()) {
+      0 => Rotation.cw0,
+      1 => Rotation.cw90,
+      2 => Rotation.cw180,
+      3 => Rotation.cw270,
+      _ => throw FormatException(),
+    };
+  }
+  void pack(Packer packer) {
+    packer.packInt(switch (this) {
+      Rotation.cw0 => 0,
+      Rotation.cw90 => 1,
+      Rotation.cw180 => 2,
+      Rotation.cw270 => 3,
+    });
+  }
+}
+
+extension _PositionSerde on Position {
+  static Position unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 2) throw FormatException();
+    final x = unpacker.unpackInt();
+    final y = unpacker.unpackInt();
+    if (x == null || y == null) throw FormatException();
+    return Position(x: x, y: y);
+  }
+  void pack(Packer packer) {
+    packer.packListLength(2);
+    packer.packInt(x);
+    packer.packInt(y);
+  }
+}
+
+extension _StairTransportSerde on StairTransport {
+  static StairTransport? unpackNullable(Unpacker unpacker) {
+    return switch (unpacker.unpackInt()) {
+      null => null,
+      0 => StairTransport.nothing,
+      1 => StairTransport.goUp,
+      2 => StairTransport.goDown,
+      _ => throw FormatException(),
+    };
+  }
+  void pack(Packer packer) {
+    packer.packInt(switch (this) {
+      StairTransport.nothing => 0,
+      StairTransport.goUp => 1,
+      StairTransport.goDown => 2,
+    });
+  }
+}
+
+extension _EdgeTypeSerde on EdgeType {
+  static EdgeType unpack(Unpacker unpacker) {
+    return switch (unpacker.unpackInt()) {
+      0 => EdgeType.nothing,
+      1 => EdgeType.door,
+      2 => EdgeType.innerWall,
+      3 => EdgeType.hole,
+      _ => throw FormatException(),
+    };
+  }
+  void pack(Packer packer) {
+    packer.packInt(switch (this) {
+      EdgeType.nothing => 0,
+      EdgeType.door => 1,
+      EdgeType.innerWall => 2,
+      EdgeType.hole => 2,
+    });
+  }
+}
+
+extension _CellInfoSerde on CellInfo {
+  static CellInfo unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 5) throw FormatException();
+    return CellInfo(
+      isStair: _StairTransportSerde.unpackNullable(unpacker),
+      edgeNorth: _EdgeTypeSerde.unpack(unpacker),
+      edgeEast: _EdgeTypeSerde.unpack(unpacker),
+      edgeSouth: _EdgeTypeSerde.unpack(unpacker),
+      edgeWest: _EdgeTypeSerde.unpack(unpacker),
+    );
+  }
+  void pack(Packer packer) {
+    packer.packListLength(5);
+    if (isStair == null) {
+      packer.packNull();
+    } else {
+      isStair!.pack(packer);
+    }
+    edgeNorth.pack(packer);
+    edgeEast.pack(packer);
+    edgeSouth.pack(packer);
+    edgeWest.pack(packer);
+  }
+}
+
+extension _StructureSerde on Structure {
+  static Structure unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 2) throw FormatException();
+    final isCorridor = unpacker.unpackBool();
+    if (isCorridor == null) throw FormatException();
+    final mapLen = unpacker.unpackMapLength();
+    final cells = <Position, CellInfo>{};
+    for (int i = 0; i < mapLen; i++) {
+      final key = _PositionSerde.unpack(unpacker);
+      final value = _CellInfoSerde.unpack(unpacker);
+      cells[key] = value;
+    }
+    return Structure(
+      isCorridor: isCorridor,
+      cells: cells,
+    );
+  }
+  void pack(Packer packer) {
+    packer.packListLength(2);
+    packer.packBool(isCorridor);
+    packer.packMapLength(cells.length);
+    for (final entry in cells.entries) {
+      entry.key.pack(packer);
+      entry.value.pack(packer);
+    }
+  }
+}
 
 Uint8List serializeStructures(Map<String, Structure> structures) {
-  final map = structures.map((key, value) => MapEntry(key, value.toJson()));
-  final string = json.encode(map);
-  return utf8.encode(string);
+  final packer = Packer();
+  packer.packMapLength(structures.length);
+  final list = structures.entries.toList();
+  list.sort((a, b) => a.key.compareTo(b.key));
+  for (final entry in list) {
+    packer.packString(entry.key);
+    entry.value.pack(packer);
+  }
+  return packer.takeBytes();
 }
 
 Map<String, Structure> deserializeStructures(Uint8List content) {
-  final string = utf8.decode(content);
-  final map = json.decode(string) as Map<String, dynamic>;
-  return map.map((key, value) => MapEntry(key, Structure.fromJson(value as Map<String, dynamic>)));
+  final unpacker = Unpacker(content);
+  final mapLen = unpacker.unpackMapLength();
+  final structures = <String, Structure>{};
+  for (int i = 0; i < mapLen; i++) {
+    final key = unpacker.unpackString();
+    if (key == null) throw FormatException();
+    final value = _StructureSerde.unpack(unpacker);
+    structures[key] = value;
+  }
+  return structures;
+}
+
+extension _StructureInstanceSerde on StructureInstance {
+  static StructureInstance unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 6) throw FormatException();
+    final typeName = unpacker.unpackString();
+    final layer = _GroundLayerSerde.unpack(unpacker);
+    final originX = unpacker.unpackInt();
+    final originY = unpacker.unpackInt();
+    final rotation = _RotationSerde.unpack(unpacker);
+    if (typeName == null || originX == null || originY == null) throw FormatException();
+    final mapLen = unpacker.unpackMapLength();
+    final cells = <Position, CellInfo>{};
+    for (int i = 0; i < mapLen; i++) {
+      final key = _PositionSerde.unpack(unpacker);
+      final value = _CellInfoSerde.unpack(unpacker);
+      cells[key] = value;
+    }
+    return StructureInstance(
+      typeName: typeName,
+      layer: layer,
+      originX: originX,
+      originY: originY,
+      rotation: rotation,
+      cells: cells,
+    );
+  }
+  void pack(Packer packer) {
+    packer.packListLength(6);
+    packer.packString(typeName);
+    layer.pack(packer);
+    packer.packInt(originX);
+    packer.packInt(originY);
+    rotation.pack(packer);
+    if (cells == null) {
+      packer.packMapLength(null);
+    } else {
+      packer.packMapLength(cells!.length);
+      for (final entry in cells!.entries) {
+        entry.key.pack(packer);
+        entry.value.pack(packer);
+      }
+    }
+  }
+}
+
+extension _WorldFileSerde on WorldFile {
+  static WorldFile unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 7) throw FormatException();
+    final layersLen = unpacker.unpackListLength();
+    final layers = <GroundLayer>{};
+    for (int i = 0; i < layersLen; i++) {
+      final layer = _GroundLayerSerde.unpack(unpacker);
+      layers.add(layer);
+    }
+    final minX = unpacker.unpackInt();
+    final maxX = unpacker.unpackInt();
+    final minY = unpacker.unpackInt();
+    final maxY = unpacker.unpackInt();
+    if (minX == null || maxX == null || minY == null || maxY == null) throw FormatException();
+    final instancesLen = unpacker.unpackListLength();
+    final instances = <StructureInstance>[];
+    for (int i = 0; i < instancesLen; i++) {
+      final instance = _StructureInstanceSerde.unpack(unpacker);
+      instances.add(instance);
+    }
+    final entrancesLen = unpacker.unpackMapLength();
+    final entrances = <GroundLayer, Set<Position>>{};
+    for (int i = 0; i < entrancesLen; i++) {
+      final layer = _GroundLayerSerde.unpack(unpacker);
+      final positionsLen = unpacker.unpackListLength();
+      final positions = <Position>{};
+      for (int i = 0; i < positionsLen; i++) {
+        final position = _PositionSerde.unpack(unpacker);
+        positions.add(position);
+      }
+      entrances[layer] = positions;
+    }
+    return WorldFile(
+      layers: layers,
+      minX: minX,
+      maxX: maxX,
+      minY: minY,
+      maxY: maxY,
+      instances: instances,
+      entrances: entrances,
+    );
+  }
+  void pack(Packer packer) {
+    packer.packListLength(7);
+    packer.packListLength(layers.length);
+    for (final layer in layers) {
+      layer.pack(packer);
+    }
+    packer.packInt(minX);
+    packer.packInt(maxX);
+    packer.packInt(minY);
+    packer.packInt(maxY);
+    packer.packListLength(instances.length);
+    for (final instance in instances) {
+      instance.pack(packer);
+    }
+    packer.packMapLength(entrances.length);
+    for (final entry in entrances.entries) {
+      entry.key.pack(packer);
+      packer.packMapLength(entry.value.length);
+      for (final position in entry.value) {
+        position.pack(packer);
+      }
+    }
+  }
 }
 
 Uint8List serializeWorld(WorldFile world) {
-  final map = world.toJson();
-  final string = json.encode(map);
-  return utf8.encode(string);
+  final packer = Packer();
+  world.pack(packer);
+  return packer.takeBytes();
 }
 
 WorldFile deserializeWorld(Uint8List content) {
-  final string = utf8.decode(content);
-  final map = json.decode(string) as Map<String, dynamic>;
-  return WorldFile.fromJson(map);
+  final unpacker = Unpacker(content);
+  return _WorldFileSerde.unpack(unpacker);
 }

@@ -3,7 +3,6 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/errors.dart';
 
 part 'world.freezed.dart';
-part 'world.g.dart';
 
 @Freezed(addImplicitFinal: false)
 abstract class Cell with _$Cell {
@@ -218,9 +217,8 @@ abstract class StructureInstance with _$StructureInstance {
     required int originX,
     required int originY,
     @Default(Rotation.cw0) Rotation rotation,
-    @CellsMapConverter() Map<Position, CellInfo>? cells,
+    Map<Position, CellInfo>? cells,
   }) = _StructureInstance;
-  factory StructureInstance.fromJson(Map<String, dynamic> json) => _$StructureInstanceFromJson(json);
 }
 
 const corridorTypeName = 'corridor';
@@ -255,7 +253,6 @@ abstract class WorldFile with _$WorldFile {
     required List<StructureInstance> instances,
     required Map<GroundLayer, Set<Position>> entrances,
   }) = _WorldFile;
-  factory WorldFile.fromJson(Map<String, dynamic> json) => _$WorldFileFromJson(json);
 }
 
 World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
