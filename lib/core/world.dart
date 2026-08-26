@@ -161,7 +161,7 @@ class World {
                 final oppositeDoor = worldEdge.opposite();
                 final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
                 if (oppositeCell != null && oppositeCell.id != null && oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
-                  errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
+                  c.info = c.info.setEdgeType(direction, EdgeType.nothing);
                 }
                 break;
               case EdgeType.innerWall:
