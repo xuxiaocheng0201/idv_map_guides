@@ -40,7 +40,7 @@ void drawWall(Canvas canvas, Rect rect, Direction direction, double cellSize) {
   final Paint paint = Paint()
     ..color = wallColor
     ..style = PaintingStyle.stroke
-    ..strokeWidth = cellSize * 0.01;
+    ..strokeWidth = cellSize * 0.04;
   final Offset p1;
   final Offset p2;
   switch (direction) {
@@ -98,7 +98,7 @@ void drawHole(Canvas canvas, Rect rect, Direction direction, double cellSize) {
     ..color = holeColor
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
-    ..strokeWidth = cellSize * 0.01;
+    ..strokeWidth = cellSize * 0.02;
   const dashWidth = 4.0;
   const dashSpace = 3.0;
   double startX, startY, endX, endY;

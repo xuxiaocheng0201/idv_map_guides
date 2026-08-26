@@ -112,11 +112,11 @@ class _WorldEditorRegistry {
 
   bool get hasErrors => !globalErrors.isEmpty || errorsByInstanceIndex.isNotEmpty;
 
-  int addInstance(void Function(void Function()) setState) {
+  int addInstance(GroundLayer layer, void Function(void Function()) setState) {
     final index = worldFile.instances.length;
     final instance = StructureInstance(
       typeName: corridorTypeName,
-      layer: GroundLayer.ground,
+      layer: layer,
       originX: 0,
       originY: 0,
     );
@@ -166,6 +166,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
               final content = await file.readAsBytes();
               dataWorld = content;
               _registry.read(setState);
+              _registry.buildWorld(setState);
             },
           ),
           IconButton(
@@ -229,7 +230,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                           style: TextStyle(color: hasError ? Colors.red : null),
                         ),
                         subtitle: Text(
-                          '图层: ${instance.layer.label(context)}  位置: (${instance.originX}, ${instance.originY})',
+                          '层级: ${instance.layer.label(context)}  位置: (${instance.originX}, ${instance.originY}) 旋转 ${instance.rotation.label(context)}',
                         ),
                         onTap: () => setState(() {
                           _selectedInstanceIndex = index;
@@ -260,7 +261,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   }
 
   void _addInstance() {
-    final structureId = _registry.addInstance(setState);
+    final structureId = _registry.addInstance(_currentLayer, setState);
     _registry.buildWorld(setState);
     setState(() => _selectedInstanceIndex = structureId);
   }
@@ -493,31 +494,35 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final instance = _registry.worldFile.instances[index];
     return Column(
       children: [
-        Row(
-          children: [
-            Text(
-              '结构实例 #${index + 1} ${instance.typeName}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: '删除此结构实例',
-              onPressed: () {
-                _registry.removeInstance(index, setState);
-                _registry.buildWorld(setState);
-                setState(() => _selectedInstanceIndex = null);
-              },
-            ),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Text(
+                '结构实例 #${index + 1} ${instance.typeName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: '删除此结构实例',
+                onPressed: () {
+                  _registry.removeInstance(index, setState);
+                  _registry.buildWorld(setState);
+                  setState(() => _selectedInstanceIndex = null);
+                },
+              ),
+            ],
+          ),
         ),
         const Divider(),
         DropdownButtonFormField<String>(
-          initialValue: instance.typeName,
+          initialValue: _registry.structures.containsKey(instance.typeName) || instance.typeName == corridorTypeName ? instance.typeName : null,
           decoration: const InputDecoration(labelText: '结构类型'),
           items: _registry.structures.keys
               .map((name) => DropdownMenuItem(value: name, child: Text(name)))
               .toList()
-            ..add(const DropdownMenuItem(value: corridorTypeName, child: Text(corridorTypeName))),
+            ..add(const DropdownMenuItem(value: corridorTypeName, child: Text(corridorTypeName)))
+            ..sort((a, b) => a.value!.compareTo(b.value!)),
           onChanged: (value) {
             if (value != null) {
               setState(() {
