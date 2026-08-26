@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'dart:math';
 
-import 'package:clipboard/clipboard.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
@@ -12,24 +11,17 @@ import 'package:toastification/toastification.dart';
 const int defaultCanvasWidth = 5;
 const int defaultCanvasHeight = 5;
 
-const defaultStructuresSavePath = 'structures.json';
+var dataStructures = serializeStructures(<String, Structure>{});
 
 class _StructuresRegistry {
-  final File file;
   Map<String, Structure> structures = <String, Structure>{};
   Map<String, (int, int)> canvas = <String, (int, int)>{};
   List<String> names = <String>[];
 
-  _StructuresRegistry({required String path}): file = File(path).absolute;
-  
-  String get path => file.path;
+  _StructuresRegistry();
 
-  Future<void> read(void Function(void Function()) setState) async {
-    if (!await file.exists()) {
-      return;
-    }
-    final content = await file.readAsBytes();
-    final structures = deserializeStructures(content);
+  void read(void Function(void Function()) setState) {
+    final structures = deserializeStructures(dataStructures);
     final names = structures.keys.toList();
     names.sort();
     final canvas = structures.map((name, structure) {
@@ -45,9 +37,9 @@ class _StructuresRegistry {
     });
   }
 
-  Future<void> write() async {
+  void write() {
     final content = serializeStructures(structures);
-    await file.writeAsBytes(content);
+    dataStructures = content;
   }
 
   int? addStructure(String name, void Function(void Function()) setState) {
@@ -99,10 +91,7 @@ class _StructuresRegistry {
 }
 
 class StructuresEditorPage extends StatefulWidget {
-  final String structuresPath;
-
-  const StructuresEditorPage({super.key, String? structuresPath}):
-        structuresPath = structuresPath ?? defaultStructuresSavePath;
+  const StructuresEditorPage({super.key});
 
   @override
   State<StructuresEditorPage> createState() => _StructuresEditorPageState();
@@ -116,7 +105,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   @override
   void initState() {
     super.initState();
-    _registry = _StructuresRegistry(path: widget.structuresPath);
+    _registry = _StructuresRegistry();
     _registry.read(setState);
     _selectedIndex = null;
     _selectedCell = null;
@@ -129,27 +118,25 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
         title: const Text('结构编辑器'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: '导入',
+            onPressed: () async {
+              final file = await FilePicker.pickFile();
+              if (file == null) return;
+              final content = await file.readAsBytes();
+              dataStructures = content;
+              _registry.read(setState);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.save),
             tooltip: '保存',
-            onPressed: () async {
-              await _registry.write();
-              toastification.show(
-                autoCloseDuration: const Duration(seconds: 3),
-                showProgressBar: true,
-                title: Row(
-                  children: [
-                    Text('保存成功'),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: '复制保存路径',
-                      onPressed: () async {
-                        await FlutterClipboard.copy(_registry.path);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            onPressed: () => _registry.write(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: '导出',
+            onPressed: () => FilePicker.saveFile(fileName: 'structures.data', bytes: dataStructures),
           ),
         ],
         backgroundColor: Theme.of(context).splashColor,

@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'dart:math';
 
-import 'package:clipboard/clipboard.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/errors.dart';
@@ -11,19 +10,24 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:idv_map_guides/painter/editor_world_painter.dart';
-import 'package:toastification/toastification.dart';
 
 const int defaultWorldMinX = -25;
 const int defaultWorldMaxX = 25;
 const int defaultWorldMinY = 0;
 const int defaultWorldMaxY = 50;
 
-const defaultWorldSavePath = 'world.json';
+var dataWorld = serializeWorld(WorldFile(
+  layers: <GroundLayer>{GroundLayer.ground},
+  minX: defaultWorldMinX,
+  maxX: defaultWorldMaxX,
+  minY: defaultWorldMinY,
+  maxY: defaultWorldMaxY,
+  instances: <StructureInstance>[],
+  entrances: <GroundLayer, Set<Position>>{},
+));
 
 class _WorldEditorRegistry {
   Map<String, Structure> structures = {};
-  final String structuresPath;
-  final File file;
   WorldFile worldFile = WorldFile(
     layers: <GroundLayer>{GroundLayer.ground},
     minX: defaultWorldMinX,
@@ -44,29 +48,20 @@ class _WorldEditorRegistry {
   Map<int, WorldErrors> errorsByInstanceIndex = {};
   Map<int, int> instanceIndexToStructureId = {};
 
-  _WorldEditorRegistry({required this.structuresPath, required String path}): file = File(path).absolute;
+  _WorldEditorRegistry();
 
-  String get path => file.path;
-
-  Future<void> read(void Function(void Function()) setState) async {
-    final structuresFile = File(structuresPath);
-    if (await structuresFile.exists()) {
-      final bytes = await structuresFile.readAsBytes();
-      structures = deserializeStructures(bytes);
-    }
-    if (!await file.exists()) {
-      return;
-    }
-    final bytes = await file.readAsBytes();
-    final worldFile = deserializeWorld(bytes);
+  void read(void Function(void Function()) setState) {
+    final structures = deserializeStructures(dataStructures);
+    final worldFile = deserializeWorld(dataWorld);
     setState(() {
+      this.structures = structures;
       this.worldFile = worldFile;
     });
   }
 
-  Future<void> write() async {
+  void write() {
     final content = serializeWorld(worldFile);
-    await file.writeAsBytes(content);
+    dataWorld = content;
   }
 
   void buildWorld(void Function(void Function()) setState) {
@@ -135,12 +130,7 @@ class _WorldEditorRegistry {
 }
 
 class WorldEditorPage extends StatefulWidget {
-  final String structuresPath;
-  final String worldPath;
-
-  const WorldEditorPage({super.key, String? structuresPath, String? worldPath}):
-        structuresPath = structuresPath ?? defaultStructuresSavePath,
-        worldPath = worldPath ?? defaultWorldSavePath;
+  const WorldEditorPage({super.key});
 
   @override
   State<WorldEditorPage> createState() => _WorldEditorPageState();
@@ -154,11 +144,9 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   @override
   void initState() {
     super.initState();
-    _registry = _WorldEditorRegistry(structuresPath: widget.structuresPath, path: widget.worldPath);
-    Future(() async {
-      await _registry.read(setState);
-      _registry.buildWorld(setState);
-    });
+    _registry = _WorldEditorRegistry();
+    _registry.read(setState);
+    _registry.buildWorld(setState);
     _currentLayer = GroundLayer.ground;
     _selectedInstanceIndex = null;
   }
@@ -170,27 +158,25 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         title: const Text('地图编辑器'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: '导入',
+            onPressed: () async {
+              final file = await FilePicker.pickFile();
+              if (file == null) return;
+              final content = await file.readAsBytes();
+              dataWorld = content;
+              _registry.read(setState);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.save),
             tooltip: '保存',
-            onPressed: () async {
-              await _registry.write();
-              toastification.show(
-                autoCloseDuration: const Duration(seconds: 3),
-                showProgressBar: true,
-                title: Row(
-                  children: [
-                    Text('保存成功'),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: '复制保存路径',
-                      onPressed: () async {
-                        await FlutterClipboard.copy(_registry.path);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            onPressed: () => _registry.write(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: '导出',
+            onPressed: () => FilePicker.saveFile(fileName: 'world.data', bytes: dataWorld),
           ),
         ],
         backgroundColor: Theme.of(context).splashColor,
