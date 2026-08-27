@@ -282,7 +282,7 @@ extension _WorldFileSerde on WorldFile {
     packer.packMapLength(entrances.length);
     for (final entry in entrances.entries) {
       entry.key.pack(packer);
-      packer.packMapLength(entry.value.length);
+      packer.packListLength(entry.value.length);
       for (final position in entry.value) {
         position.pack(packer);
       }
