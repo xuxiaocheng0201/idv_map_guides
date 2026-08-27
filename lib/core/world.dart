@@ -20,10 +20,24 @@ abstract class Cell with _$Cell {
   }) = _Cell;
 }
 
+enum EntranceType {
+  main,
+  sideGround,
+  sideSecond;
+
+  GroundLayer layer() {
+    return switch (this) {
+      EntranceType.main => GroundLayer.ground,
+      EntranceType.sideGround => GroundLayer.ground,
+      EntranceType.sideSecond => GroundLayer.second,
+    };
+  }
+}
+
 class World {
   final int minX, maxX, minY, maxY;
   Map<GroundLayer, List<List<Cell>>> map;
-  Map<GroundLayer, Set<Position>> entrances;
+  Map<EntranceType, Position> entrances;
   int _nextStructureId;
 
   World({
@@ -36,7 +50,7 @@ class World {
         for (final layer in layers)
           layer: List.generate(maxX - minX + 1, (_) => List.generate(maxY - minY + 1, (_) => Cell())),
       },
-      entrances = <GroundLayer, Set<Position>>{},
+      entrances = <EntranceType, Position>{},
       _nextStructureId = 0;
 
   Set<GroundLayer> get layers => map.keys.toSet();
@@ -50,13 +64,6 @@ class World {
     return map[layer]?[x - minX][y - minY];
   }
 
-
-  void addEntrance(GroundLayer layer, Position entrance) {
-    if (!map.containsKey(layer) || _isOutOfWorld(entrance.x, entrance.y)) {
-      throw WorldError.entranceOutOfWorld(entrance: entrance);
-    }
-    entrances.putIfAbsent(layer, () => <Position>{}).add(entrance);
-  }
 
   int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
     // validate
@@ -140,7 +147,9 @@ class World {
 
   void validate() {
     final errors = WorldErrors(errors: <WorldError>[]);
-    for (final (layer, entrance) in entrances.entries.expand((entry) => entry.value.map((p) => (entry.key, p)))) {
+    for (final entry in entrances.entries) {
+      final (type, entrance) = (entry.key, entry.value);
+      final layer = type.layer();
       final c = cell(layer, entrance.x, entrance.y);
       if (c == null || c.id == null) {
         errors.push(WorldError.entranceInEmpty(entrance: entrance));
@@ -255,7 +264,7 @@ abstract class WorldFile with _$WorldFile {
     required int minY,
     required int maxY,
     required List<StructureInstance> instances,
-    required Map<GroundLayer, Set<Position>> entrances,
+    required Map<EntranceType, Position> entrances,
   }) = _WorldFile;
 }
 
@@ -279,13 +288,7 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
       errors.merge(e);
     }
   }
-  for (final (layer, entrance) in worldFile.entrances.entries.expand((entry) => entry.value.map((p) => (entry.key, p)))) {
-    try {
-      world.addEntrance(layer, entrance);
-    } on WorldError catch (e) {
-      errors.push(e);
-    }
-  }
+  world.entrances = worldFile.entrances;
   try {
     world.validate();
   } on WorldErrors catch (e) {

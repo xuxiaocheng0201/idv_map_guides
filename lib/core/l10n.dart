@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/maps.dart';
+import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 
 extension MapTypeL10n on MapType {
@@ -72,6 +73,16 @@ extension EdgeTypeL10n on EdgeType {
       EdgeType.door => S.of(context).edgeTypeDoor,
       EdgeType.innerWall => S.of(context).edgeTypeInnerWall,
       EdgeType.hole => S.of(context).edgeTypeHole,
+    };
+  }
+}
+
+extension EntranceTypeL10n on EntranceType {
+  String label(BuildContext context) {
+    return switch (this) {
+      EntranceType.main => S.of(context).entranceTypeMain,
+      EntranceType.sideGround => S.of(context).entranceTypeSideGround,
+      EntranceType.sideSecond => S.of(context).entranceTypeSideSecond,
     };
   }
 }

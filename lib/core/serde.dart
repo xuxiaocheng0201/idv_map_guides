@@ -222,6 +222,24 @@ extension _StructureInstanceSerde on StructureInstance {
   }
 }
 
+extension _EntranceTypeSerde on EntranceType {
+  static EntranceType unpack(Unpacker unpacker) {
+    return switch (unpacker.unpackInt()) {
+      0 => EntranceType.main,
+      1 => EntranceType.sideGround,
+      2 => EntranceType.sideSecond,
+      _ => throw FormatException(),
+    };
+  }
+  void pack(Packer packer) {
+    packer.packInt(switch (this) {
+      EntranceType.main => 0,
+      EntranceType.sideGround => 1,
+      EntranceType.sideSecond => 2,
+    });
+  }
+}
+
 extension _WorldFileSerde on WorldFile {
   static WorldFile unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
@@ -244,16 +262,11 @@ extension _WorldFileSerde on WorldFile {
       instances.add(instance);
     }
     final entrancesLen = unpacker.unpackMapLength();
-    final entrances = <GroundLayer, Set<Position>>{};
+    final entrances = <EntranceType, Position>{};
     for (int i = 0; i < entrancesLen; i++) {
-      final layer = _GroundLayerSerde.unpack(unpacker);
-      final positionsLen = unpacker.unpackListLength();
-      final positions = <Position>{};
-      for (int i = 0; i < positionsLen; i++) {
-        final position = _PositionSerde.unpack(unpacker);
-        positions.add(position);
-      }
-      entrances[layer] = positions;
+      final type = _EntranceTypeSerde.unpack(unpacker);
+      final position = _PositionSerde.unpack(unpacker);
+      entrances[type] = position;
     }
     return WorldFile(
       layers: layers,
@@ -282,10 +295,7 @@ extension _WorldFileSerde on WorldFile {
     packer.packMapLength(entrances.length);
     for (final entry in entrances.entries) {
       entry.key.pack(packer);
-      packer.packListLength(entry.value.length);
-      for (final position in entry.value) {
-        position.pack(packer);
-      }
+      entry.value.pack(packer);
     }
   }
 }

@@ -26,6 +26,9 @@
   "edgeTypeDoor": "Door",
   "edgeTypeInnerWall": "Wall",
   "edgeTypeHole": "Hole",
+  "entranceTypeMain": "Main",
+  "entranceTypeSideGround": "Side Ground",
+  "entranceTypeSideSecond": "Side Second",
 
   "mapChoose": "Choose map",
   "enter": "Enter"

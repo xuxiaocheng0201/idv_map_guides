@@ -26,6 +26,9 @@
   "edgeTypeDoor": "门",
   "edgeTypeInnerWall": "墙",
   "edgeTypeHole": "洞",
+  "entranceTypeMain": "正门",
+  "entranceTypeSideGround": "一楼侧门",
+  "entranceTypeSideSecond": "二楼侧门",
 
   "mapChoose": "选择地图",
   "enter": "进入"

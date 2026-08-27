@@ -23,7 +23,7 @@ var dataWorld = serializeWorld(WorldFile(
   minY: defaultWorldMinY,
   maxY: defaultWorldMaxY,
   instances: <StructureInstance>[],
-  entrances: <GroundLayer, Set<Position>>{},
+  entrances: <EntranceType, Position>{},
 ));
 
 class _WorldEditorRegistry {
@@ -35,7 +35,7 @@ class _WorldEditorRegistry {
     minY: defaultWorldMinY,
     maxY: defaultWorldMaxY,
     instances: <StructureInstance>[],
-    entrances: <GroundLayer, Set<Position>>{},
+    entrances: <EntranceType, Position>{},
   );
   World world = World(
     layers: <GroundLayer>{GroundLayer.ground},
@@ -90,13 +90,7 @@ class _WorldEditorRegistry {
         errorsByInstanceIndex[i] = WorldErrors(errors: [e]);
       }
     }
-    for (final (layer, entrance) in worldFile.entrances.entries.expand((entry) => entry.value.map((p) => (entry.key, p)))) {
-      try {
-        world.addEntrance(layer, entrance);
-      } on WorldError catch (e) {
-        globalErrors.push(e);
-      }
-    }
+    world.entrances = worldFile.entrances;
     try {
       world.validate();
     } on WorldErrors catch (e) {
@@ -141,6 +135,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   GroundLayer _currentLayer = GroundLayer.ground;
   bool _isEditingEntrances = false;
   int? _selectedInstanceIndex;
+  Position? _selectedCell;
 
   @override
   void initState() {
@@ -150,6 +145,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     _registry.buildWorld(setState);
     _currentLayer = GroundLayer.ground;
     _selectedInstanceIndex = null;
+    _selectedCell = null;
   }
 
   @override
@@ -226,6 +222,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                           onPressed: () => setState(() {
                             _isEditingEntrances = !_isEditingEntrances;
                             _selectedInstanceIndex = null;
+                            _selectedCell = null;
                           }),
                         ),
                       ],
@@ -267,7 +264,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             width: 300,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: _buildInstanceProperties(context),
+              child: _isEditingEntrances ? _buildEntranceProperties(context) : _buildInstanceProperties(context),
             ),
           ),
         ],
@@ -483,15 +480,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final y = world.maxY - (localPosition.dy / cellSize).floor();
     if (_isEditingEntrances) {
       final position = Position(x: x, y: y);
-      setState(() {
-        final set = _registry.worldFile.entrances.putIfAbsent(_currentLayer, () => <Position>{});
-        if (set.contains(position)) {
-          set.remove(position);
-        } else {
-          set.add(position);
-        }
-      });
-      _registry.buildWorld(setState);
+      setState(() => _selectedCell = position);
       return;
     }
     final cell = world.cell(_currentLayer, x, y);
@@ -512,13 +501,46 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     }
   }
 
+  Widget _buildEntranceProperties(BuildContext context) {
+    final position = _selectedCell;
+    if (position == null) {
+      return const Center(
+        child: Text('请选择一个单元格'),
+      );
+    }
+    return Column(
+      children: [
+        Text(
+          '单元格 (${position.x}, ${position.y})',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const Divider(),
+        DropdownButtonFormField<EntranceType?>(
+          initialValue: null,
+          decoration: const InputDecoration(labelText: '入口类型'),
+          items: EntranceType.values
+              .map((type) => DropdownMenuItem(value: type, child: Text(type.label(context))))
+              .toList()
+            ..insert(0, const DropdownMenuItem(value: null, child: Text('无'))),
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => _registry.worldFile.entrances[value] = position);
+              _registry.buildWorld(setState);
+            } else {
+              setState(() => _registry.worldFile.entrances.removeWhere((_, p) => p == position));
+              _registry.buildWorld(setState);
+            }
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildInstanceProperties(BuildContext context) {
     final index = _selectedInstanceIndex;
     if (index == null) {
-      return Center(
-        child: _isEditingEntrances
-            ? const Text('退出入口编辑以编辑结构实例')
-            : const Text('请选择一个结构实例'),
+      return const Center(
+        child: Text('请选择一个结构实例'),
       );
     }
     final instance = _registry.worldFile.instances[index];

@@ -182,7 +182,6 @@ class WorldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cellSize = min(size.width / world.width, size.height / world.height);
     drawBackground(canvas, world.width, world.height, cellSize);
-    final entrances = world.entrances[layer] ?? <Position>{};
     for (int x = world.minX; x <= world.maxX; x++) {
       for (int y = world.minY; y <= world.maxY; y++) {
         final cell = world.cell(layer, x, y)!;
@@ -214,9 +213,13 @@ class WorldPainter extends CustomPainter {
         }
       }
     }
-    for (final entrance in entrances) {
-      final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
-      drawEntrance(canvas, rect, cellSize);
+    for (final entry in world.entrances.entries) {
+      final layer = entry.key.layer();
+      if (layer == this.layer) {
+        final entrance = entry.value;
+        final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
+        drawEntrance(canvas, rect, cellSize);
+      }
     }
   }
 
