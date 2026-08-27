@@ -139,6 +139,7 @@ class WorldEditorPage extends StatefulWidget {
 class _WorldEditorPageState extends State<WorldEditorPage> {
   late _WorldEditorRegistry _registry;
   GroundLayer _currentLayer = GroundLayer.ground;
+  bool _isEditingEntrances = false;
   int? _selectedInstanceIndex;
 
   @override
@@ -191,30 +192,44 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.add),
-                        label: const Text('添加'),
-                        onPressed: _addInstance,
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        tooltip: '删除当前结构',
-                        onPressed: _selectedInstanceIndex == null ? null : _removeInstance,
-                      ),
-                      const SizedBox(width: 8),
-                      if (_registry.hasErrors)
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('添加'),
+                          onPressed: _addInstance,
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          tooltip: '删除当前结构',
+                          onPressed: _selectedInstanceIndex == null ? null : _removeInstance,
+                        ),
+                        const SizedBox(width: 8),
+                        if (_registry.hasErrors)
+                          IconButton(
+                            icon: Icon(
+                              Icons.error,
+                              color: Colors.red,
+                            ),
+                            tooltip: '点击查看地图错误',
+                            onPressed: _showErrorsDialog,
+                          ),
+                        const SizedBox(width: 8),
                         IconButton(
                           icon: Icon(
-                            Icons.error,
-                            color: Colors.red,
+                            _isEditingEntrances ? Icons.door_front_door : Icons.door_front_door_outlined,
                           ),
-                          tooltip: '点击查看地图错误',
-                          onPressed: _showErrorsDialog,
+                          tooltip: _isEditingEntrances ? '退出入口编辑' : '编辑入口',
+                          onPressed: () => setState(() {
+                            _isEditingEntrances = !_isEditingEntrances;
+                            _selectedInstanceIndex = null;
+                          }),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -466,6 +481,19 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final world = _registry.world;
     final x = (localPosition.dx / cellSize).floor() + world.minX;
     final y = world.maxY - (localPosition.dy / cellSize).floor();
+    if (_isEditingEntrances) {
+      final position = Position(x: x, y: y);
+      setState(() {
+        final set = _registry.worldFile.entrances.putIfAbsent(_currentLayer, () => <Position>{});
+        if (set.contains(position)) {
+          set.remove(position);
+        } else {
+          set.add(position);
+        }
+      });
+      _registry.buildWorld(setState);
+      return;
+    }
     final cell = world.cell(_currentLayer, x, y);
     if (cell == null || cell.id == null) {
       setState(() => _selectedInstanceIndex = null);
@@ -487,8 +515,10 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   Widget _buildInstanceProperties(BuildContext context) {
     final index = _selectedInstanceIndex;
     if (index == null) {
-      return const Center(
-        child: Text('请选择一个结构实例'),
+      return Center(
+        child: _isEditingEntrances
+            ? const Text('退出入口编辑以编辑结构实例')
+            : const Text('请选择一个结构实例'),
       );
     }
     final instance = _registry.worldFile.instances[index];

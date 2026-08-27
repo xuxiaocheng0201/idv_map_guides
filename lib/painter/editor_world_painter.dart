@@ -97,10 +97,11 @@ class EditorWorldPainter extends CustomPainter {
               break;
           }
         }
-        if (entrances.contains(Position(x: x, y: y))) {
-          drawEntrance(canvas, rect, cellSize);
-        }
       }
+    }
+    for (final entrance in entrances) {
+      final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
+      drawEntrance(canvas, rect, cellSize);
     }
   }
 
