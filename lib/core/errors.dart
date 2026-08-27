@@ -15,6 +15,7 @@ sealed class WorldError with _$WorldError {
   const factory WorldError.holeOutOfWorld({required Edge worldHole}) = WorldError_HoleOutOfWorld;
 
   const factory WorldError.entranceInEmpty({required Position entrance}) = WorldError_EntranceInEmpty;
+  const factory WorldError.doorMismatch({required Edge worldDoor}) = WorldError_DoorMismatch;
   const factory WorldError.stairMismatch({required Position worldStair}) = WorldError_StairMismatch;
   const factory WorldError.holeMismatch({required Edge worldHole}) = WorldError_HoleMismatch;
   const factory WorldError.holeMovedMismatch({required Edge worldHole}) = WorldError_HoleMovedMismatch;

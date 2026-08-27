@@ -159,8 +159,12 @@ class World {
               case EdgeType.door:
                 final oppositeDoor = worldEdge.opposite();
                 final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
-                if (oppositeCell != null && oppositeCell.id != null && oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
-                  c.info = c.info.setEdgeType(direction, EdgeType.nothing);
+                if (oppositeCell == null || oppositeCell.id == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
+                  if (c.isCorridor) {
+                    errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
+                  } else {
+                    c.info.setEdgeType(direction, EdgeType.nothing);
+                  }
                 }
                 break;
               case EdgeType.innerWall:
