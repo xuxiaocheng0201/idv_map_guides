@@ -1,14 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:idv_map_guides/bloc/map_cubit.dart';
-import 'package:idv_map_guides/core/l10n.dart';
-import 'package:idv_map_guides/core/maps.dart';
+import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/routes.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  WorldType _world = WorldType.theBringerOfDoom;
+  WorldDifficulty _difficulty = WorldDifficulty.hard;
 
   @override
   Widget build(BuildContext context) {
@@ -52,49 +57,42 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            Text(S.of(context).mapChoose, style: Theme.of(context).textTheme.titleMedium),
+            Text(S.of(context).homeChooseWorld, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            BlocBuilder<MapCubit, MapState>(
-              builder: (context, state) => Wrap(
-                spacing: 12,
-                children: MapType.values.map((map) {
-                  final isSelected = state.map == map;
-                  return ChoiceChip(
-                    label: Text(map.label(context)),
-                    selected: isSelected,
-                    onSelected: (_) => context.read<MapCubit>().selectMap(map),
-                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                  );
-                }).toList(),
-              ),
+            Wrap(
+              spacing: 12,
+              children: WorldType.values.map((world) {
+                return ChoiceChip(
+                  label: Text(world.label(context)),
+                  selected: _world == world,
+                  onSelected: (_) => setState(() => _world = world),
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                );
+              }).toList(),
             ),
             const SizedBox(height: 32),
 
-            Text(S.of(context).difficultyChoose, style: Theme.of(context).textTheme.titleMedium),
+            Text(S.of(context).homeChooseDifficulty, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            BlocBuilder<MapCubit, MapState>(
-              builder: (context, state) => Wrap(
-                  spacing: 12,
-                  children: MapDifficulty.values.map((difficulty) {
-                    final isSelected = state.difficulty == difficulty;
-                    return ChoiceChip(
-                      label: Text(difficulty.label(context)),
-                      selected: isSelected,
-                      onSelected: (_) => context.read<MapCubit>().selectDifficulty(difficulty),
-                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                    );
-                  }).toList(),
-                ),
+            Wrap(
+              spacing: 12,
+              children: worldsProviders[_world]!.keys.map((difficulty) {
+                return ChoiceChip(
+                  label: Text(difficulty.label(context)),
+                  selected: _difficulty == difficulty,
+                  onSelected: (_) => setState(() => _difficulty = difficulty),
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                );
+              }).toList(),
             ),
             const SizedBox(height: 32),
 
             ElevatedButton(
               onPressed: () {
-                final state = context.read<MapCubit>().state;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Enter ${state.map.label(context)} - ${state.difficulty.label(context)}',
+                      'Enter ${_world.label(context)} - ${_difficulty.label(context)}',
                     ),
                   ),
                 );
@@ -105,7 +103,7 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               child: Text(
-                S.of(context).enter,
+                S.of(context).homeEnter,
                 style: const TextStyle(fontSize: 18),
               ),
             ),

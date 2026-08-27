@@ -1,8 +1,7 @@
 {
   "@@locale": "en",
   "title": "IDV Cryptic Notes Map Guides",
-  "mapTheBringerOfDoom": "The Bringer Of Doom",
-  "difficultyChoose": "Choose difficulty",
+  "worldTheBringerOfDoom": "The Bringer Of Doom",
   "difficultyNovice": "Novice",
   "difficultyEasy": "Easy",
   "difficultyNormal": "Normal",
@@ -30,6 +29,7 @@
   "entranceTypeSideGround": "Side Ground",
   "entranceTypeSideSecond": "Side Second",
 
-  "mapChoose": "Choose map",
-  "enter": "Enter"
+  "homeChooseWorld": "Choose map",
+  "homeChooseDifficulty": "Choose difficulty",
+  "homeEnter": "Enter"
 }

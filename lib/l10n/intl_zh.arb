@@ -1,8 +1,7 @@
 {
   "@@locale": "zh",
   "title": "第五人格加页手记小抄",
-  "mapTheBringerOfDoom": "厄运之女",
-  "difficultyChoose": "选择难度",
+  "worldTheBringerOfDoom": "厄运之女",
   "difficultyNovice": "新手",
   "difficultyEasy": "简单",
   "difficultyNormal": "普通",
@@ -30,6 +29,7 @@
   "entranceTypeSideGround": "一楼侧门",
   "entranceTypeSideSecond": "二楼侧门",
 
-  "mapChoose": "选择地图",
-  "enter": "进入"
+  "homeChooseWorld": "选择地图",
+  "homeChooseDifficulty": "选择难度",
+  "homeEnter": "进入"
 }

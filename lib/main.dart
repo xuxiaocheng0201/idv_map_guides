@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:idv_map_guides/bloc/map_cubit.dart';
-import 'package:idv_map_guides/bloc/setting_cubit.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/pages/editors/world_editor_page.dart';
@@ -35,35 +32,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => SettingCubit()),
-        BlocProvider(create: (_) => MapCubit()),
-      ],
-      child: BlocBuilder<SettingCubit, SettingState>(
-        builder: (context, state) => ToastificationWrapper(
-          child: SafeArea(
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              themeMode: state.theme,
-              locale: state.locale,
-              localizationsDelegates: const [
-                S.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: S.delegate.supportedLocales,
-              onGenerateTitle: (context) => S.of(context).title,
-              initialRoute: Routes.home,
-              routes: {
-                Routes.home: (context) => const HomePage(),
+    return ToastificationWrapper(
+      child: SafeArea(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: const [
+            S.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: S.delegate.supportedLocales,
+          onGenerateTitle: (context) => S.of(context).title,
+          initialRoute: Routes.home,
+          routes: {
+            Routes.home: (context) => const HomePage(),
 
-                if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
-                if (kDebugMode) Routes.editorWorld: (context) => WorldEditorPage(),
-              },
-            ),
-          ),
+            if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
+            if (kDebugMode) Routes.editorWorld: (context) => WorldEditorPage(),
+          },
         ),
       ),
     );
