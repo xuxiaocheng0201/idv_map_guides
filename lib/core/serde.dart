@@ -92,7 +92,7 @@ extension _EdgeTypeSerde on EdgeType {
       EdgeType.nothing => 0,
       EdgeType.door => 1,
       EdgeType.innerWall => 2,
-      EdgeType.hole => 2,
+      EdgeType.hole => 3,
     });
   }
 }
