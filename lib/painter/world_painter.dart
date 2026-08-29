@@ -62,7 +62,7 @@ void drawWall(Canvas canvas, Rect rect, Direction direction, double cellSize) {
     ..color = wallColor
     ..style = PaintingStyle.stroke
     ..strokeWidth = cellSize * 0.04;
-  final double inset = paint.strokeWidth / 2;
+  final inset = paint.strokeWidth / 2;
   final Offset p1;
   final Offset p2;
   switch (direction) {
@@ -92,7 +92,7 @@ void drawDoor(Canvas canvas, Rect rect, Direction direction, double cellSize) {
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
     ..strokeWidth = cellSize * 0.02;
-  final double inset = paint.strokeWidth / 2;
+  final inset = paint.strokeWidth / 2;
   final Offset p1;
   final Offset p2;
   switch (direction) {
@@ -122,9 +122,8 @@ void drawHole(Canvas canvas, Rect rect, Direction direction, double cellSize) {
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
     ..strokeWidth = cellSize * 0.02;
-  final double inset = paint.strokeWidth / 2;
-  const dashWidth = 4.0;
-  const dashSpace = 3.0;
+  const dashCount = 8;
+  final inset = paint.strokeWidth / 2;
   double startX, startY, endX, endY;
   switch (direction) {
     case Direction.north:
@@ -152,14 +151,22 @@ void drawHole(Canvas canvas, Rect rect, Direction direction, double cellSize) {
       endY = rect.bottom;
       break;
   }
-  final total = (endX - startX).abs() + (endY - startY).abs();
-  final steps = (total / (dashWidth + dashSpace)).floor();
-  for (int i = 0; i < steps; i++) {
-    final t1 = (i * (dashWidth + dashSpace)) / total;
-    final t2 = ((i * (dashWidth + dashSpace)) + dashWidth) / total;
-    final p1 = Offset(startX + (endX - startX) * t1, startY + (endY - startY) * t1);
-    final p2 = Offset(startX + (endX - startX) * t2, startY + (endY - startY) * t2);
+  final normalDashLength = cellSize / 2.0 / dashCount;
+  final halfDashLength = normalDashLength / 2.0;
+
+  final dashLengths = List<double>.filled(dashCount + 1, normalDashLength);
+  dashLengths[0] = halfDashLength;
+  dashLengths[dashCount + 1 - 1] = halfDashLength;
+
+  double currentDistance = 0.0;
+  for (final dashLen in dashLengths) {
+    final t1 = currentDistance / cellSize;
+    final t2 = (currentDistance + dashLen) / cellSize;
+    final Offset p1 = Offset(startX + (endX - startX) * t1, startY + (endY - startY) * t1);
+    final Offset p2 = Offset(startX + (endX - startX) * t2, startY + (endY - startY) * t2);
     canvas.drawLine(p1, p2, paint);
+    currentDistance += dashLen;
+    currentDistance += normalDashLength;
   }
 }
 
@@ -168,7 +175,7 @@ void drawEntrance(Canvas canvas, Rect rect, double cellSize) {
     ..color = entranceColor
     ..style = PaintingStyle.fill;
   final Offset center = rect.center;
-  final double radius = cellSize * 0.3;
+  final radius = cellSize * 0.3;
   canvas.drawCircle(center, radius, paint);
 }
 
