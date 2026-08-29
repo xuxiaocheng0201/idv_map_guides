@@ -145,7 +145,7 @@ class World {
     return structureId;
   }
 
-  void validate() {
+  void validate({required bool replaceStructureMismatchedDoor}) {
     final errors = WorldErrors(errors: <WorldError>[]);
     for (final entry in entrances.entries) {
       final (type, entrance) = (entry.key, entry.value);
@@ -172,7 +172,9 @@ class World {
                   if (c.isCorridor) {
                     errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
                   } else {
-                    c.info.setEdgeType(direction, EdgeType.nothing);
+                    if (replaceStructureMismatchedDoor) {
+                      c.info = c.info.setEdgeType(direction, EdgeType.nothing);
+                    }
                   }
                 }
                 break;
@@ -290,7 +292,7 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
   }
   world.entrances = worldFile.entrances;
   try {
-    world.validate();
+    world.validate(replaceStructureMismatchedDoor: true);
   } on WorldErrors catch (e) {
     errors.merge(e);
   }

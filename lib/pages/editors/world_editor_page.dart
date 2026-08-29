@@ -92,7 +92,7 @@ class _WorldEditorRegistry {
     }
     world.entrances = worldFile.entrances;
     try {
-      world.validate();
+      world.validate(replaceStructureMismatchedDoor: false);
     } on WorldErrors catch (e) {
       globalErrors.merge(e);
     }
