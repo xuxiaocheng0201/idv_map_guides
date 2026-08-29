@@ -164,6 +164,10 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
               dataWorld = content;
               _registry.read(setState);
               _registry.buildWorld(setState);
+              setState(() {
+                _selectedInstanceIndex = null;
+                _selectedCell = null;
+              });
             },
           ),
           IconButton(
