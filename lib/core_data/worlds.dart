@@ -49,10 +49,10 @@ abstract class WorldsProvider<M> {
   Future<Uint8List> loadAssets(String file) async {
     return Uint8List.sublistView(await rootBundle.load('maps/${type._assets}/${difficulty._assets}/$file'));
   }
+  List<EntranceType> get validEntrances;
   Future<Map<String, Structure>> provideStructures();
   Future<WorldFile> provideWorld(M map);
 
-  List<EntranceType> get validEntrances;
 }
 
 final Map<WorldType, Map<WorldDifficulty, WorldsProvider<dynamic>>> worldsProviders = <WorldType, Map<WorldDifficulty, WorldsProvider<dynamic>>>{
