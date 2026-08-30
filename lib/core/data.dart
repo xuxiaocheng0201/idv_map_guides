@@ -15,6 +15,7 @@ enum GroundLayer {
   ground,
   second;
 
+  @useResult
   GroundLayer? up() {
     switch (this) {
       case GroundLayer.basement:
@@ -26,6 +27,7 @@ enum GroundLayer {
     }
   }
 
+  @useResult
   GroundLayer? down() {
     switch (this) {
       case GroundLayer.basement:
@@ -44,6 +46,7 @@ enum Rotation {
   cw180,
   cw270;
 
+  @useResult
   int times() {
     switch (this) {
       case Rotation.cw0:
@@ -64,6 +67,7 @@ enum Direction {
   south, // ↓
   west;  // ←
 
+  @useResult
   (int, int) get dxy {
     switch (this) {
       case Direction.north:
@@ -77,6 +81,7 @@ enum Direction {
     }
   }
 
+  @useResult
   Direction rotate(Rotation rotation) {
     var result = this;
     for (var i = 0; i < rotation.times(); i++) {
@@ -99,10 +104,13 @@ abstract class Position with _$Position {
     required int y,
   }) = _Position;
 
+  @useResult
   Position toWorld(Rotation rotation, int dx, int dy) => _rotate(rotation).add(dx, dy);
 
+  @useResult
   Position add(int dx, int dy) => Position(x: x + dx, y: y + dy);
 
+  @useResult
   Position _rotate(Rotation rotation) {
     var result = this;
     for (var i = 0; i < rotation.times(); i++) {
@@ -136,6 +144,7 @@ abstract class CellInfo with _$CellInfo {
     @Default(EdgeType.nothing) EdgeType edgeWest,
   }) = _CellInfo;
 
+  @useResult
   EdgeType getEdgeType(Direction direction) => switch (direction) {
     Direction.north => edgeNorth,
     Direction.east => edgeEast,
@@ -143,6 +152,7 @@ abstract class CellInfo with _$CellInfo {
     Direction.west => edgeWest,
   };
 
+  @useResult
   CellInfo setEdgeType(Direction direction, EdgeType type) => switch (direction) {
     Direction.north => copyWith(edgeNorth: type),
     Direction.east => copyWith(edgeEast: type),
@@ -150,6 +160,7 @@ abstract class CellInfo with _$CellInfo {
     Direction.west => copyWith(edgeWest: type),
   };
 
+  @useResult
   CellInfo rotation(Rotation rotation) {
     var result = this;
     for (var i = 0; i < rotation.times(); i++) {
@@ -181,6 +192,7 @@ abstract class Edge with _$Edge {
     required Direction direction,
   }) = _Edge;
 
+  @useResult
   Edge opposite() {
     final (dx, dy) = direction.dxy;
     return Edge(
