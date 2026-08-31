@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:toastification/toastification.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -76,7 +79,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
-              children: worldsProviders[_world]!.keys.map((difficulty) {
+              children: WorldDifficulty.values.map((difficulty) {
                 return ChoiceChip(
                   label: Text(difficulty.label(context)),
                   selected: _difficulty == difficulty,
@@ -89,23 +92,22 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Enter ${_world.label(context)} - ${_difficulty.label(context)}',
-                    ),
-                  ),
+                final manager = getWorldsManager(_world, _difficulty);
+                if (manager == null) {
+                  toastification.show(
+                    autoCloseDuration: const Duration(seconds: 3),
+                    showProgressBar: true,
+                    title: Text(S.of(context).homeNotSupport),
+                  );
+                  return;
+                }
+                Navigator.pushNamed(
+                  context,
+                  Routes.entrances,
+                  arguments: EntranceFeaturePageArgument(manager: manager),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                S.of(context).homeEnter,
-                style: const TextStyle(fontSize: 18),
-              ),
+              child: Text(S.of(context).homeEnter),
             ),
           ],
         ),

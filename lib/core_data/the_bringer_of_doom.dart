@@ -1,9 +1,49 @@
 import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+
+MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
+  final position = world.entrances[entrance]!;
+  final mainEntranceId = world.cell(entrance.layer(), position.x, position.y)!.id!;
+  final upDoor = position.add(0, 4);
+  final leftDoor = position.add(-1, 1);
+  final rightDoor = position.add(1, 1);
+  final upDoorCell = world.cell(entrance.layer(), upDoor.x, upDoor.y)!;
+  final leftDoorCell = world.cell(entrance.layer(), leftDoor.x, leftDoor.y)!;
+  final rightDoorCell = world.cell(entrance.layer(), rightDoor.x, rightDoor.y)!;
+  return MainEntranceFeature(
+    hasUpDoor: upDoorCell.id == mainEntranceId && upDoorCell.info.edgeNorth == EdgeType.door,
+    hasLeftDoor: leftDoorCell.id == mainEntranceId && leftDoorCell.info.edgeWest == EdgeType.door,
+    hasRightDoor: rightDoorCell.id == mainEntranceId && rightDoorCell.info.edgeEast == EdgeType.door,
+  );
+}
+
+SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
+  final position = world.entrances[entrance]!;
+  final sideEntranceId = world.cell(entrance.layer(), position.x, position.y)!.id!;
+  Direction? facing;
+  for (final direction in Direction.values) {
+    final (dx, dy) = direction.dxy;
+    final facingPosition = position.add(dx, dy);
+    final facingCell = world.cell(entrance.layer(), facingPosition.x, facingPosition.y);
+    if (facingCell?.id == sideEntranceId) {
+      if (facing == null) {
+        facing = direction;
+      } else {
+        return SideEntranceFeature.other;
+      }
+    }
+  }
+  return switch (facing!) {
+    Direction.north => SideEntranceFeature.north,
+    Direction.east => SideEntranceFeature.east,
+    Direction.south => SideEntranceFeature.south,
+    Direction.west => SideEntranceFeature.west,
+  };
+}
 
 enum TheBringerOfDoomHardWorlds {
   north1,
@@ -105,17 +145,9 @@ enum TheBringerOfDoomHardWorlds {
 class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoomHardWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.hard;
+  @override List<TheBringerOfDoomHardWorlds> get allWorlds => TheBringerOfDoomHardWorlds.values;
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround, EntranceType.sideSecond];
-
-  @override
-  Future<Map<String, Structure>> provideStructures() async {
-    final data = await loadAssets('structures.data');
-    return deserializeStructures(data);
-  }
-
-  @override
-  Future<WorldFile> provideWorld(TheBringerOfDoomHardWorlds map) async {
-    final data = await loadAssets('world_${map._assets}.data');
-    return deserializeWorld(data);
-  }
+  @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
+  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
+  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
 }

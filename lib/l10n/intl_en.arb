@@ -58,7 +58,10 @@
   "worldTheBringerOfDoomHardWestHammerLantern": "左-锤灯笼",
   "worldTheBringerOfDoomHardWestFork": "左-音叉",
 
-  "homeChooseWorld": "Choose map",
+  "homeChooseWorld": "Choose world",
   "homeChooseDifficulty": "Choose difficulty",
-  "homeEnter": "Enter"
+  "homeEnter": "Enter",
+  "homeNotSupport": "Not support.",
+
+  "entrancesChooseMap": "Choose map"
 }

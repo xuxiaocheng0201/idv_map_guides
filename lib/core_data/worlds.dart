@@ -1,62 +1,99 @@
+import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
-import 'package:idv_map_guides/generated/l10n.dart';
 
-enum WorldType {
-  theBringerOfDoom;
-
-  String get _assets => switch (this) {
-    WorldType.theBringerOfDoom => 'the_bringer_of_doom',
-  };
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldType.theBringerOfDoom => S.of(context).worldTheBringerOfDoom,
-    };
-  }
-}
-
-enum WorldDifficulty {
-  novice,
-  easy,
-  normal,
-  hard,
-  insane;
-
-  String get _assets => switch (this) {
-    WorldDifficulty.novice => 'novice',
-    WorldDifficulty.easy => 'easy',
-    WorldDifficulty.normal => 'normal',
-    WorldDifficulty.hard => 'hard',
-    WorldDifficulty.insane => 'insane',
-  };
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldDifficulty.novice => S.of(context).difficultyNovice,
-      WorldDifficulty.easy => S.of(context).difficultyEasy,
-      WorldDifficulty.normal => S.of(context).difficultyNormal,
-      WorldDifficulty.hard => S.of(context).difficultyHard,
-      WorldDifficulty.insane => S.of(context).difficultyInsane,
-    };
-  }
-}
-
-abstract class WorldsProvider<M> {
+abstract class WorldsProvider<W> {
   WorldType get type;
   WorldDifficulty get difficulty;
-  Future<Uint8List> loadAssets(String file) async {
-    return Uint8List.sublistView(await rootBundle.load('maps/${type._assets}/${difficulty._assets}/$file'));
-  }
+  List<W> get allWorlds;
   List<EntranceType> get validEntrances;
-  Future<Map<String, Structure>> provideStructures();
-  Future<WorldFile> provideWorld(M map);
-
+  String worldAssets(W world);
+  MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
+  SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
 }
 
-final Map<WorldType, Map<WorldDifficulty, WorldsProvider<dynamic>>> worldsProviders = <WorldType, Map<WorldDifficulty, WorldsProvider<dynamic>>>{
-  WorldType.theBringerOfDoom: <WorldDifficulty, WorldsProvider<dynamic>> {
-    WorldDifficulty.hard: TheBringerOfDoomHardWorldsProvider(),
-  },
-};
+class WorldsManager<W extends Enum> {
+  final WorldsProvider<W> provider;
+  WorldsManager({required this.provider});
+
+  Future<Uint8List> _loadAssets(String file) async {
+    return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
+  }
+
+  final Cache cache = Cache();
+  Future<Map<String, Structure>> _getStructures() async {
+    final result = await cache.get(
+      key: 'structures',
+      fetch: () async {
+        final data = await _loadAssets('structures.data');
+        return Result.success(deserializeStructures(data));
+      },
+    );
+    switch (result) {
+      case Success<Map<String, Structure>>():
+        return result.value;
+      case Failure<Map<String, Structure>>():
+        throw result.error;
+    }
+  }
+  Future<World> getWorld(W world) async {
+    final structures = await _getStructures();
+    final result = await cache.get(
+      key: 'world/${world.index}',
+      fetch: () async {
+        final data = await _loadAssets(provider.worldAssets(world));
+        final worldFile = deserializeWorld(data);
+        return Result.success(constructWorld(structures, worldFile));
+      },
+    );
+    switch (result) {
+      case Success<World>():
+        return result.value;
+      case Failure<World>():
+        throw result.error;
+    }
+  }
+
+  Future<void> _preload() async {
+    for (final world in provider.allWorlds) {
+      await getWorld(world);
+    }
+  }
+
+  Future<Map<MainEntranceFeature, Set<W>>> getWorldsByMainEntranceFeature(EntranceType entrance) async {
+    final result = <MainEntranceFeature, Set<W>>{};
+    for (final world in provider.allWorlds) {
+      final map = await getWorld(world);
+      final feature = provider.inferMainEntranceFeature(map, entrance);
+      result.putIfAbsent(feature, () => <W>{}).add(world);
+    }
+    return result;
+  }
+  Future<Map<SideEntranceFeature, Set<W>>> getWorldsBySideEntranceFeature(EntranceType entrance) async {
+    final result = <SideEntranceFeature, Set<W>>{};
+    for (final world in provider.allWorlds) {
+      final map = await getWorld(world);
+      final feature = provider.inferSideEntranceFeature(map, entrance);
+      result.putIfAbsent(feature, () => <W>{}).add(world);
+    }
+    return result;
+  }
+}
+
+final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
+
+WorldsManager<dynamic>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
+  return switch (type) {
+    WorldType.theBringerOfDoom => switch (difficulty) {
+      WorldDifficulty.novice => null,
+      WorldDifficulty.easy => null,
+      WorldDifficulty.normal => null,
+      WorldDifficulty.hard => _theBringerOfDoomHard,
+      WorldDifficulty.insane => null,
+    },
+  }?.._preload();
+}
