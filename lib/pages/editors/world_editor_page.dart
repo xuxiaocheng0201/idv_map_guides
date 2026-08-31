@@ -155,6 +155,47 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         title: const Text('地图编辑器'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.delete),
+            color: Colors.red,
+            tooltip: '清空',
+            onPressed: () async {
+              await showDialog<void>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('取消'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          dataWorld = serializeWorld(WorldFile(
+                            layers: <GroundLayer>{GroundLayer.ground},
+                            minX: defaultWorldMinX,
+                            maxX: defaultWorldMaxX,
+                            minY: defaultWorldMinY,
+                            maxY: defaultWorldMaxY,
+                            instances: <StructureInstance>[],
+                            entrances: <EntranceType, Position>{},
+                          ));
+                          _registry.read(setState);
+                          _registry.buildWorld(setState);
+                          setState(() {
+                            _selectedInstanceIndex = null;
+                            _selectedCell = null;
+                          });
+                        },
+                        child: const Text('确认'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.download),
             tooltip: '导入',
             onPressed: () async {
