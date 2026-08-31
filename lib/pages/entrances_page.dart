@@ -53,7 +53,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       );
       for (final worldType in manager.provider.allWorlds) {
         final world = await manager.getWorld(worldType);
-        final painter = EntranceThumbnailPainter(world: world, entrance: entrance);
+        final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
         final signature = painter.getSignature();
         map.putIfAbsent(signature, () => []).add(worldType);
       }
@@ -122,7 +122,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                 children: [
                   Expanded(
                     child: CustomPaint(
-                      painter: EntranceThumbnailPainter(world: world, entrance: entrance),
+                      painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
                       size: Size.infinite,
                     ),
                   ),
