@@ -120,20 +120,23 @@ class _LayerMapItem extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final cellSize = min(constraints.maxWidth / world.width, constraints.maxHeight / world.height);
-                final paintSize = Size(world.width * cellSize, world.height * cellSize);
-                return Center(
-                  child: InteractiveViewer(
-                    constrained: true,
-                    child: CustomPaint(
-                      size: paintSize,
-                      painter: WorldPainter(world: world, layer: layer),
+            child: Container(
+              color: backgroundColor,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cellSize = min(constraints.maxWidth / world.width, constraints.maxHeight / world.height);
+                  final paintSize = Size(world.width * cellSize, world.height * cellSize);
+                  return Center(
+                    child: InteractiveViewer(
+                      constrained: true,
+                      child: CustomPaint(
+                        size: paintSize,
+                        painter: WorldPainter.auto(world: world, layer: layer),
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],

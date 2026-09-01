@@ -183,17 +183,69 @@ class WorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
 
-  WorldPainter({required this.world, required this.layer});
+  final int minX;
+  final int maxX;
+  final int minY;
+  final int maxY;
+
+  WorldPainter({
+    required this.world,
+    required this.layer,
+    int? minX,
+    int? maxX,
+    int? minY,
+    int? maxY,
+  })  : minX = minX ?? world.minX,
+        maxX = maxX ?? world.maxX,
+        minY = minY ?? world.minY,
+        maxY = maxY ?? world.maxY;
+
+  factory WorldPainter.auto({
+    required World world,
+    required GroundLayer layer,
+    int padding = 1,
+  }) {
+    int? contentMinX, contentMaxX, contentMinY, contentMaxY;
+    for (int x = world.minX; x <= world.maxX; x++) {
+      for (int y = world.minY; y <= world.maxY; y++) {
+        final cell = world.cell(layer, x, y);
+        if (cell != null && cell.id != null) {
+          contentMinX = contentMinX == null ? x : min(contentMinX, x);
+          contentMaxX = contentMaxX == null ? x : max(contentMaxX, x);
+          contentMinY = contentMinY == null ? y : min(contentMinY, y);
+          contentMaxY = contentMaxY == null ? y : max(contentMaxY, y);
+        }
+      }
+    }
+    return WorldPainter(
+      world: world,
+      layer: layer,
+      minX: (contentMinX ?? world.minX) - padding,
+      maxX: (contentMaxX ?? world.maxX) + padding,
+      minY: (contentMinY ?? world.minY) - padding,
+      maxY: (contentMaxY ?? world.maxY) + padding,
+    );
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = min(size.width / world.width, size.height / world.height);
-    drawBackground(canvas, world.width, world.height, cellSize);
-    for (int x = world.minX; x <= world.maxX; x++) {
-      for (int y = world.minY; y <= world.maxY; y++) {
-        final cell = world.cell(layer, x, y)!;
-        if (cell.id == null) continue;
-        final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
+    final width = maxX - minX + 1;
+    final height = maxY - minY + 1;
+    final cellSize = min(size.width / width, size.height / height);
+    drawBackground(canvas, width, height, cellSize);
+
+    for (int x = minX; x <= maxX; x++) {
+      for (int y = minY; y <= maxY; y++) {
+        final cell = world.cell(layer, x, y);
+        if (cell == null || cell.id == null) continue;
+
+        final rect = Rect.fromLTWH(
+          (x - minX) * cellSize,
+          (maxY - y) * cellSize,
+          cellSize,
+          cellSize,
+        );
+
         drawCell(canvas, rect, cell.isCorridor, cellSize);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
@@ -203,7 +255,7 @@ class WorldPainter extends CustomPainter {
             case EdgeType.nothing:
               final (dx, dy) = direction.dxy;
               final neighbor = world.cell(layer, x + dx, y + dy);
-              if (neighbor != null && neighbor.id != cell.id) {
+              if (neighbor == null || neighbor.id != cell.id) {
                 drawWall(canvas, rect, direction, cellSize);
               }
               break;
@@ -220,18 +272,31 @@ class WorldPainter extends CustomPainter {
         }
       }
     }
+
     for (final entry in world.entrances.entries) {
-      final layer = entry.key.layer();
-      if (layer == this.layer) {
-        final entrance = entry.value;
-        final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
-        drawEntrance(canvas, rect, cellSize);
+      final entranceLayer = entry.key.layer();
+      if (entranceLayer != layer) continue;
+      final entrance = entry.value;
+      if (entrance.x < minX || entrance.x > maxX || entrance.y < minY || entrance.y > maxY) {
+        continue;
       }
+      final rect = Rect.fromLTWH(
+        (entrance.x - minX) * cellSize,
+        (maxY - entrance.y) * cellSize,
+        cellSize,
+        cellSize,
+      );
+      drawEntrance(canvas, rect, cellSize);
     }
   }
 
   @override
   bool shouldRepaint(covariant WorldPainter oldDelegate) {
-    return oldDelegate.world != world || oldDelegate.layer != layer;
+    return oldDelegate.world != world ||
+        oldDelegate.layer != layer ||
+        oldDelegate.minX != minX ||
+        oldDelegate.maxX != maxX ||
+        oldDelegate.minY != minY ||
+        oldDelegate.maxY != maxY;
   }
 }
