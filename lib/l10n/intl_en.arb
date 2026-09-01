@@ -63,5 +63,7 @@
   "homeEnter": "Enter",
   "homeNotSupport": "Not support.",
 
-  "entrancesChooseMap": "Choose map"
+  "entrancesChooseMap": "Choose map",
+
+  "worldsShowMap": "Map - {worldName}"
 }

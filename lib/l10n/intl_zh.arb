@@ -63,5 +63,7 @@
   "homeEnter": "进入",
   "homeNotSupport": "暂不支持此组合，请耐心等待更新",
 
-  "entrancesChooseMap": "选择地图"
+  "entrancesChooseMap": "选择地图",
+
+  "worldsShowMap": "地图展示 - {worldName}"
 }

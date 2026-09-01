@@ -6,7 +6,9 @@ import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
+import 'package:idv_map_guides/routes.dart';
 
 class EntranceFeaturePageArgument {
   final WorldsManager<dynamic> manager;
@@ -24,13 +26,14 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   late WorldsManager<dynamic> manager;
   late TabController _tabController;
   bool _loading = true;
-  final Map<EntranceType, LinkedHashMap<BoolList, List<dynamic>>> _signatureMaps = {};
+  final Map<EntranceType, LinkedHashMap<BoolList, List<dynamic>>> _signatures = {};
   bool _initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_initialized) return;
+    _initialized = true;
     final argument = ModalRoute.of(context)?.settings.arguments as EntranceFeaturePageArgument?;
     if (argument == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -42,7 +45,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     final entrances = manager.provider.validEntrances;
     _tabController = TabController(length: entrances.length, vsync: this);
     _loadAllData();
-    _initialized = true;
   }
 
   Future<void> _loadAllData() async {
@@ -57,7 +59,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
         final signature = painter.getSignature();
         map.putIfAbsent(signature, () => []).add(worldType);
       }
-      _signatureMaps[entrance] = map;
+      _signatures[entrance] = map;
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -95,7 +97,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   }
 
   Widget _buildEntranceGrid(EntranceType entrance) {
-    final entries = _signatureMaps[entrance]!.entries.toList();
+    final entries = _signatures[entrance]!.entries.toList();
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -107,17 +109,23 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
-        final maps = entry.value;
-        final firstMap = maps.first;
+        final worlds = entry.value;
+        final firstWorld = worlds.first;
         return FutureBuilder<World>(
-          future: manager.getWorld(firstMap),
+          future: manager.getWorld(firstWorld),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
             final world = snapshot.data!;
             return InkWell(
-              onTap: () {}, // TODO
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  Routes.worlds,
+                  arguments: WorldListPageArguments(manager: manager, worlds: worlds),
+                );
+              },
               child: Column(
                 children: [
                   Expanded(
@@ -128,7 +136,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    maps.map((m) => m.label(context) as String).join(' / '),
+                    worlds.map((m) => m.label(context) as String).join(' / '),
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
