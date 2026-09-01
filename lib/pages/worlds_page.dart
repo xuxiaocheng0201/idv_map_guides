@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
@@ -68,32 +71,72 @@ class _WorldListPageState extends State<WorldListPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final world = snapshot.data!;
-          return Row(
-            children: [
-              for (final layer in world.layers.toList()..sort((a, b) => a.index.compareTo(b.index)))
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      Text(layer.label(context), style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: 350,
-                        height: 350 * world.height / world.width,
-                        child: InteractiveViewer(
-                          constrained: false,
-                          child: CustomPaint(
-                            size: Size(350, 350 * world.height / world.width),
-                            painter: WorldPainter(world: world, layer: layer),
-                          ),
-                        ),
+          final layers = world.layers.toList()..sort((a, b) => a.index.compareTo(b.index));
+          return OrientationBuilder(
+            builder: (context, orientation) {
+              if (orientation == Orientation.portrait) {
+                return Column(
+                  children: [
+                    for (final layer in layers)
+                      Expanded(
+                        child: _LayerMapItem(world: world, layer: layer),
                       ),
-                    ],
-                  ),
-                ),
-            ],
+                  ],
+                );
+              } else {
+                return Row(
+                  children: [
+                    for (final layer in layers)
+                      Expanded(
+                        child: _LayerMapItem(world: world, layer: layer),
+                      ),
+                  ],
+                );
+              }
+            },
           );
         },
+      ),
+    );
+  }
+}
+
+class _LayerMapItem extends StatelessWidget {
+  final World world;
+  final GroundLayer layer;
+
+  const _LayerMapItem({required this.world, required this.layer});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          Text(
+            layer.label(context),
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cellSize = min(constraints.maxWidth / world.width, constraints.maxHeight / world.height);
+                final paintSize = Size(world.width * cellSize, world.height * cellSize);
+                return Center(
+                  child: InteractiveViewer(
+                    constrained: true,
+                    child: CustomPaint(
+                      size: paintSize,
+                      painter: WorldPainter(world: world, layer: layer),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
