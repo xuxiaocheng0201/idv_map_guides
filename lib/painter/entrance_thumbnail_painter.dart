@@ -24,8 +24,6 @@ class EntranceThumbnailPainter extends CustomPainter {
   }): assert(offsetMinX < offsetMaxX),
       assert(offsetMinY < offsetMaxY);
 
-  /// 自动根据入口周围的地图内容调整观察窗口，使得边缘空白最少。
-  /// [square] 必须为奇数，表示正方形窗口的边长（默认 7）。
   factory EntranceThumbnailPainter.auto({
     required World world,
     required EntranceType entrance,

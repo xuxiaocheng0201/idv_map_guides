@@ -25,7 +25,7 @@ class _WorldListPageState extends State<WorldListPage> {
   late WorldsManager<dynamic> manager;
   late List<dynamic> worlds;
   bool _initialized = false;
-  dynamic _currentWorld;
+  int _currentWorldIndex = 0;
 
   @override
   void didChangeDependencies() {
@@ -41,31 +41,30 @@ class _WorldListPageState extends State<WorldListPage> {
     }
     manager = argument.manager;
     worlds = argument.worlds;
-    _currentWorld = worlds.first;
+    _currentWorldIndex = 0;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).worldsShowMap(_currentWorld.label(context) as String)),
+        title: Text(S.of(context).worldsShowMap(worlds[_currentWorldIndex].label(context) as String)),
         actions: [
           if (worlds.length > 1)
-            DropdownButton<dynamic>(
-              value: _currentWorld,
-              items: worlds
-                  .map((world) => DropdownMenuItem(value: world, child: Text(world.label(context) as String)))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null && value != _currentWorld) {
-                  setState(() => _currentWorld = value);
+            IconButton(
+              onPressed: () => setState(() {
+                _currentWorldIndex += 1;
+                if (_currentWorldIndex >= worlds.length) {
+                  _currentWorldIndex = 0;
                 }
-              },
+              }),
+              icon: const Icon(Icons.swap_horiz),
+              tooltip: S.of(context).worldsSwitchMap,
             ),
         ],
       ),
       body: FutureBuilder<World>(
-        future: manager.getWorld(_currentWorld),
+        future: manager.getWorld(worlds[_currentWorldIndex]),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
@@ -74,25 +73,33 @@ class _WorldListPageState extends State<WorldListPage> {
           final layers = world.layers.toList()..sort((a, b) => a.index.compareTo(b.index));
           return OrientationBuilder(
             builder: (context, orientation) {
-              if (orientation == Orientation.portrait) {
-                return Column(
-                  children: [
-                    for (final layer in layers)
-                      Expanded(
-                        child: _LayerMapItem(world: world, layer: layer),
+              return Flex(
+                direction: switch (orientation) {
+                  Orientation.portrait => Axis.vertical,
+                  Orientation.landscape => Axis.horizontal,
+                },
+                children: [
+                  for (final layer in layers)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              layer.label(context),
+                              style: Theme.of(context).textTheme.titleMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Expanded(
+                              child: _WorldLayerPaint(world: world, layer: layer, auto: true),
+                            ),
+                          ],
+                        ),
                       ),
-                  ],
-                );
-              } else {
-                return Row(
-                  children: [
-                    for (final layer in layers)
-                      Expanded(
-                        child: _LayerMapItem(world: world, layer: layer),
-                      ),
-                  ],
-                );
-              }
+                    ),
+                ],
+              );
             },
           );
         },
@@ -101,45 +108,32 @@ class _WorldListPageState extends State<WorldListPage> {
   }
 }
 
-class _LayerMapItem extends StatelessWidget {
+class _WorldLayerPaint extends StatelessWidget {
   final World world;
   final GroundLayer layer;
+  final bool auto;
 
-  const _LayerMapItem({required this.world, required this.layer});
+  const _WorldLayerPaint({required this.world, required this.layer, required this.auto});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          Text(
-            layer.label(context),
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Container(
-              color: backgroundColor,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final cellSize = min(constraints.maxWidth / world.width, constraints.maxHeight / world.height);
-                  final paintSize = Size(world.width * cellSize, world.height * cellSize);
-                  return Center(
-                    child: InteractiveViewer(
-                      constrained: true,
-                      child: CustomPaint(
-                        size: paintSize,
-                        painter: WorldPainter.auto(world: world, layer: layer),
-                      ),
-                    ),
-                  );
-                },
+    return Container(
+      color: backgroundColor,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
+          final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
+          final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
+          return Center(
+            child: InteractiveViewer(
+              constrained: true,
+              child: CustomPaint(
+                size: paintSize,
+                painter: painter,
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

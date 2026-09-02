@@ -188,6 +188,9 @@ class WorldPainter extends CustomPainter {
   final int minY;
   final int maxY;
 
+  int get width => maxX - minX + 1;
+  int get height => maxY - minY + 1;
+
   WorldPainter({
     required this.world,
     required this.layer,
@@ -229,8 +232,6 @@ class WorldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final width = maxX - minX + 1;
-    final height = maxY - minY + 1;
     final cellSize = min(size.width / width, size.height / height);
     drawBackground(canvas, width, height, cellSize);
 
