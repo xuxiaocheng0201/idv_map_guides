@@ -66,5 +66,6 @@
   "entrancesChooseMap": "选择地图",
 
   "worldsShowMap": "地图展示 - {worldName}",
-  "worldsSwitchMap": "切换地图"
+  "worldsFullscreen": "全屏模式",
+  "worldsFullscreenExit": "退出全屏"
 }

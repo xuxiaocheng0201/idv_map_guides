@@ -25,7 +25,10 @@ class _WorldListPageState extends State<WorldListPage> {
   late WorldsManager<dynamic> manager;
   late List<dynamic> worlds;
   bool _initialized = false;
-  int _currentWorldIndex = 0;
+  dynamic _currentWorld;
+
+  bool _isFullscreen = false;
+  int _currentLayerIndex = 0;
 
   @override
   void didChangeDependencies() {
@@ -41,67 +44,117 @@ class _WorldListPageState extends State<WorldListPage> {
     }
     manager = argument.manager;
     worlds = argument.worlds;
-    _currentWorldIndex = 0;
+    _currentWorld = worlds.first;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).worldsShowMap(worlds[_currentWorldIndex].label(context) as String)),
+        title: Text(S.of(context).worldsShowMap(_currentWorld.label(context) as String)),
+        centerTitle: true,
         actions: [
           if (worlds.length > 1)
-            IconButton(
-              onPressed: () => setState(() {
-                _currentWorldIndex += 1;
-                if (_currentWorldIndex >= worlds.length) {
-                  _currentWorldIndex = 0;
-                }
-              }),
-              icon: const Icon(Icons.swap_horiz),
-              tooltip: S.of(context).worldsSwitchMap,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: SegmentedButton(
+                selected: {_currentWorld},
+                segments: [
+                  for (final world in worlds)
+                    ButtonSegment(
+                      value: world,
+                      label: Text(world.label(context) as String),
+                    )
+                ],
+                emptySelectionAllowed: false,
+                multiSelectionEnabled: false,
+                onSelectionChanged: (w) => setState(() {
+                  _currentWorld = w.first;
+                }),
+              ),
             ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: IconButton(
+              onPressed: () => setState(() => _isFullscreen = !_isFullscreen),
+              icon: Icon(_isFullscreen ? Icons.grid_view : Icons.fullscreen),
+              tooltip: _isFullscreen ? S.of(context).worldsFullscreenExit : S.of(context).worldsFullscreen,
+            ),
+          ),
         ],
       ),
       body: FutureBuilder<World>(
-        future: manager.getWorld(worlds[_currentWorldIndex]),
+        future: manager.getWorld(_currentWorld),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
           final world = snapshot.data!;
           final layers = world.layers.toList()..sort((a, b) => a.index.compareTo(b.index));
-          return OrientationBuilder(
-            builder: (context, orientation) {
-              return Flex(
-                direction: switch (orientation) {
-                  Orientation.portrait => Axis.vertical,
-                  Orientation.landscape => Axis.horizontal,
-                },
-                children: [
-                  for (final layer in layers)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              layer.label(context),
-                              style: Theme.of(context).textTheme.titleMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Expanded(
-                              child: _WorldLayerPaint(world: world, layer: layer, auto: true),
-                            ),
-                          ],
+          if (_currentLayerIndex >= layers.length) {
+            setState(() => _currentLayerIndex = 0);
+          }
+          if (_isFullscreen) {
+            final layer = layers[_currentLayerIndex];
+            return Column(
+              children: [
+                SegmentedButton(
+                  selected: {_currentLayerIndex},
+                  segments: [
+                    for (int i = 0; i < layers.length; i++)
+                      ButtonSegment(
+                        value: i,
+                        label: Text(layers[i].label(context)),
+                      )
+                  ],
+                  emptySelectionAllowed: false,
+                  multiSelectionEnabled: false,
+                  onSelectionChanged: (i) => setState(() {
+                    _currentLayerIndex = i.first;
+                  }),
+                ),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: _WorldLayerPaint(world: world, layer: layer, auto: true),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            return OrientationBuilder(
+              builder: (context, orientation) {
+                return Flex(
+                  direction: switch (orientation) {
+                    Orientation.portrait => Axis.vertical,
+                    Orientation.landscape => Axis.horizontal,
+                  },
+                  children: [
+                    for (final layer in layers)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: [
+                              Text(
+                                layer.label(context),
+                                style: Theme.of(context).textTheme.titleMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Expanded(
+                                child: _WorldLayerPaint(world: world, layer: layer, auto: true),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              );
-            },
-          );
+                  ],
+                );
+              },
+            );
+          }
         },
       ),
     );
