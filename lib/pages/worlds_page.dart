@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
@@ -90,7 +91,7 @@ class _WorldListPageState extends State<WorldListPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final world = snapshot.data!;
-          final layers = world.layers.toList()..sort((a, b) => a.index.compareTo(b.index));
+          final layers = world.layers.toList()..sortBy((e) => e.index);
           if (_currentLayerIndex >= layers.length) {
             setState(() => _currentLayerIndex = 0);
           }

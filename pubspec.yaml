@@ -18,6 +18,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   toastification: ^3.2.0
   file_picker: ^12.1.0
+  path: ^1.9.1
   messagepack: ^0.2.1
   cachemesh: ^2.0.0
   collection: ^1.19.1

@@ -6,12 +6,15 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
+import 'package:path/path.dart' as p;
 import 'package:toastification/toastification.dart';
 
 const int defaultCanvasWidth = 5;
 const int defaultCanvasHeight = 5;
 
 var dataStructures = serializeStructures(<String, Structure>{});
+String? saveDirectory;
+String? saveFilename;
 
 class _StructuresRegistry {
   Map<String, Structure> structures = <String, Structure>{};
@@ -121,8 +124,18 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             icon: const Icon(Icons.download),
             tooltip: '导入',
             onPressed: () async {
-              final file = await FilePicker.pickFile();
+              final file = await FilePicker.pickFile(
+                initialDirectory: saveDirectory,
+              );
               if (file == null) return;
+              final path = file.path;
+              if (path == null) {
+                saveDirectory = null;
+                saveFilename = null;
+              } else {
+                saveDirectory = p.dirname(path);
+                saveFilename = p.basename(path);
+              }
               final content = await file.readAsBytes();
               dataStructures = content;
               _registry.read(setState);
@@ -136,7 +149,11 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: '导出',
-            onPressed: () => FilePicker.saveFile(fileName: 'structures.data', bytes: dataStructures),
+            onPressed: () => FilePicker.saveFile(
+              initialDirectory: saveDirectory,
+              fileName: saveFilename ?? 'structures.data',
+              bytes: dataStructures,
+            ),
           ),
         ],
         backgroundColor: Theme.of(context).splashColor,

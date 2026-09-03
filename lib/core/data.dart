@@ -97,7 +97,7 @@ enum Direction {
 }
 
 @freezed
-abstract class Position with _$Position {
+abstract class Position with _$Position implements Comparable<Position> {
   const Position._();
   const factory Position({
     required int x,
@@ -117,6 +117,13 @@ abstract class Position with _$Position {
       result = Position(x: result.y, y: -result.x);
     }
     return result;
+  }
+
+  @override
+  int compareTo(Position other) {
+    final x = this.x.compareTo(other.x);
+    if (x != 0) return x;
+    return y.compareTo(other.y);
   }
 }
 

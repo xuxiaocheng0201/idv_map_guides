@@ -47,7 +47,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
 
   Future<void> _loadAllData() async {
     for (final entrance in manager.provider.validEntrances) {
-      final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>((a, b) => a.compareTo(b));
+      final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>();
       for (final worldType in manager.provider.allWorlds) {
         final world = await manager.getWorld(worldType);
         final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);

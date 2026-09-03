@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:messagepack/messagepack.dart';
@@ -144,8 +145,10 @@ extension _StructureSerde on Structure {
   void pack(Packer packer) {
     packer.packListLength(2);
     packer.packBool(isCorridor);
+    final cells = this.cells.entries.toList();
+    cells.sortBy((e) => e.key);
     packer.packMapLength(cells.length);
-    for (final entry in cells.entries) {
+    for (final entry in cells) {
       entry.key.pack(packer);
       entry.value.pack(packer);
     }
@@ -156,7 +159,7 @@ Uint8List serializeStructures(Map<String, Structure> structures) {
   final packer = Packer();
   packer.packMapLength(structures.length);
   final list = structures.entries.toList();
-  list.sort((a, b) => a.key.compareTo(b.key));
+  list.sortBy((e) => e.key);
   for (final entry in list) {
     packer.packString(entry.key);
     entry.value.pack(packer);
@@ -210,11 +213,13 @@ extension _StructureInstanceSerde on StructureInstance {
     packer.packInt(originX);
     packer.packInt(originY);
     rotation.pack(packer);
+    final cells = this.cells?.entries.toList();
     if (cells == null) {
       packer.packMapLength(null);
     } else {
-      packer.packMapLength(cells!.length);
-      for (final entry in cells!.entries) {
+      cells.sortBy((e) => e.key);
+      packer.packMapLength(cells.length);
+      for (final entry in cells) {
         entry.key.pack(packer);
         entry.value.pack(packer);
       }
@@ -292,8 +297,10 @@ extension _WorldFileSerde on WorldFile {
     for (final instance in instances) {
       instance.pack(packer);
     }
+    final entrances = this.entrances.entries.toList();
+    entrances.sortBy((e) => e.key.index);
     packer.packMapLength(entrances.length);
-    for (final entry in entrances.entries) {
+    for (final entry in entrances) {
       entry.key.pack(packer);
       entry.value.pack(packer);
     }

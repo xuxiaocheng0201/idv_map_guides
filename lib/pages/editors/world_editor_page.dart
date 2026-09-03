@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
@@ -10,6 +11,7 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:idv_map_guides/painter/editor_world_painter.dart';
+import 'package:path/path.dart' as p;
 
 const int defaultWorldMinX = -25;
 const int defaultWorldMaxX = 25;
@@ -25,6 +27,8 @@ var dataWorld = serializeWorld(WorldFile(
   instances: <StructureInstance>[],
   entrances: <EntranceType, Position>{},
 ));
+String? saveDirectory;
+String? saveFilename;
 
 class _WorldEditorRegistry {
   Map<String, Structure> structures = {};
@@ -199,8 +203,18 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             icon: const Icon(Icons.download),
             tooltip: '导入',
             onPressed: () async {
-              final file = await FilePicker.pickFile();
+              final file = await FilePicker.pickFile(
+                initialDirectory: saveDirectory,
+              );
               if (file == null) return;
+              final path = file.path;
+              if (path == null) {
+                saveDirectory = null;
+                saveFilename = null;
+              } else {
+                saveDirectory = p.dirname(path);
+                saveFilename = p.basename(path);
+              }
               final content = await file.readAsBytes();
               dataWorld = content;
               _registry.read(setState);
@@ -219,7 +233,11 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: '导出',
-            onPressed: () => FilePicker.saveFile(fileName: 'world.data', bytes: dataWorld),
+            onPressed: () => FilePicker.saveFile(
+              initialDirectory: saveDirectory,
+              fileName: saveFilename ?? 'world.data',
+              bytes: dataWorld,
+            ),
           ),
         ],
         backgroundColor: Theme.of(context).splashColor,
@@ -619,7 +637,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
               .map((name) => DropdownMenuItem(value: name, child: Text(name)))
               .toList()
             ..add(const DropdownMenuItem(value: corridorTypeName, child: Text(corridorTypeName)))
-            ..sort((a, b) => a.value!.compareTo(b.value!)),
+            ..sortBy((e) => e.value!),
           onChanged: (value) {
             if (value != null) {
               setState(() {
