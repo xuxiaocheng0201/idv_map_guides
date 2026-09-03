@@ -25,7 +25,6 @@ class EntranceFeaturePage extends StatefulWidget {
 
 class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTickerProviderStateMixin {
   late WorldsManager<dynamic> manager;
-  late TabController _tabController;
   bool _loading = true;
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>> _worlds = {};
   bool _initialized = false;
@@ -43,8 +42,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       return;
     }
     manager = argument.manager;
-    final entrances = manager.provider.validEntrances;
-    _tabController = TabController(length: entrances.length, vsync: this);
     _loadAllData();
   }
 
@@ -71,108 +68,113 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final entrances = manager.provider.validEntrances;
     return Scaffold(
       appBar: AppBar(
         title: Text(S.of(context).entrancesChooseMap),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            for (final entrance in entrances)
-              Tab(text: entrance.label(context)),
-          ],
-        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-            controller: _tabController,
-            children: [
-              for (final entrance in entrances)
-                _buildEntranceGrid(entrance),
-            ],
-          ),
+          : _buildEntranceTabBar(context),
     );
   }
 
-  Widget _buildEntranceGrid(EntranceType entrance) {
-    final worlds = _worlds[entrance]!.entries.toList();
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: worlds.length,
-      itemBuilder: (context, featureIndex) {
-        final feature = worlds[featureIndex].key;
-        final entries = worlds[featureIndex].value.entries.toList();
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Text(feature.label(context)),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                flex: 5,
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 180,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 180 / (180 + 4 + MediaQuery.textScalerOf(context).scale(12)),
-                  ),
-                  itemCount: entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    final worlds = entry.value;
-                    final firstWorld = worlds.first;
-                    return FutureBuilder<World>(
-                      future: manager.getWorld(firstWorld),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        final world = snapshot.data!;
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              Routes.worlds,
-                              arguments: WorldListPageArguments(manager: manager, worlds: worlds),
-                            );
-                          },
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: CustomPaint(
-                                  painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
-                                  size: Size.infinite,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                worlds.map((m) => m.label(context) as String).join(' / '),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
+  Widget _buildEntranceTabBar(BuildContext context) {
+    final entrances = manager.provider.validEntrances;
+    return DefaultTabController(
+      length: entrances.length,
+      child: Column(
+        children: [
+          TabBar(
+            tabs: [
+              for (final entrance in entrances)
+                Tab(text: entrance.label(context)),
             ],
           ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final entrance in entrances)
+                  _buildFeatureTabBar(context, entrance),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureTabBar(BuildContext context, EntranceType entrance) {
+    final worlds = _worlds[entrance]!;
+    return DefaultTabController(
+      length: worlds.length,
+      child: Column(
+        children: [
+          TabBar.secondary(
+            tabs: [
+              for (final feature in worlds.keys)
+                Tab(text: feature.label(context)),
+            ],
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: TabBarView(
+                children: [
+                  for (final entry in worlds.entries)
+                    _buildThumbnailGrid(context, entrance, entry.key, entry.value),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumbnailGrid(BuildContext context, EntranceType entrance, EntranceFeature _, LinkedHashMap<BoolList, List<dynamic>> worlds) {
+    final worldsList = worlds.values.toList();
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 180,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: worldsList.length,
+      itemBuilder: (context, index) {
+        final worlds = worldsList[index];
+        final firstWorld = worlds.first;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return Tooltip(
+              message: worlds.map((m) => m.label(context) as String).join(' / '),
+              verticalOffset: constraints.maxWidth / 2 + 4,
+              showDuration: const Duration(seconds: 3),
+              child: FutureBuilder<World>(
+                future: manager.getWorld(firstWorld),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final world = snapshot.data!;
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        Routes.worlds,
+                        arguments: WorldListPageArguments(manager: manager, worlds: worlds),
+                      );
+                    },
+                    child: CustomPaint(
+                      painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
+                    ),
+                  );
+                },
+              ),
+            );
+          }
         );
       },
     );
