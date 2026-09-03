@@ -228,6 +228,7 @@ abstract class StructureInstance with _$StructureInstance {
   StructureInstance._();
   factory StructureInstance({
     @JsonKey(name: 'type') required String typeName,
+    @Default(false) bool isSuspicious,
     required GroundLayer layer,
     required int originX,
     required int originY,

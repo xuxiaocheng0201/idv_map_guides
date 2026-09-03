@@ -127,7 +127,7 @@ extension _CellInfoSerde on CellInfo {
 extension _StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 2) throw FormatException();
+    if (len != 3) throw FormatException();
     final isCorridor = unpacker.unpackBool();
     final isResource = unpacker.unpackBool();
     if (isCorridor == null || isResource == null) throw FormatException();
@@ -145,7 +145,7 @@ extension _StructureSerde on Structure {
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(2);
+    packer.packListLength(3);
     packer.packBool(isCorridor);
     packer.packBool(isResource);
     final cells = this.cells.entries.toList();
@@ -186,13 +186,14 @@ Map<String, Structure> deserializeStructures(Uint8List content) {
 extension _StructureInstanceSerde on StructureInstance {
   static StructureInstance unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 6) throw FormatException();
+    if (len != 7) throw FormatException();
     final typeName = unpacker.unpackString();
+    final isSuspicious = unpacker.unpackBool();
     final layer = _GroundLayerSerde.unpack(unpacker);
     final originX = unpacker.unpackInt();
     final originY = unpacker.unpackInt();
     final rotation = _RotationSerde.unpack(unpacker);
-    if (typeName == null || originX == null || originY == null) throw FormatException();
+    if (typeName == null || isSuspicious == null || originX == null || originY == null) throw FormatException();
     final mapLen = unpacker.unpackMapLength();
     final cells = <Position, CellInfo>{};
     for (int i = 0; i < mapLen; i++) {
@@ -202,6 +203,7 @@ extension _StructureInstanceSerde on StructureInstance {
     }
     return StructureInstance(
       typeName: typeName,
+      isSuspicious: isSuspicious,
       layer: layer,
       originX: originX,
       originY: originY,
@@ -210,8 +212,9 @@ extension _StructureInstanceSerde on StructureInstance {
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(6);
+    packer.packListLength(7);
     packer.packString(typeName);
+    packer.packBool(isSuspicious);
     layer.pack(packer);
     packer.packInt(originX);
     packer.packInt(originY);

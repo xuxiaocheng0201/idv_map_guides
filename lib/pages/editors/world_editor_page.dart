@@ -729,6 +729,20 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
           },
         ),
         const SizedBox(height: 16),
+        Row(
+          children: [
+            Text(instance.isSuspicious ? '需要校对' : '校对完成'),
+            const SizedBox(width: 8),
+            Switch(
+              value: instance.isSuspicious,
+              onChanged: (value) {
+                setState(() => instance.isSuspicious = value);
+                _registry.buildWorld(setState);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         if (instance.typeName == corridorTypeName) ...[
           ElevatedButton.icon(
             icon: const Icon(Icons.edit),
