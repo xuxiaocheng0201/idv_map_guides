@@ -51,7 +51,7 @@ class EditorWorldPainter extends CustomPainter {
     for (int x = world.minX; x <= world.maxX; x++) {
       for (int y = world.minY; y <= world.maxY; y++) {
         final cell = world.cell(layer, x, y)!;
-        if (cell.id == null) continue;
+        if (cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
         drawCell(canvas, rect, cell.isCorridor, cellSize);
         if (cell.info.isStair != null) {
@@ -64,15 +64,15 @@ class EditorWorldPainter extends CustomPainter {
     for (int x = world.minX; x <= world.maxX; x++) {
       for (int y = world.minY; y <= world.maxY; y++) {
         final cell = world.cell(layer, x, y)!;
-        if (cell.id == null) continue;
+        if (cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
 // == Add End ==
         for (final direction in Direction.values) {
 // == Add Start ==
-          if (selectedStructure != null && cell.id == selectedStructure) {
+          if (selectedStructure != null && cell.structureId == selectedStructure) {
             final (dx, dy) = direction.dxy;
             final neighbor = world.cell(layer, x + dx, y + dy);
-            if (neighbor == null || neighbor.id != cell.id) {
+            if (neighbor == null || neighbor.structureId != cell.structureId) {
               drawStructureSelectedBoarder(canvas, rect, direction, cellSize);
             }
           }
@@ -81,7 +81,7 @@ class EditorWorldPainter extends CustomPainter {
             case EdgeType.nothing:
               final (dx, dy) = direction.dxy;
               final neighbor = world.cell(layer, x + dx, y + dy);
-              if (neighbor != null && neighbor.id != cell.id) {
+              if (neighbor != null && neighbor.structureId != cell.structureId) {
                 drawWall(canvas, rect, direction, cellSize);
               }
               break;

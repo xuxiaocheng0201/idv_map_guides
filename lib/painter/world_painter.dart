@@ -212,7 +212,7 @@ class WorldPainter extends CustomPainter {
     for (int x = world.minX; x <= world.maxX; x++) {
       for (int y = world.minY; y <= world.maxY; y++) {
         final cell = world.cell(layer, x, y);
-        if (cell != null && cell.id != null) {
+        if (cell != null && cell.structureId != null) {
           contentMinX = contentMinX == null ? x : min(contentMinX, x);
           contentMaxX = contentMaxX == null ? x : max(contentMaxX, x);
           contentMinY = contentMinY == null ? y : min(contentMinY, y);
@@ -238,7 +238,7 @@ class WorldPainter extends CustomPainter {
     for (int x = minX; x <= maxX; x++) {
       for (int y = minY; y <= maxY; y++) {
         final cell = world.cell(layer, x, y);
-        if (cell == null || cell.id == null) continue;
+        if (cell == null || cell.structureId == null) continue;
 
         final rect = Rect.fromLTWH(
           (x - minX) * cellSize,
@@ -256,7 +256,7 @@ class WorldPainter extends CustomPainter {
             case EdgeType.nothing:
               final (dx, dy) = direction.dxy;
               final neighbor = world.cell(layer, x + dx, y + dy);
-              if (neighbor == null || neighbor.id != cell.id) {
+              if (neighbor == null || neighbor.structureId != cell.structureId) {
                 drawWall(canvas, rect, direction, cellSize);
               }
               break;

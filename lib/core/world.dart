@@ -8,7 +8,7 @@ part 'world.freezed.dart';
 abstract class Cell with _$Cell {
   Cell._();
   factory Cell({
-    int? id,
+    int? structureId,
     @Default(false) bool isCorridor,
     @Default(CellInfo(
       isStair: null,
@@ -78,8 +78,8 @@ class World {
         case null:
           errors.push(WorldError.cellOutOfWorld(worldPosition: worldPosition));
           break;
-        case Cell(:final id):
-          if (id != null) {
+        case Cell(:final structureId):
+          if (structureId != null) {
             errors.push(WorldError.cellOverlap(worldPosition: worldPosition));
             break;
           }
@@ -138,7 +138,7 @@ class World {
       final (position, info) = (entry.key, entry.value);
       final worldPosition = position.toWorld(rotation, originX, originY);
       final existing = cell(layer, worldPosition.x, worldPosition.y)!;
-      existing.id = structureId;
+      existing.structureId = structureId;
       existing.isCorridor = structure.isCorridor;
       existing.info = info.rotation(rotation);
     }
@@ -151,7 +151,7 @@ class World {
       final (type, entrance) = (entry.key, entry.value);
       final layer = type.layer();
       final c = cell(layer, entrance.x, entrance.y);
-      if (c == null || c.id == null) {
+      if (c == null || c.structureId == null) {
         errors.push(WorldError.entranceInEmpty(entrance: entrance));
       }
     }
@@ -168,7 +168,7 @@ class World {
               case EdgeType.door:
                 final oppositeDoor = worldEdge.opposite();
                 final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
-                if (oppositeCell == null || oppositeCell.id == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
+                if (oppositeCell == null || oppositeCell.structureId == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
                   if (c.isCorridor) {
                     errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
                   } else {
@@ -184,11 +184,11 @@ class World {
                 final downLayer = layer.down()!;
                 final targetPosition = worldEdge.opposite().position;
                 final targetCell = cell(layer, targetPosition.x, targetPosition.y)!;
-                if (targetCell.id == null) {
+                if (targetCell.structureId == null) {
                   errors.push(WorldError.holeMismatch(worldHole: worldEdge));
                 }
                 final targetMovedCell = cell(downLayer, targetPosition.x, targetPosition.y)!;
-                if (targetMovedCell.id == null) {
+                if (targetMovedCell.structureId == null) {
                   errors.push(WorldError.holeMovedMismatch(worldHole: worldEdge));
                 }
                 break;
@@ -202,14 +202,14 @@ class World {
             case StairTransport.goUp:
               final upLayer = layer.up()!;
               final targetCell = cell(upLayer, worldPosition.x, worldPosition.y)!;
-              if (targetCell.id == null || targetCell.info.isStair != StairTransport.goDown) {
+              if (targetCell.structureId == null || targetCell.info.isStair != StairTransport.goDown) {
                 errors.push(WorldError.stairMismatch(worldStair: worldPosition));
               }
               break;
             case StairTransport.goDown:
               final downLayer = layer.down()!;
               final targetCell = cell(downLayer, worldPosition.x, worldPosition.y)!;
-              if (targetCell.id == null || targetCell.info.isStair != StairTransport.goUp) {
+              if (targetCell.structureId == null || targetCell.info.isStair != StairTransport.goUp) {
                 errors.push(WorldError.stairMismatch(worldStair: worldPosition));
               }
               break;
@@ -246,6 +246,7 @@ Structure resolveStructure(StructureInstance instance, Map<String, Structure> st
     }
     return Structure(
       isCorridor: true,
+      isResource: false,
       cells: cells,
     );
   }

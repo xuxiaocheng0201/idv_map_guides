@@ -73,7 +73,7 @@
 
   "entrancesChooseMap": "Choose map",
 
-  "worldsShowMap": "Map - {worldName}",
+  "worldsShowMap": "Map",
   "worldsFullscreen": "Fullscreen",
   "worldsFullscreenExit": "Exit Fullscreen"
 }

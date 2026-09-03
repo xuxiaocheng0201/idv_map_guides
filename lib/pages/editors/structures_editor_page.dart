@@ -51,7 +51,11 @@ class _StructuresRegistry {
     newNames.add(name);
     newNames.sort();
     final index = newNames.indexOf(name);
-    final structure = Structure(isCorridor: false, cells: <Position, CellInfo>{});
+    final structure = Structure(
+      isCorridor: false,
+      isResource: false,
+      cells: <Position, CellInfo>{},
+    );
     setState(() {
       names = newNames;
       structures[name] = structure;
@@ -333,6 +337,13 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             Switch(
               value: structure.isCorridor,
               onChanged: (value) => setState(() => structure.isCorridor = value),
+            ),
+            const SizedBox(width: 16),
+            Text(structure.isResource ? '必刷点' : '非必刷'),
+            const SizedBox(width: 8),
+            Switch(
+              value: structure.isResource,
+              onChanged: (value) => setState(() => structure.isResource = value),
             ),
           ],
         ),

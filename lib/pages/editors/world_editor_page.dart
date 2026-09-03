@@ -547,14 +547,14 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
       return;
     }
     final cell = world.cell(_currentLayer, x, y);
-    if (cell == null || cell.id == null) {
+    if (cell == null || cell.structureId == null) {
       setState(() => _selectedInstanceIndex = null);
       return;
     }
     int? instanceIndex;
     for (final entry in _registry.instanceIndexToStructureId.entries) {
       final (index, id) = (entry.key, entry.value);
-      if (id == cell.id) {
+      if (id == cell.structureId) {
         instanceIndex = index;
         break;
       }
@@ -826,7 +826,11 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                     child: CustomPaint(
                       size: paintSize,
                       painter: EditorStructurePainter(
-                        structure: Structure(isCorridor: true, cells: _cells),
+                        structure: Structure(
+                          isCorridor: true,
+                          isResource: false,
+                          cells: _cells,
+                        ),
                         width: _width,
                         height: _height,
                         selectedCell: _selectedCell,

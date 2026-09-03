@@ -73,7 +73,7 @@
 
   "entrancesChooseMap": "选择地图",
 
-  "worldsShowMap": "地图展示 - {worldName}",
+  "worldsShowMap": "地图展示",
   "worldsFullscreen": "全屏模式",
   "worldsFullscreenExit": "退出全屏"
 }

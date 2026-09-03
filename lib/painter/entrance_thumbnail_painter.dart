@@ -59,7 +59,7 @@ class EntranceThumbnailPainter extends CustomPainter {
         final worldX = ex + dx;
         final worldY = ey + dy;
         final cell = world.cell(entrance.layer(), worldX, worldY);
-        if (cell == null || cell.id == null) continue;
+        if (cell == null || cell.structureId == null) continue;
 
         final rect = Rect.fromLTWH(
           (dx - offsetMinX) * cellSize,
@@ -77,7 +77,7 @@ class EntranceThumbnailPainter extends CustomPainter {
             case EdgeType.nothing:
               final (dx2, dy2) = direction.dxy;
               final neighbor = world.cell(entrance.layer(), worldX + dx2, worldY + dy2);
-              if (neighbor == null || neighbor.id != cell.id) {
+              if (neighbor == null || neighbor.structureId != cell.structureId) {
                 drawWall(canvas, rect, direction, cellSize);
               }
               break;
@@ -118,7 +118,7 @@ class EntranceThumbnailPainter extends CustomPainter {
     for (int dx = offsetMinX; dx <= offsetMaxX; dx++) {
       for (int dy = offsetMinY; dy <= offsetMaxY; dy++) {
         final cell = world.cell(entrance.layer(), ex + dx, ey + dy);
-        if (cell == null || cell.id == null) {
+        if (cell == null || cell.structureId == null) {
           list.add(false);
         } else {
           list.add(true);
@@ -210,7 +210,7 @@ class EntranceThumbnailPainter extends CustomPainter {
   static bool _isColumnEmpty(World world, GroundLayer layer, int x, int yMin, int yMax) {
     for (int y = yMin; y <= yMax; y++) {
       final cell = world.cell(layer, x, y);
-      if (cell != null && cell.id != null) return false;
+      if (cell != null && cell.structureId != null) return false;
     }
     return true;
   }
@@ -218,7 +218,7 @@ class EntranceThumbnailPainter extends CustomPainter {
   static bool _isRowEmpty(World world, GroundLayer layer, int y, int xMin, int xMax) {
     for (int x = xMin; x <= xMax; x++) {
       final cell = world.cell(layer, x, y);
-      if (cell != null && cell.id != null) return false;
+      if (cell != null && cell.structureId != null) return false;
     }
     return true;
   }

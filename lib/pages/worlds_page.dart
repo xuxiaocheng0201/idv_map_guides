@@ -52,7 +52,7 @@ class _WorldListPageState extends State<WorldListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).worldsShowMap(_currentWorld.label(context) as String)),
+        title: Text(S.of(context).worldsShowMap),
         centerTitle: true,
         actions: [
           if (worlds.length > 1)

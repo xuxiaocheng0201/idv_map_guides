@@ -187,6 +187,7 @@ abstract class Structure with _$Structure {
   Structure._();
   factory Structure({
     required bool isCorridor,
+    required bool isResource,
     required Map<Position, CellInfo> cells,
   }) = _Structure;
 }

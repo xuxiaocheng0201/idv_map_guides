@@ -7,7 +7,7 @@ import 'package:idv_map_guides/generated/l10n.dart';
 
 MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
   final position = world.entrances[entrance]!;
-  final mainEntranceId = world.cell(entrance.layer(), position.x, position.y)!.id!;
+  final mainEntranceId = world.cell(entrance.layer(), position.x, position.y)!.structureId!;
   final upDoor = position.add(0, 4);
   final leftDoor = position.add(-1, 1);
   final rightDoor = position.add(1, 1);
@@ -15,21 +15,21 @@ MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
   final leftDoorCell = world.cell(entrance.layer(), leftDoor.x, leftDoor.y)!;
   final rightDoorCell = world.cell(entrance.layer(), rightDoor.x, rightDoor.y)!;
   return MainEntranceFeature(
-    hasUpDoor: upDoorCell.id == mainEntranceId && upDoorCell.info.edgeNorth == EdgeType.door,
-    hasLeftDoor: leftDoorCell.id == mainEntranceId && leftDoorCell.info.edgeWest == EdgeType.door,
-    hasRightDoor: rightDoorCell.id == mainEntranceId && rightDoorCell.info.edgeEast == EdgeType.door,
+    hasUpDoor: upDoorCell.structureId == mainEntranceId && upDoorCell.info.edgeNorth == EdgeType.door,
+    hasLeftDoor: leftDoorCell.structureId == mainEntranceId && leftDoorCell.info.edgeWest == EdgeType.door,
+    hasRightDoor: rightDoorCell.structureId == mainEntranceId && rightDoorCell.info.edgeEast == EdgeType.door,
   );
 }
 
 SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
   final position = world.entrances[entrance]!;
-  final sideEntranceId = world.cell(entrance.layer(), position.x, position.y)!.id!;
+  final sideEntranceId = world.cell(entrance.layer(), position.x, position.y)!.structureId!;
   Direction? facing;
   for (final direction in Direction.values) {
     final (dx, dy) = direction.dxy;
     final facingPosition = position.add(dx, dy);
     final facingCell = world.cell(entrance.layer(), facingPosition.x, facingPosition.y);
-    if (facingCell?.id == sideEntranceId) {
+    if (facingCell?.structureId == sideEntranceId) {
       if (facing == null) {
         facing = direction;
       } else {
