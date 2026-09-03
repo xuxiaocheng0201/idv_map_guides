@@ -50,12 +50,78 @@ abstract class MainEntranceFeature with _$MainEntranceFeature {
     required bool hasLeftDoor,
     required bool hasRightDoor,
   }) = _MainEntranceFeature;
+
+  String label(BuildContext context) {
+    final s = S.of(context);
+    final StringBuffer sb = StringBuffer();
+    if (hasUpDoor) sb.write(s.mainEntranceFeatureHasUp);
+    if (hasLeftDoor) sb.write(s.mainEntranceFeatureHasLeft);
+    if (hasRightDoor) sb.write(s.mainEntranceFeatureHasRight);
+    return sb.toString();
+  }
 }
 
 enum SideEntranceFeature {
-  north, // 北
-  east,  // 右
-  south, // 南
-  west,  // 左
-  other,
+  north,
+  east,
+  south,
+  west,
+  other;
+
+  String label(BuildContext context) {
+    return switch (this) {
+      SideEntranceFeature.north => S.of(context).sideEntranceFeatureNorth,
+      SideEntranceFeature.east => S.of(context).sideEntranceFeatureEast,
+      SideEntranceFeature.south => S.of(context).sideEntranceFeatureSouth,
+      SideEntranceFeature.west => S.of(context).sideEntranceFeatureWest,
+      SideEntranceFeature.other => S.of(context).sideEntranceFeatureOther,
+    };
+  }
+}
+
+int _compareMainEntranceFeature(MainEntranceFeature a, MainEntranceFeature b) {
+  final countA = (a.hasUpDoor ? 1 : 0) + (a.hasLeftDoor ? 1 : 0) + (a.hasRightDoor ? 1 : 0);
+  final countB = (b.hasUpDoor ? 1 : 0) + (b.hasLeftDoor ? 1 : 0) + (b.hasRightDoor ? 1 : 0);
+  if (countA != countB) {
+    return countB.compareTo(countA);
+  }
+  if (a.hasUpDoor != b.hasUpDoor) {
+    return a.hasUpDoor ? -1 : 1;
+  }
+  if (a.hasLeftDoor != b.hasLeftDoor) {
+    return a.hasLeftDoor ? -1 : 1;
+  }
+  if (a.hasRightDoor != b.hasRightDoor) {
+    return a.hasRightDoor ? -1 : 1;
+  }
+  return 0;
+}
+
+@freezed
+sealed class EntranceFeature with _$EntranceFeature {
+  const EntranceFeature._();
+  const factory EntranceFeature.main({required MainEntranceFeature feature}) = EntranceFeature_Main;
+  const factory EntranceFeature.side({required SideEntranceFeature feature}) = EntranceFeature_Side;
+
+  int compareTo(EntranceFeature other) {
+    final me = this;
+    return switch (me) {
+      EntranceFeature_Main() => switch (other) {
+        EntranceFeature_Main() => _compareMainEntranceFeature(me.feature, other.feature),
+        EntranceFeature_Side() => 1,
+      },
+      EntranceFeature_Side() => switch (other) {
+        EntranceFeature_Main() => -1,
+        EntranceFeature_Side() => me.feature.index.compareTo(other.feature.index),
+      },
+    };
+  }
+
+  String label(BuildContext context) {
+    final me = this;
+    return switch (me) {
+      EntranceFeature_Main() => me.feature.label(context),
+      EntranceFeature_Side() => me.feature.label(context),
+    };
+  }
 }
