@@ -13,14 +13,19 @@ const holeColor = Color(0xFFFF6F61);
 const stairColor = Color(0xFFBCBCFF);
 const stairGridColor = Color(0xFFBDBDBD);
 const entranceColor = Color(0xFF00CC55);
+const suspiciousColor = Color(0xFFFF0066);
 
 void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
   canvas.drawRect(rect, Paint()..color = backgroundColor);
 }
 
-void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize) {
-  canvas.drawRect(rect, Paint()..color = isCorridor ? corridorColor : roomColor);
+void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious) {
+  var color = isCorridor ? corridorColor : roomColor;
+  if (isSuspicious) {
+    color = Color.alphaBlend(suspiciousColor.withValues(alpha: 0.2), color);
+  }
+  canvas.drawRect(rect, Paint()..color = color);
 }
 
 void drawStair(Canvas canvas, Rect rect, StairTransport stair, double cellSize) {
@@ -247,7 +252,7 @@ class WorldPainter extends CustomPainter {
           cellSize,
         );
 
-        drawCell(canvas, rect, cell.isCorridor, cellSize);
+        drawCell(canvas, rect, cell.isCorridor, cellSize, false);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }

@@ -51,6 +51,7 @@ class _WorldEditorRegistry {
   WorldErrors globalErrors = WorldErrors(errors: <WorldError>[]);
   Map<int, WorldErrors> errorsByInstanceIndex = {};
   Map<int, int> instanceIndexToStructureId = {};
+  Set<int> suspiciousStructures = {};
 
   _WorldEditorRegistry();
 
@@ -79,6 +80,7 @@ class _WorldEditorRegistry {
     final globalErrors = WorldErrors(errors: <WorldError>[]);
     final errorsByInstanceIndex = <int, WorldErrors>{};
     final instanceIndexToStructureId = <int, int>{};
+    final suspiciousStructures = <int>{};
     if (worldFile.instances.isEmpty) {
       globalErrors.push(WorldError.emptyMap());
     }
@@ -87,6 +89,9 @@ class _WorldEditorRegistry {
       try {
         final structure = resolveStructure(instance, structures);
         final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
+        if (instance.isSuspicious) {
+          suspiciousStructures.add(structureId);
+        }
         instanceIndexToStructureId[i] = structureId;
       } on WorldErrors catch (e) {
         errorsByInstanceIndex[i] = e;
@@ -105,6 +110,7 @@ class _WorldEditorRegistry {
       this.globalErrors = globalErrors;
       this.errorsByInstanceIndex = errorsByInstanceIndex;
       this.instanceIndexToStructureId = instanceIndexToStructureId;
+      this.suspiciousStructures = suspiciousStructures;
     });
   }
 
@@ -523,6 +529,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                       world: _registry.world,
                       layer: _currentLayer,
                       selectedStructure: _selectedInstanceIndex == null ? null : _registry.instanceIndexToStructureId[_selectedInstanceIndex!],
+                      suspiciousStructures: _registry.suspiciousStructures,
                     ),
                   ),
                 );

@@ -37,11 +37,13 @@ class EditorWorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
   final int? selectedStructure;
+  final Set<int> suspiciousStructures;
 
   EditorWorldPainter({
     required this.world,
     required this.layer,
     this.selectedStructure,
+    this.suspiciousStructures = const <int>{},
   });
 
   @override
@@ -53,7 +55,9 @@ class EditorWorldPainter extends CustomPainter {
         final cell = world.cell(layer, x, y)!;
         if (cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
-        drawCell(canvas, rect, cell.isCorridor, cellSize);
+// == Fix Start ==
+        drawCell(canvas, rect, cell.isCorridor, cellSize, suspiciousStructures.contains(cell.structureId));
+// == Fix End ==
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
