@@ -127,10 +127,11 @@ extension _CellInfoSerde on CellInfo {
 extension _StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 3) throw FormatException();
+    if (len != 4) throw FormatException();
     final isCorridor = unpacker.unpackBool();
     final isResource = unpacker.unpackBool();
-    if (isCorridor == null || isResource == null) throw FormatException();
+    final isNoDirection = unpacker.unpackBool();
+    if (isCorridor == null || isResource == null || isNoDirection == null) throw FormatException();
     final mapLen = unpacker.unpackMapLength();
     final cells = <Position, CellInfo>{};
     for (int i = 0; i < mapLen; i++) {
@@ -141,13 +142,15 @@ extension _StructureSerde on Structure {
     return Structure(
       isCorridor: isCorridor,
       isResource: isResource,
+      isNoDirection: isNoDirection,
       cells: cells,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(3);
+    packer.packListLength(4);
     packer.packBool(isCorridor);
     packer.packBool(isResource);
+    packer.packBool(isNoDirection);
     final cells = this.cells.entries.toList();
     cells.sortBy((e) => e.key);
     packer.packMapLength(cells.length);

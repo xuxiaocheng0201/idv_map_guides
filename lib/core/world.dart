@@ -68,6 +68,9 @@ class World {
   int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
     // validate
     final errors = WorldErrors(errors: <WorldError>[]);
+    if (structure.isNoDirection && !{Rotation.cw0, Rotation.cw90}.contains(rotation)) {
+      errors.push(WorldError.directionNotAllowed());
+    }
     final downLayer = switch (layer.down()) { final k? => map.containsKey(k) ? k : null, _ => null };
     final upLayer = switch (layer.up()) { final k? => map.containsKey(k) ? k : null, _ => null };
     for (final entry in structure.cells.entries) {
@@ -248,6 +251,7 @@ Structure resolveStructure(StructureInstance instance, Map<String, Structure> st
     return Structure(
       isCorridor: true,
       isResource: false,
+      isNoDirection: true,
       cells: cells,
     );
   }

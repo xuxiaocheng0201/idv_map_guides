@@ -722,18 +722,30 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
           ],
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<Rotation>(
-          initialValue: instance.rotation,
-          decoration: const InputDecoration(labelText: '旋转'),
-          items: Rotation.values
-              .map((rotation) => DropdownMenuItem(value: rotation, child: Text(rotation.label(context))))
-              .toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => instance.rotation = value);
-              _registry.buildWorld(setState);
+        Builder(
+          builder: (context) {
+            final List<Rotation> allowedRotations;
+            if (instance.typeName == corridorTypeName) {
+              allowedRotations = [Rotation.cw0];
+            } else if (_registry.structures[instance.typeName]?.isNoDirection ?? false) {
+              allowedRotations = [Rotation.cw0, Rotation.cw90];
+            } else {
+              allowedRotations = Rotation.values;
             }
-          },
+            return DropdownButtonFormField<Rotation>(
+              initialValue: allowedRotations.contains(instance.rotation) ? instance.rotation : null,
+              decoration: const InputDecoration(labelText: '旋转'),
+              items: allowedRotations
+                  .map((rotation) => DropdownMenuItem(value: rotation, child: Text(rotation.label(context))))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => instance.rotation = value);
+                  _registry.buildWorld(setState);
+                }
+              },
+            );
+          }
         ),
         const SizedBox(height: 16),
         Row(
@@ -850,6 +862,7 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                         structure: Structure(
                           isCorridor: true,
                           isResource: false,
+                          isNoDirection: true,
                           cells: _cells,
                         ),
                         width: _width,

@@ -54,6 +54,7 @@ class _StructuresRegistry {
     final structure = Structure(
       isCorridor: false,
       isResource: false,
+      isNoDirection: false,
       cells: <Position, CellInfo>{},
     );
     setState(() {
@@ -197,7 +198,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       return ListTile(
                         selected: index == _selectedIndex,
                         title: Text(name),
-                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'}'),
+                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isNoDirection ? '无向' : '有向'}'),
                         onTap: () => setState(() {
                           _selectedIndex = index;
                           _selectedCell = null;
@@ -344,6 +345,13 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             Switch(
               value: structure.isResource,
               onChanged: (value) => setState(() => structure.isResource = value),
+            ),
+            const SizedBox(width: 16),
+            Text(structure.isNoDirection ? '无方向' : '有方向'),
+            const SizedBox(width: 8),
+            Switch(
+              value: structure.isNoDirection,
+              onChanged: (value) => setState(() => structure.isNoDirection = value),
             ),
           ],
         ),
