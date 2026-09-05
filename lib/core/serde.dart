@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:messagepack/messagepack.dart';
@@ -151,8 +152,7 @@ extension _StructureSerde on Structure {
     packer.packBool(isCorridor);
     packer.packBool(isResource);
     packer.packBool(isNoDirection);
-    final cells = this.cells.entries.toList();
-    cells.sortBy((e) => e.key);
+    final cells = this.cells.entries.sortedBy((e) => e.key);
     packer.packMapLength(cells.length);
     for (final entry in cells) {
       entry.key.pack(packer);
@@ -164,8 +164,7 @@ extension _StructureSerde on Structure {
 Uint8List serializeStructures(Map<String, Structure> structures) {
   final packer = Packer();
   packer.packMapLength(structures.length);
-  final list = structures.entries.toList();
-  list.sortBy((e) => e.key);
+  final list = structures.entries.sortedBy((e) => e.key);
   for (final entry in list) {
     packer.packString(entry.key);
     entry.value.pack(packer);
@@ -222,11 +221,10 @@ extension _StructureInstanceSerde on StructureInstance {
     packer.packInt(originX);
     packer.packInt(originY);
     rotation.pack(packer);
-    final cells = this.cells?.entries.toList();
+    final cells = this.cells?.entries.sortedBy((e) => e.key);
     if (cells == null) {
       packer.packMapLength(null);
     } else {
-      cells.sortBy((e) => e.key);
       packer.packMapLength(cells.length);
       for (final entry in cells) {
         entry.key.pack(packer);
@@ -302,12 +300,17 @@ extension _WorldFileSerde on WorldFile {
     packer.packInt(maxX);
     packer.packInt(minY);
     packer.packInt(maxY);
+    final instances = this.instances.sorted(compareSequentially([
+      compare<StructureInstance>((instance) => instance.layer.index),
+      compare<StructureInstance>((instance) => instance.originX),
+      compare<StructureInstance>((instance) => instance.originY),
+      compare<StructureInstance>((instance) => instance.rotation.index),
+    ]));
     packer.packListLength(instances.length);
     for (final instance in instances) {
       instance.pack(packer);
     }
-    final entrances = this.entrances.entries.toList();
-    entrances.sortBy((e) => e.key.index);
+    final entrances = this.entrances.entries.sortedBy((e) => e.key.index);
     packer.packMapLength(entrances.length);
     for (final entry in entrances) {
       entry.key.pack(packer);

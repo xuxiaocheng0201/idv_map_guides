@@ -145,6 +145,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.19.1"
+  comparators:
+    dependency: "direct main"
+    description:
+      name: comparators
+      sha256: ae5bd75bf89ef7bca930c4d037db69d82cb56ac0a3699f64f2b652b95fb87a99
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.2.0"
   convert:
     dependency: transitive
     description:

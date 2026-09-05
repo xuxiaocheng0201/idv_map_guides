@@ -1,3 +1,4 @@
+import 'package:comparators/comparators.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'data.freezed.dart';
@@ -121,9 +122,10 @@ abstract class Position with _$Position implements Comparable<Position> {
 
   @override
   int compareTo(Position other) {
-    final x = this.x.compareTo(other.x);
-    if (x != 0) return x;
-    return y.compareTo(other.y);
+    return compareSequentially([
+      compare<Position>((position) => position.x),
+      compare<Position>((position) => position.y),
+    ])(this, other);
   }
 }
 

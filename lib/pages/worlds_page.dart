@@ -91,7 +91,7 @@ class _WorldListPageState extends State<WorldListPage> {
             return const Center(child: CircularProgressIndicator());
           }
           final world = snapshot.data!;
-          final layers = world.layers.toList()..sortBy((e) => e.index);
+          final layers = world.layers.sortedBy((e) => e.index);
           if (_currentLayerIndex >= layers.length) {
             setState(() => _currentLayerIndex = 0);
           }
