@@ -9,6 +9,7 @@ import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
+import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:idv_map_guides/painter/editor_world_painter.dart';
 import 'package:path/path.dart' as p;
@@ -418,98 +419,40 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                 ),
               ),
             const SizedBox(width: 16),
-            Text('X'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.minX -= 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-                Text('${_registry.worldFile.minX}'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.minX += 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-              ],
-            ),
-            Text('～'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.maxX -= 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-                Text('${_registry.worldFile.maxX}'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.maxX += 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-              ],
+            ValueEditor(
+              label: 'X',
+              value: _registry.worldFile.minX,
+              onSet: (newMinX) {
+                setState(() => _registry.worldFile.minX = newMinX);
+                _registry.buildWorld(setState);
+              },
             ),
             const SizedBox(width: 16),
-            Text('Y'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.minY -= 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-                Text('${_registry.worldFile.minY}'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.minY += 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-              ],
+            ValueEditor(
+              label: '～',
+              value: _registry.worldFile.maxX,
+              onSet: (newMaxX) {
+                setState(() => _registry.worldFile.maxX = newMaxX);
+                _registry.buildWorld(setState);
+              },
             ),
-            Text('～'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.maxY -= 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-                Text('${_registry.worldFile.maxY}'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () {
-                    setState(() => _registry.worldFile.maxY += 1);
-                    _registry.buildWorld(setState);
-                  },
-                ),
-              ],
+            const SizedBox(width: 16),
+            ValueEditor(
+              label: 'Y',
+              value: _registry.worldFile.minY,
+              onSet: (newMinY) {
+                setState(() => _registry.worldFile.minY = newMinY);
+                _registry.buildWorld(setState);
+              },
+            ),
+            const SizedBox(width: 16),
+            ValueEditor(
+              label: '～',
+              value: _registry.worldFile.maxY,
+              onSet: (newMaxY) {
+                setState(() => _registry.worldFile.maxY = newMaxY);
+                _registry.buildWorld(setState);
+              },
             ),
           ],
         ),
@@ -674,52 +617,22 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
           },
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text('原点 X'),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.remove),
-              visualDensity: VisualDensity.compact,
-              onPressed: () {
-                setState(() => instance.originX -= 1);
-                _registry.buildWorld(setState);
-              },
-            ),
-            Text('${instance.originX}'),
-            IconButton(
-              icon: const Icon(Icons.add),
-              visualDensity: VisualDensity.compact,
-              onPressed: () {
-                setState(() => instance.originX += 1);
-                _registry.buildWorld(setState);
-              },
-            ),
-          ],
+        ValueEditor(
+          label: '原点 X',
+          value: instance.originX,
+          onSet: (newOriginX) {
+            setState(() => instance.originX = newOriginX);
+            _registry.buildWorld(setState);
+          },
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            const Text('原点 Y'),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.remove),
-              visualDensity: VisualDensity.compact,
-              onPressed: () {
-                setState(() => instance.originY -= 1);
-                _registry.buildWorld(setState);
-              },
-            ),
-            Text('${instance.originY}'),
-            IconButton(
-              icon: const Icon(Icons.add),
-              visualDensity: VisualDensity.compact,
-              onPressed: () {
-                setState(() => instance.originY += 1);
-                _registry.buildWorld(setState);
-              },
-            ),
-          ],
+        ValueEditor(
+          label: '原点 Y',
+          value: instance.originY,
+          onSet: (newOriginY) {
+            setState(() => instance.originY = newOriginY);
+            _registry.buildWorld(setState);
+          },
         ),
         const SizedBox(height: 8),
         Builder(
@@ -745,7 +658,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                 }
               },
             );
-          }
+          },
         ),
         const SizedBox(height: 16),
         Row(
@@ -888,30 +801,16 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
           children: [
             const Text('画布大小:'),
             const SizedBox(width: 8),
-            const Text('宽'),
-            IconButton(
-              icon: const Icon(Icons.remove),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _width = max(1, _width - 1)),
-            ),
-            Text('$_width'),
-            IconButton(
-              icon: const Icon(Icons.add),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _width++),
+            ValueEditor(
+              label: '宽',
+              value: _width,
+              onSet: (newWidth) => setState(() => _width = max(1, newWidth)),
             ),
             const SizedBox(width: 8),
-            const Text('高'),
-            IconButton(
-              icon: const Icon(Icons.remove),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _height = max(1, _height - 1)),
-            ),
-            Text('$_height'),
-            IconButton(
-              icon: const Icon(Icons.add),
-              visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _height++),
+            ValueEditor(
+              label: '高',
+              value: _height,
+              onSet: (newHeight) => setState(() => _height = max(1, newHeight)),
             ),
           ],
         ),

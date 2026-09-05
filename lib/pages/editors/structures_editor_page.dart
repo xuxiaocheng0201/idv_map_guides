@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
+import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:path/path.dart' as p;
 import 'package:toastification/toastification.dart';
@@ -297,40 +298,16 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               ),
             ),
             const SizedBox(width: 16),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('宽'),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _registry.modifyCanvas(index, (width, height) => (width - 1, height), setState),
-                ),
-                Text('$width'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _registry.modifyCanvas(index, (width, height) => (width + 1, height), setState),
-                ),
-              ],
+            ValueEditor(
+              label: '宽',
+              value: width,
+              onSet: (newWidth) => _registry.modifyCanvas(index, (w, h) => (newWidth, h), setState),
             ),
             const SizedBox(width: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('高'),
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _registry.modifyCanvas(index, (width, height) => (width, height - 1), setState),
-                ),
-                Text('$height'),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _registry.modifyCanvas(index, (width, height) => (width, height + 1), setState),
-                ),
-              ],
+            ValueEditor(
+              label: '高',
+              value: height,
+              onSet: (newHeight) => _registry.modifyCanvas(index, (w, h) => (w, newHeight), setState),
             ),
             const SizedBox(width: 16),
             Text(structure.isCorridor ? '走廊' : '房间'),
@@ -442,8 +419,8 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
           Row(
             children: [
               Text(
-                  '单元格 (${position.x}, ${position.y})',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                '单元格 (${position.x}, ${position.y})',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.delete),
