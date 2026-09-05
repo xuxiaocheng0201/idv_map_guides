@@ -150,6 +150,9 @@ class World {
 
   void validate({required bool replaceStructureMismatchedDoor}) {
     final errors = WorldErrors(errors: <WorldError>[]);
+    if (entrances.isEmpty) {
+      errors.push(WorldError.entranceMissing());
+    }
     for (final entry in entrances.entries) {
       final (type, entrance) = (entry.key, entry.value);
       final layer = type.layer();

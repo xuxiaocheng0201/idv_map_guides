@@ -521,6 +521,13 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         child: Text('请选择一个单元格'),
       );
     }
+    EntranceType? currentType;
+    for (final entry in _registry.worldFile.entrances.entries) {
+      if (position == entry.value) {
+        currentType = entry.key;
+        break;
+      }
+    }
     return Column(
       children: [
         Text(
@@ -528,19 +535,20 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         const Divider(),
-        DropdownButtonFormField<EntranceType?>(
-          initialValue: null,
+        DropdownButtonFormField<int>(
+          initialValue: currentType == null ? 0 : (currentType.index + 1),
           decoration: const InputDecoration(labelText: '入口类型'),
           items: EntranceType.values
-              .map((type) => DropdownMenuItem(value: type, child: Text(type.label(context))))
+              .map((type) => DropdownMenuItem(value: type.index + 1, child: Text(type.label(context))))
               .toList()
-            ..insert(0, const DropdownMenuItem(value: null, child: Text('无'))),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _registry.worldFile.entrances[value] = position);
+            ..insert(0, const DropdownMenuItem(value: 0, child: Text('无'))),
+          onChanged: (index) {
+            if (currentType != null) setState(() => _registry.worldFile.entrances.remove(currentType));
+            if (index == null || index == 0) {
               _registry.buildWorld(setState);
             } else {
-              setState(() => _registry.worldFile.entrances.removeWhere((_, p) => p == position));
+              final value = EntranceType.values[index - 1];
+              setState(() => _registry.worldFile.entrances[value] = position);
               _registry.buildWorld(setState);
             }
           },
