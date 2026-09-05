@@ -158,7 +158,7 @@ class World {
       final layer = type.layer();
       final c = cell(layer, entrance.x, entrance.y);
       if (c == null || c.structureId == null) {
-        errors.push(WorldError.entranceInEmpty(entrance: entrance));
+        errors.push(WorldError.entranceInEmpty(type: type, entrance: entrance));
       }
     }
     for (final layer in map.keys) {
@@ -176,7 +176,7 @@ class World {
                 final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
                 if (oppositeCell == null || oppositeCell.structureId == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
                   if (c.isCorridor) {
-                    errors.push(WorldError.doorMismatch(worldDoor: worldEdge));
+                    errors.push(WorldError.doorMismatch(layer: layer, worldDoor: worldEdge));
                   } else {
                     if (replaceStructureMismatchedDoor) {
                       c.info = c.info.setEdgeType(direction, EdgeType.nothing);
@@ -191,11 +191,11 @@ class World {
                 final targetPosition = worldEdge.opposite().position;
                 final targetCell = cell(layer, targetPosition.x, targetPosition.y)!;
                 if (targetCell.structureId == null) {
-                  errors.push(WorldError.holeMismatch(worldHole: worldEdge));
+                  errors.push(WorldError.holeMismatch(layer: layer, worldHole: worldEdge));
                 }
                 final targetMovedCell = cell(downLayer, targetPosition.x, targetPosition.y)!;
                 if (targetMovedCell.structureId == null) {
-                  errors.push(WorldError.holeMovedMismatch(worldHole: worldEdge));
+                  errors.push(WorldError.holeMovedMismatch(layer: layer, worldHole: worldEdge));
                 }
                 break;
             }
@@ -209,14 +209,14 @@ class World {
               final upLayer = layer.up()!;
               final targetCell = cell(upLayer, worldPosition.x, worldPosition.y)!;
               if (targetCell.structureId == null || targetCell.info.isStair != StairTransport.goDown) {
-                errors.push(WorldError.stairMismatch(worldStair: worldPosition));
+                errors.push(WorldError.stairMismatch(layer: layer, worldStair: worldPosition));
               }
               break;
             case StairTransport.goDown:
               final downLayer = layer.down()!;
               final targetCell = cell(downLayer, worldPosition.x, worldPosition.y)!;
               if (targetCell.structureId == null || targetCell.info.isStair != StairTransport.goUp) {
-                errors.push(WorldError.stairMismatch(worldStair: worldPosition));
+                errors.push(WorldError.stairMismatch(layer: layer, worldStair: worldPosition));
               }
               break;
           }
