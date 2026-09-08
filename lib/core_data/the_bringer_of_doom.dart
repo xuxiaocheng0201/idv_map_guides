@@ -38,10 +38,10 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
     }
   }
   return switch (facing!) {
-    Direction.north => SideEntranceFeature.north,
-    Direction.east => SideEntranceFeature.east,
-    Direction.south => SideEntranceFeature.south,
-    Direction.west => SideEntranceFeature.west,
+    Direction.north => SideEntranceFeature.south,
+    Direction.east => SideEntranceFeature.west,
+    Direction.south => SideEntranceFeature.north,
+    Direction.west => SideEntranceFeature.east,
   };
 }
 
