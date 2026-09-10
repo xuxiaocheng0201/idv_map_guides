@@ -173,21 +173,21 @@ class _WorldLayerPaint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: backgroundColor,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
-          final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
-          final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
-          return Center(
-            child: InteractiveViewer(
-              constrained: true,
+      child: Center(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
+            final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
+            final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
+            return SizedBox.fromSize(
+              size: paintSize,
               child: CustomPaint(
                 size: paintSize,
                 painter: painter,
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
