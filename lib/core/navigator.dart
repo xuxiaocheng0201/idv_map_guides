@@ -117,7 +117,7 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
     }
   }
   // Collect exit id.
-  final exitIndices = <int>[];
+  final exitIndices = <int>{};
   for (final entry in world.entrances.entries) {
     final layer = entry.key.layer();
     final pos = entry.value;
@@ -126,9 +126,10 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
     if (idx != null) exitIndices.add(idx);
   }
 
-  // BFS searches the shortest path.
-  List<int> bfs(int from, int to) {
-    if (from == to) return [from];
+  // BFS
+  (int, List<int>)? bfsToNearest(int from, Set<int> targets) {
+    if (targets.isEmpty) return null;
+    if (targets.contains(from)) return (from, [from]);
     final prev = List.filled(n, -1);
     final visited = List.filled(n, false);
     final queue = Queue<int>()..add(from);
@@ -139,19 +140,19 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
         if (visited[v]) continue;
         visited[v] = true;
         prev[v] = u;
-        if (v == to) {
+        if (targets.contains(v)) {
           final path = <int>[v];
           var x = v;
           while (x != from) {
             x = prev[x];
             path.add(x);
           }
-          return path.reversed.toList();
+          return (v, path.reversed.toList());
         }
         queue.addLast(v);
       }
     }
-    return [];
+    return null;
   }
 
   // Greedy access resource.
@@ -160,43 +161,25 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
   var currentIndex = startIndex;
   pathIndices.add(currentIndex);
   while (true) {
-    int? bestTarget;
-    var bestDist = -1;
-    List<int>? bestPath;
+    final remainingTargets = <int>{};
     for (final entry in resourceNodes.entries) {
-      final sid = entry.key;
-      if (visitedResources.contains(sid)) continue;
-      for (final resIndex in entry.value) {
-        final path = bfs(currentIndex, resIndex);
-        if (path.isEmpty) continue;
-        if (bestDist == -1 || path.length < bestDist) {
-          bestDist = path.length;
-          bestTarget = resIndex;
-          bestPath = path;
-        }
-      }
+      if (visitedResources.contains(entry.key)) continue;
+      remainingTargets.addAll(entry.value);
     }
-    if (bestTarget == null || bestPath == null) break;
-    pathIndices.addAll(bestPath.skip(1));
-    currentIndex = bestTarget;
+    if (remainingTargets.isEmpty) break;
+    final result = bfsToNearest(currentIndex, remainingTargets);
+    if (result == null) break;
+    final (target, path) = result;
+    pathIndices.addAll(path.skip(1));
+    currentIndex = target;
     final cell = world.cell(nodes[currentIndex].layer, nodes[currentIndex].x, nodes[currentIndex].y)!;
     visitedResources.add(cell.structureId!);
   }
   // access exit.
-  int? bestExit;
-  var bestExitDist = -1;
-  List<int>? bestExitPath;
-  for (final exitIndex in exitIndices) {
-    final path = bfs(currentIndex, exitIndex);
-    if (path.isEmpty) continue;
-    if (bestExitDist == -1 || path.length < bestExitDist) {
-      bestExitDist = path.length;
-      bestExit = exitIndex;
-      bestExitPath = path;
-    }
-  }
-  if (bestExit == null || bestExitPath == null) return [];
-  pathIndices.addAll(bestExitPath.skip(1));
+  final exitResult = bfsToNearest(currentIndex, exitIndices);
+  if (exitResult == null) return [];
+  final (_, exitPath) = exitResult;
+  pathIndices.addAll(exitPath.skip(1));
 
   // Return path.
   return pathIndices.map((i) => nodes[i]).toList();
