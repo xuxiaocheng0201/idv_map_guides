@@ -39,6 +39,7 @@ class World {
   Map<GroundLayer, List<List<Cell>>> map;
   Map<EntranceType, Position> entrances;
   int _nextStructureId;
+  Set<int> suspiciousStructures = <int>{};
 
   World({
     required Set<GroundLayer> layers,
@@ -294,7 +295,8 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
       continue;
     }
     try {
-      world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
+      final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
+      if (instance.isSuspicious) world.suspiciousStructures.add(structureId);
     } on WorldErrors catch (e) {
       errors.merge(e);
     }

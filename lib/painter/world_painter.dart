@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
@@ -22,7 +23,7 @@ void drawBackground(Canvas canvas, int width, int height, double cellSize) {
 
 void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious) {
   var color = isCorridor ? corridorColor : roomColor;
-  if (isSuspicious) {
+  if (kDebugMode && isSuspicious) {
     color = Color.alphaBlend(suspiciousColor.withValues(alpha: 0.2), color);
   }
   canvas.drawRect(rect, Paint()..color = color);
@@ -203,10 +204,10 @@ class WorldPainter extends CustomPainter {
     int? maxX,
     int? minY,
     int? maxY,
-  })  : minX = minX ?? world.minX,
-        maxX = maxX ?? world.maxX,
-        minY = minY ?? world.minY,
-        maxY = maxY ?? world.maxY;
+  }): minX = minX ?? world.minX,
+      maxX = maxX ?? world.maxX,
+      minY = minY ?? world.minY,
+      maxY = maxY ?? world.maxY;
 
   factory WorldPainter.auto({
     required World world,
@@ -244,15 +245,8 @@ class WorldPainter extends CustomPainter {
       for (int y = minY; y <= maxY; y++) {
         final cell = world.cell(layer, x, y);
         if (cell == null || cell.structureId == null) continue;
-
-        final rect = Rect.fromLTWH(
-          (x - minX) * cellSize,
-          (maxY - y) * cellSize,
-          cellSize,
-          cellSize,
-        );
-
-        drawCell(canvas, rect, cell.isCorridor, cellSize, false);
+        final rect = Rect.fromLTWH((x - minX) * cellSize, (maxY - y) * cellSize, cellSize, cellSize);
+        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId));
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
