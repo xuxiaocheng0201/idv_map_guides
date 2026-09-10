@@ -40,6 +40,7 @@ class World {
   Map<EntranceType, Position> entrances;
   int _nextStructureId;
   Set<int> suspiciousStructures = <int>{};
+  Set<int> resources = <int>{};
 
   World({
     required Set<GroundLayer> layers,
@@ -146,6 +147,7 @@ class World {
       existing.isCorridor = structure.isCorridor;
       existing.info = info.rotation(rotation);
     }
+    if (structure.isResource) resources.add(structureId);
     return structureId;
   }
 
