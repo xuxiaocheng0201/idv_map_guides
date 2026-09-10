@@ -118,7 +118,7 @@ class _WorldListPageState extends State<WorldListPage> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: _WorldLayerPaint(world: world, layer: layer, auto: true),
+                    child: _WorldLayerPaint(world: world, layer: layer, auto: false),
                   ),
                 ),
               ],

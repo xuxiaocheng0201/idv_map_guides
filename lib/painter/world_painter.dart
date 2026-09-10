@@ -204,10 +204,11 @@ class WorldPainter extends CustomPainter {
     int? maxX,
     int? minY,
     int? maxY,
-  }): minX = minX ?? world.minX,
-      maxX = maxX ?? world.maxX,
-      minY = minY ?? world.minY,
-      maxY = maxY ?? world.maxY;
+    int padding = 1,
+  }): minX = (minX ?? world.minX) - padding,
+      maxX = (maxX ?? world.maxX) + padding,
+      minY = (minY ?? world.minY) - padding,
+      maxY = (maxY ?? world.maxY) + padding;
 
   factory WorldPainter.auto({
     required World world,
