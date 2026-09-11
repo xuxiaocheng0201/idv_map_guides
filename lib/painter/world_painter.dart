@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
 
 const backgroundColor = Color(0xFF223344);
@@ -15,6 +16,7 @@ const stairColor = Color(0xFFBCBCFF);
 const stairGridColor = Color(0xFFBDBDBD);
 const entranceColor = Color(0xFF00CC55);
 const suspiciousColor = Color(0xFFFF0066);
+const pathColor = Color(0xFF00E5FF);
 
 void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
@@ -188,6 +190,7 @@ void drawEntrance(Canvas canvas, Rect rect, double cellSize) {
 class WorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
+  List<Node> path = [];
 
   final int minX;
   final int maxX;
@@ -289,6 +292,59 @@ class WorldPainter extends CustomPainter {
       );
       drawEntrance(canvas, rect, cellSize);
     }
+
+    if (path.isNotEmpty) {
+      final linePaint = Paint()
+        ..color = pathColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = cellSize * 0.12
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      final arrowPaint = Paint()
+        ..color = pathColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = cellSize * 0.06
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      final laneOffset = cellSize * 0.12;
+      final arrowSize = cellSize * 0.18;
+
+      Node? prevNode;
+      for (final node in path) {
+        final bool nodeOnThisLayer = node.layer == layer;
+        final bool isCrossLayerEntry = !nodeOnThisLayer &&
+            prevNode != null &&
+            prevNode.layer != node.layer &&
+            (node.x != prevNode.x || node.y != prevNode.y);
+        if (!nodeOnThisLayer && !isCrossLayerEntry) {
+          prevNode = null;
+          continue;
+        }
+        if (prevNode != null) {
+          final center = Offset((node.x - minX + 0.5) * cellSize, (maxY - node.y + 0.5) * cellSize);
+          final prevCenter = Offset((prevNode.x - minX + 0.5) * cellSize, (maxY - prevNode.y + 0.5) * cellSize);
+          final v = center - prevCenter;
+          final len = v.distance;
+
+          if (len > 0.01) {
+            final u = v / len;
+            final n = Offset(-u.dy, u.dx);
+            final a = prevCenter + n * laneOffset;
+            final b = center + n * laneOffset;
+            canvas.drawLine(a, b, linePaint);
+
+            final mid = Offset.lerp(a, b, 0.5)!;
+            final tip = mid + u * (arrowSize * 0.5);
+            final back = tip - u * arrowSize;
+            final left = back + n * (arrowSize * 0.6);
+            final right = back - n * (arrowSize * 0.6);
+            canvas.drawLine(tip, left, arrowPaint);
+            canvas.drawLine(tip, right, arrowPaint);
+          }
+        }
+        prevNode = node;
+      }
+    }
   }
 
   @override
@@ -298,6 +354,7 @@ class WorldPainter extends CustomPainter {
         oldDelegate.minX != minX ||
         oldDelegate.maxX != maxX ||
         oldDelegate.minY != minY ||
-        oldDelegate.maxY != maxY;
+        oldDelegate.maxY != maxY ||
+        listEquals(oldDelegate.path, path);
   }
 }

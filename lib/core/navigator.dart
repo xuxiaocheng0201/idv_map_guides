@@ -131,14 +131,12 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
     if (targets.isEmpty) return null;
     if (targets.contains(from)) return (from, [from]);
     final prev = List.filled(n, -1);
-    final visited = List.filled(n, false);
     final queue = Queue<int>()..add(from);
-    visited[from] = true;
+    prev[from] = from;
     while (queue.isNotEmpty) {
       final u = queue.removeFirst();
       for (final v in adj[u]) {
-        if (visited[v]) continue;
-        visited[v] = true;
+        if (prev[v] != -1) continue;
         prev[v] = u;
         if (targets.contains(v)) {
           final path = <int>[v];
