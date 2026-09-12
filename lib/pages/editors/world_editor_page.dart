@@ -329,7 +329,9 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             width: 300,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: _isEditingEntrances ? _buildEntranceProperties(context) : _buildInstanceProperties(context),
+              child: SingleChildScrollView(
+                child: _isEditingEntrances ? _buildEntranceProperties(context) : _buildInstanceProperties(context),
+              ),
             ),
           ),
         ],
@@ -532,10 +534,11 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         DropdownButtonFormField<int>(
           initialValue: currentType == null ? 0 : (currentType.index + 1),
           decoration: const InputDecoration(labelText: '入口类型'),
-          items: EntranceType.values
-              .map((type) => DropdownMenuItem(value: type.index + 1, child: Text(type.label(context))))
-              .toList()
-            ..insert(0, const DropdownMenuItem(value: 0, child: Text('无'))),
+          items: [
+            const DropdownMenuItem(value: 0, child: Text('无')),
+            for (final type in EntranceType.values)
+              DropdownMenuItem(value: type.index + 1, child: Text(type.label(context))),
+          ],
           onChanged: (index) {
             if (currentType != null) setState(() => _registry.worldFile.entrances.remove(currentType));
             if (index == null || index == 0) {

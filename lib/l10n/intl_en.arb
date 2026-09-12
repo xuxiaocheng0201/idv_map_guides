@@ -75,5 +75,19 @@
 
   "worldsShowMap": "Map",
   "worldsFullscreen": "Fullscreen",
-  "worldsFullscreenExit": "Exit Fullscreen"
+  "worldsFullscreenExit": "Exit Fullscreen",
+  "worldsNavigateMode": "Navigate Mode",
+  "worldsNavigateSetting": "Navigate Setting",
+  "worldsNavigateEditing": "Editing",
+  "worldsNavigateReset": "Reset",
+  "worldsNavigateStartNode": "Start",
+  "worldsNavigateStartNodeValue": "Current: {layer} ({x}, {y})",
+  "worldsNavigateStartNodeEdit": "Choose start",
+  "worldsNavigateStartNodeEditExit": "Exit choose",
+  "worldsNavigateResource": "Resources",
+  "worldsNavigateResourceValue": "Marked count: {count}",
+  "worldsNavigateResourceEdit": "Mark resources",
+  "worldsNavigateResourceEditExit": "Exit mark",
+  "worldsNavigateResourceClear": "Clear",
+  "worldsNavigateExit": "Navigate to exit"
 }

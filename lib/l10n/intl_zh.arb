@@ -75,5 +75,19 @@
 
   "worldsShowMap": "地图展示",
   "worldsFullscreen": "全屏模式",
-  "worldsFullscreenExit": "退出全屏"
+  "worldsFullscreenExit": "退出全屏",
+  "worldsNavigateMode": "导航模式",
+  "worldsNavigateSetting": "导航设置",
+  "worldsNavigateEditing": "编辑中",
+  "worldsNavigateReset": "重置",
+  "worldsNavigateStartNode": "起点",
+  "worldsNavigateStartNodeValue": "当前：{layer} ({x}, {y})",
+  "worldsNavigateStartNodeEdit": "选择起点",
+  "worldsNavigateStartNodeEditExit": "退出选择",
+  "worldsNavigateResource": "资源点",
+  "worldsNavigateResourceValue": "已选 {count} 个",
+  "worldsNavigateResourceEdit": "标记资源点",
+  "worldsNavigateResourceEditExit": "退出标记",
+  "worldsNavigateResourceClear": "清空",
+  "worldsNavigateExit": "导航至出口结束"
 }

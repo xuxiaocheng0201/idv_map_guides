@@ -164,7 +164,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                       Navigator.pushNamed(
                         context,
                         Routes.worlds,
-                        arguments: WorldListPageArguments(manager: manager, worlds: worlds),
+                        arguments: WorldListPageArguments(manager: manager, worlds: worlds, entrance: entrance),
                       );
                     },
                     child: CustomPaint(

@@ -1,3 +1,3 @@
 # idv_map_guides
 
-IdentityV AddedPagesNotes maps.
+IdentityV Cryptic Notes maps.

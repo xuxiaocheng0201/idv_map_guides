@@ -362,7 +362,9 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               const VerticalDivider(width: 1),
               SizedBox(
                 width: 240,
-                child: _buildCellProperties(context, structure),
+                child: SingleChildScrollView(
+                  child: _buildCellProperties(context, structure),
+                ),
               ),
             ],
           ),

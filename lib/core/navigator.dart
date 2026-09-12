@@ -12,7 +12,7 @@ abstract class Node with _$Node {
   factory Node(GroundLayer layer, int x, int y) = _Node;
 }
 
-List<Node> navigate(World world, Node start, Set<int> resources) {
+List<Node> navigate(World world, Node start, Set<int> resources, bool exit) {
   // Collect node list.
   final nodes = <Node>[];
   final nodeToIndex = <Node, int>{};
@@ -174,10 +174,12 @@ List<Node> navigate(World world, Node start, Set<int> resources) {
     visitedResources.add(cell.structureId!);
   }
   // access exit.
-  final exitResult = bfsToNearest(currentIndex, exitIndices);
-  if (exitResult == null) return [];
-  final (_, exitPath) = exitResult;
-  pathIndices.addAll(exitPath.skip(1));
+  if (exit) {
+    final exitResult = bfsToNearest(currentIndex, exitIndices);
+    if (exitResult == null) return [];
+    final (_, exitPath) = exitResult;
+    pathIndices.addAll(exitPath.skip(1));
+  }
 
   // Return path.
   return pathIndices.map((i) => nodes[i]).toList();
