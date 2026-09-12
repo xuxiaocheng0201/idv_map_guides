@@ -50,7 +50,7 @@ class EditorStructurePainter extends CustomPainter {
     for (final entry in structure.cells.entries) {
       final (position, info) = (entry.key, entry.value);
       final rect = Rect.fromLTWH(position.x * cellSize, (height - position.y - 1) * cellSize, cellSize, cellSize);
-      drawCell(canvas, rect, structure.isCorridor, cellSize, false);
+      drawCell(canvas, rect, structure.isCorridor, cellSize, false, false);
       if (info.isStair != null) {
         drawStair(canvas, rect, info.isStair!, cellSize);
       }

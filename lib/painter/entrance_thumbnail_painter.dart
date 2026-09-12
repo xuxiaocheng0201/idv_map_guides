@@ -68,7 +68,7 @@ class EntranceThumbnailPainter extends CustomPainter {
           cellSize,
         );
 
-        drawCell(canvas, rect, cell.isCorridor, cellSize, false);
+        drawCell(canvas, rect, cell.isCorridor, cellSize, false, false);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }

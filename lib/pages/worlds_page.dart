@@ -466,6 +466,7 @@ class _WorldLayerPaint extends StatelessWidget {
               builder: (context, constraints) {
                 final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
                 painter.path = path;
+                painter.resources = resources;
                 final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
                 final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
                 return GestureDetector(

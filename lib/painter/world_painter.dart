@@ -11,22 +11,29 @@ const corridorColor = Color(0xFF666666);
 const roomColor = Color(0xFF665544);
 const wallColor = Color(0xFF778899);
 const doorColor = Color(0xFFFFDD33);
-const holeColor = Color(0xFFFF6F61);
+const holeColor = Color(0xFFFF6666);
 const stairColor = Color(0xFFBCBCFF);
 const stairGridColor = Color(0xFFBDBDBD);
 const entranceColor = Color(0xFF00CC55);
 const suspiciousColor = Color(0xFFFF0066);
-const pathColor = Color(0xFF00E5FF);
+const resourceColor = Color(0xFFFF9900);
+const pathColor = Color(0xFF00EEFF);
+const pathStartColor = Color(0xFF00DD77);
+const pathEndColor = Color(0xFFFF3399);
+const pathMarkerColor = Color(0xFFFFFFFF);
 
 void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
   canvas.drawRect(rect, Paint()..color = backgroundColor);
 }
 
-void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious) {
+void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious, bool isResource) {
   var color = isCorridor ? corridorColor : roomColor;
   if (kDebugMode && isSuspicious) {
     color = Color.alphaBlend(suspiciousColor.withValues(alpha: 0.2), color);
+  }
+  if (isResource) {
+    color = Color.alphaBlend(resourceColor.withValues(alpha: 0.2), color);
   }
   canvas.drawRect(rect, Paint()..color = color);
 }
@@ -187,9 +194,45 @@ void drawEntrance(Canvas canvas, Rect rect, double cellSize) {
   canvas.drawCircle(center, radius, paint);
 }
 
+void _drawPathStart(Canvas canvas, Offset center, double cellSize) {
+  final radius = cellSize * 0.26;
+  final fillPaint = Paint()
+    ..color = pathStartColor
+    ..style = PaintingStyle.fill;
+  final borderPaint = Paint()
+    ..color = pathMarkerColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = cellSize * 0.05;
+  final innerPaint = Paint()
+    ..color = pathMarkerColor
+    ..style = PaintingStyle.fill;
+  canvas.drawCircle(center, radius, fillPaint);
+  canvas.drawCircle(center, radius, borderPaint);
+  canvas.drawCircle(center, radius * 0.36, innerPaint);
+}
+
+void _drawPathEnd(Canvas canvas, Offset center, double cellSize) {
+  final radius = cellSize * 0.26;
+  final fillPaint = Paint()
+    ..color = pathEndColor
+    ..style = PaintingStyle.fill;
+  final borderPaint = Paint()
+    ..color = pathMarkerColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = cellSize * 0.05;
+  final innerPaint = Paint()
+    ..color = pathMarkerColor
+    ..style = PaintingStyle.fill;
+  canvas.drawCircle(center, radius, fillPaint);
+  canvas.drawCircle(center, radius, borderPaint);
+  final side = radius * 0.8;
+  canvas.drawRect(Rect.fromCenter(center: center, width: side, height: side), innerPaint);
+}
+
 class WorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
+  Set<int> resources = const <int>{};
   List<Node> path = [];
 
   final int minX;
@@ -250,7 +293,14 @@ class WorldPainter extends CustomPainter {
         final cell = world.cell(layer, x, y);
         if (cell == null || cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - minX) * cellSize, (maxY - y) * cellSize, cellSize, cellSize);
-        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId));
+        drawCell(
+          canvas,
+          rect,
+          cell.isCorridor,
+          cellSize,
+          world.suspiciousStructures.contains(cell.structureId),
+          resources.contains(cell.structureId),
+        );
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
@@ -293,57 +343,107 @@ class WorldPainter extends CustomPainter {
       drawEntrance(canvas, rect, cellSize);
     }
 
-    if (path.isNotEmpty) {
-      final linePaint = Paint()
-        ..color = pathColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = cellSize * 0.12
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-      final arrowPaint = Paint()
-        ..color = pathColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = cellSize * 0.06
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-      final laneOffset = cellSize * 0.12;
-      final arrowSize = cellSize * 0.18;
+    _paintPath(canvas, cellSize);
+  }
 
-      Node? prevNode;
-      for (final node in path) {
-        final bool nodeOnThisLayer = node.layer == layer;
-        final bool isCrossLayerEntry = !nodeOnThisLayer &&
-            prevNode != null &&
-            prevNode.layer != node.layer &&
-            (node.x != prevNode.x || node.y != prevNode.y);
-        if (!nodeOnThisLayer && !isCrossLayerEntry) {
-          prevNode = null;
-          continue;
+  void _paintPath(Canvas canvas, double cellSize) {
+    if (path.isEmpty) return;
+    final laneOffset = cellSize * 0.12;
+    final arrowSize = cellSize * 0.18;
+    final linePaint = Paint()
+      ..color = pathColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * 0.12
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final arrowPaint = Paint()
+      ..color = pathColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cellSize * 0.06
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final polylines = <List<Offset>>[];
+    List<Offset>? current;
+    Node? prevNode;
+    for (final node in path) {
+      final bool nodeOnThisLayer = node.layer == layer;
+      final bool isCrossLayerEntry = prevNode != null &&
+          prevNode.layer == layer && !nodeOnThisLayer &&
+          (node.x != prevNode.x || node.y != prevNode.y);
+      if (!nodeOnThisLayer && !isCrossLayerEntry) {
+        if (current != null && current.length > 1) {
+          polylines.add(current);
         }
-        if (prevNode != null) {
-          final center = Offset((node.x - minX + 0.5) * cellSize, (maxY - node.y + 0.5) * cellSize);
-          final prevCenter = Offset((prevNode.x - minX + 0.5) * cellSize, (maxY - prevNode.y + 0.5) * cellSize);
-          final v = center - prevCenter;
-          final len = v.distance;
-
-          if (len > 0.01) {
-            final u = v / len;
-            final n = Offset(-u.dy, u.dx);
-            final a = prevCenter + n * laneOffset;
-            final b = center + n * laneOffset;
-            canvas.drawLine(a, b, linePaint);
-
-            final mid = Offset.lerp(a, b, 0.5)!;
-            final tip = mid + u * (arrowSize * 0.5);
-            final back = tip - u * arrowSize;
-            final left = back + n * (arrowSize * 0.6);
-            final right = back - n * (arrowSize * 0.6);
-            canvas.drawLine(tip, left, arrowPaint);
-            canvas.drawLine(tip, right, arrowPaint);
-          }
-        }
-        prevNode = node;
+        current = null;
+        prevNode = null;
+        continue;
       }
+      final center = Offset((node.x - minX + 0.5) * cellSize, (maxY - node.y + 0.5) * cellSize);
+      if (current == null) {
+        current = <Offset>[center];
+      } else {
+        current.add(center);
+      }
+      prevNode = node;
+    }
+    if (current != null && current.length > 1) polylines.add(current);
+    if (polylines.isEmpty) return;
+
+    final shiftedPolylines = <List<Offset>>[];
+    for (final points in polylines) {
+      Offset unitNormal(Offset a, Offset b) {
+        final v = b - a;
+        final len = v.distance;
+        return Offset(-v.dy / len, v.dx / len);
+      }
+      final shifted = <Offset>[];
+      for (int i = 0; i < points.length; i++) {
+        final Offset normal;
+        if (i == 0) {
+          normal = unitNormal(points[i], points[i + 1]);
+        } else if (i == points.length - 1) {
+          normal = unitNormal(points[i - 1], points[i]);
+        } else {
+          final n1 = unitNormal(points[i - 1], points[i]);
+          final n2 = unitNormal(points[i], points[i + 1]);
+          final sum = n1 + n2;
+          final len = sum.distance;
+          normal = len < 1e-3 ? n1 : sum / len;
+        }
+        shifted.add(points[i] + normal * laneOffset);
+      }
+      shiftedPolylines.add(shifted);
+    }
+
+    for (final points in shiftedPolylines) {
+      final route = Path()..moveTo(points.first.dx, points.first.dy);
+      for (int i = 1; i < points.length; i++) {
+        route.lineTo(points[i].dx, points[i].dy);
+      }
+      canvas.drawPath(route, linePaint);
+
+      for (int i = 0; i < points.length - 1; i++) {
+        final a = points[i];
+        final b = points[i + 1];
+        final v = b - a;
+        final len = v.distance;
+
+        final u = v / len;
+        final n = Offset(-u.dy, u.dx);
+        final mid = Offset.lerp(a, b, 0.5)!;
+        final tip = mid + u * (arrowSize * 0.5);
+        final back = tip - u * arrowSize;
+        canvas.drawLine(tip, back + n * (arrowSize * 0.6), arrowPaint);
+        canvas.drawLine(tip, back - n * (arrowSize * 0.6), arrowPaint);
+      }
+    }
+
+    if (path.first.layer == layer) {
+      _drawPathStart(canvas, shiftedPolylines.first.first, cellSize);
+    }
+    if (path.last.layer == layer) {
+      _drawPathEnd(canvas, shiftedPolylines.last.last, cellSize);
     }
   }
 
@@ -355,6 +455,7 @@ class WorldPainter extends CustomPainter {
         oldDelegate.maxX != maxX ||
         oldDelegate.minY != minY ||
         oldDelegate.maxY != maxY ||
-        listEquals(oldDelegate.path, path);
+        !setEquals(oldDelegate.resources, resources) ||
+        !listEquals(oldDelegate.path, path);
   }
 }

@@ -53,7 +53,7 @@ class EditorWorldPainter extends CustomPainter {
         final cell = world.cell(layer, x, y);
         if (cell == null || cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
-        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId));
+        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId), false);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
