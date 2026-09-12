@@ -329,8 +329,13 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             width: 300,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: SingleChildScrollView(
-                child: _isEditingEntrances ? _buildEntranceProperties(context) : _buildInstanceProperties(context),
+              child: LayoutBuilder(
+                builder: (context, constraints) => ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: SingleChildScrollView(
+                    child: _isEditingEntrances ? _buildEntranceProperties(context) : _buildInstanceProperties(context),
+                  ),
+                ),
               ),
             ),
           ),
@@ -564,25 +569,22 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final instance = _registry.worldFile.instances[index];
     return Column(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              Text(
-                '结构实例 #${index + 1} ${instance.typeName}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: '删除此结构实例',
-                onPressed: () {
-                  _registry.removeInstance(index, setState);
-                  _registry.buildWorld(setState);
-                  setState(() => _selectedInstanceIndex = null);
-                },
-              ),
-            ],
-          ),
+        Row(
+          children: [
+            Text(
+              '结构实例 #${index + 1} ${instance.typeName}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: '删除此结构实例',
+              onPressed: () {
+                _registry.removeInstance(index, setState);
+                _registry.buildWorld(setState);
+                setState(() => _selectedInstanceIndex = null);
+              },
+            ),
+          ],
         ),
         const Divider(),
         DropdownButtonFormField<String>(
@@ -691,13 +693,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         if (_registry.errorsByInstanceIndex.containsKey(index)) ...[
           const Divider(),
           const Text('该实例存在错误：', style: TextStyle(color: Colors.red)),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: _registry.errorsByInstanceIndex[index]!.errors.map((e) => Text('• $e')).toList(),
-              ),
-            ),
-          ),
+          ..._registry.errorsByInstanceIndex[index]!.errors.map((e) => Text('• $e')),
         ],
       ],
     );
