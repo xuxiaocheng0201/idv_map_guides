@@ -45,6 +45,7 @@ class _WorldListPageState extends State<WorldListPage> {
   List<GroundLayer> _currentLayers = const [];
 
   bool _navigateMode = true;
+  bool _showNavigateProperties = true;
   _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
   final Map<dynamic, Node> _navigateStart = <dynamic, Node>{};
   final Map<dynamic, Set<int>> _navigateResource = <dynamic, Set<int>>{};
@@ -92,6 +93,10 @@ class _WorldListPageState extends State<WorldListPage> {
                 onChanged: (value) => setState(() => _navigateMode = value!),
                 child: Text(S.of(context).worldsNavigateMode),
               ),
+            ),
+            IconButton(
+              onPressed: _navigateMode ? () => setState(() => _showNavigateProperties = !_showNavigateProperties) : null,
+              icon: Icon(_showNavigateProperties ? Icons.settings : Icons.settings_outlined),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -222,7 +227,7 @@ class _WorldListPageState extends State<WorldListPage> {
                       },
                     ),
                 ),
-                if (_navigateMode)
+                if (_navigateMode && _showNavigateProperties)
                   SizedBox(
                     width: 300,
                     child: Padding(
