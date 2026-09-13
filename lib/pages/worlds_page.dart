@@ -141,7 +141,7 @@ class _WorldListPageState extends State<WorldListPage> {
             final layer = layers[_currentLayerIndex];
             final startNode = _navigateMode ? _navigateStart.update(_currentWorld, (n) => n, ifAbsent: () {
               final entrancePos = world.entrances[entrance]!;
-              return Node(layer, entrancePos.x, entrancePos.y);
+              return Node(entrance.layer(), entrancePos.x, entrancePos.y);
             }) : null;
             final resources = _navigateMode? _navigateResource.update(_currentWorld, (r) => r, ifAbsent: () => Set.of(world.resources)) : <int>{};
             final exit = _navigateMode ? _navigateExit : false;
