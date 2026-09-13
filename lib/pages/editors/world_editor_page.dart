@@ -395,68 +395,71 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final currentLayerInWorld = _registry.worldFile.layers.contains(_currentLayer);
     return Column(
       children: [
-        Row(
-          children: [
-            currentLayerInWorld ? IconButton(
-              icon: const Icon(Icons.remove),
-              onPressed: () {
-                setState(() => _registry.worldFile.layers.remove(_currentLayer));
-                _registry.buildWorld(setState);
-              },
-            ) : IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () {
-                setState(() => _registry.worldFile.layers.add(_currentLayer));
-                _registry.buildWorld(setState);
-              },
-            ),
-            for (final layer in GroundLayer.values)
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: ChoiceChip(
-                  label: Text(layer.label(context)),
-                  selected: _currentLayer == layer,
-                  onSelected: (selected) => setState(() => _currentLayer = layer),
-                  backgroundColor: _registry.worldFile.layers.contains(layer) ? null : Colors.grey.withValues(alpha: 0.3),
-                ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              currentLayerInWorld ? IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: () {
+                  setState(() => _registry.worldFile.layers.remove(_currentLayer));
+                  _registry.buildWorld(setState);
+                },
+              ) : IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  setState(() => _registry.worldFile.layers.add(_currentLayer));
+                  _registry.buildWorld(setState);
+                },
               ),
-            const SizedBox(width: 16),
-            ValueEditor(
-              label: 'X',
-              value: _registry.worldFile.minX,
-              onSet: (newMinX) {
-                setState(() => _registry.worldFile.minX = newMinX);
-                _registry.buildWorld(setState);
-              },
-            ),
-            const SizedBox(width: 16),
-            ValueEditor(
-              label: '～',
-              value: _registry.worldFile.maxX,
-              onSet: (newMaxX) {
-                setState(() => _registry.worldFile.maxX = newMaxX);
-                _registry.buildWorld(setState);
-              },
-            ),
-            const SizedBox(width: 16),
-            ValueEditor(
-              label: 'Y',
-              value: _registry.worldFile.minY,
-              onSet: (newMinY) {
-                setState(() => _registry.worldFile.minY = newMinY);
-                _registry.buildWorld(setState);
-              },
-            ),
-            const SizedBox(width: 16),
-            ValueEditor(
-              label: '～',
-              value: _registry.worldFile.maxY,
-              onSet: (newMaxY) {
-                setState(() => _registry.worldFile.maxY = newMaxY);
-                _registry.buildWorld(setState);
-              },
-            ),
-          ],
+              for (final layer in GroundLayer.values)
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: ChoiceChip(
+                    label: Text(layer.label(context)),
+                    selected: _currentLayer == layer,
+                    onSelected: (selected) => setState(() => _currentLayer = layer),
+                    backgroundColor: _registry.worldFile.layers.contains(layer) ? null : Colors.grey.withValues(alpha: 0.3),
+                  ),
+                ),
+              const SizedBox(width: 16),
+              ValueEditor(
+                label: 'X',
+                value: _registry.worldFile.minX,
+                onSet: (newMinX) {
+                  setState(() => _registry.worldFile.minX = newMinX);
+                  _registry.buildWorld(setState);
+                },
+              ),
+              const SizedBox(width: 16),
+              ValueEditor(
+                label: '～',
+                value: _registry.worldFile.maxX,
+                onSet: (newMaxX) {
+                  setState(() => _registry.worldFile.maxX = newMaxX);
+                  _registry.buildWorld(setState);
+                },
+              ),
+              const SizedBox(width: 16),
+              ValueEditor(
+                label: 'Y',
+                value: _registry.worldFile.minY,
+                onSet: (newMinY) {
+                  setState(() => _registry.worldFile.minY = newMinY);
+                  _registry.buildWorld(setState);
+                },
+              ),
+              const SizedBox(width: 16),
+              ValueEditor(
+                label: '～',
+                value: _registry.worldFile.maxY,
+                onSet: (newMaxY) {
+                  setState(() => _registry.worldFile.maxY = newMaxY);
+                  _registry.buildWorld(setState);
+                },
+              ),
+            ],
+          ),
         ),
         Expanded(
           child: currentLayerInWorld ? Padding(
@@ -569,22 +572,25 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final instance = _registry.worldFile.instances[index];
     return Column(
       children: [
-        Row(
-          children: [
-            Text(
-              '结构实例 #${index + 1} ${instance.typeName}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: '删除此结构实例',
-              onPressed: () {
-                _registry.removeInstance(index, setState);
-                _registry.buildWorld(setState);
-                setState(() => _selectedInstanceIndex = null);
-              },
-            ),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Text(
+                '结构实例 #${index + 1} ${instance.typeName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: '删除此结构实例',
+                onPressed: () {
+                  _registry.removeInstance(index, setState);
+                  _registry.buildWorld(setState);
+                  setState(() => _selectedInstanceIndex = null);
+                },
+              ),
+            ],
+          ),
         ),
         const Divider(),
         DropdownButtonFormField<String>(
