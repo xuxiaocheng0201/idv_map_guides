@@ -780,6 +780,7 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                       size: paintSize,
                       painter: EditorStructurePainter(
                         structure: Structure(
+                          name: corridorTypeName,
                           isCorridor: true,
                           isResource: false,
                           isNoDirection: true,

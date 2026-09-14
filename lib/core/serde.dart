@@ -126,7 +126,7 @@ extension _CellInfoSerde on CellInfo {
 }
 
 extension _StructureSerde on Structure {
-  static Structure unpack(Unpacker unpacker) {
+  static Structure unpack(Unpacker unpacker, String name) {
     final len = unpacker.unpackListLength();
     if (len != 4) throw FormatException();
     final isCorridor = unpacker.unpackBool();
@@ -141,6 +141,7 @@ extension _StructureSerde on Structure {
       cells[key] = value;
     }
     return Structure(
+      name: name,
       isCorridor: isCorridor,
       isResource: isResource,
       isNoDirection: isNoDirection,
@@ -179,7 +180,7 @@ Map<String, Structure> deserializeStructures(Uint8List content) {
   for (int i = 0; i < mapLen; i++) {
     final key = unpacker.unpackString();
     if (key == null) throw FormatException();
-    final value = _StructureSerde.unpack(unpacker);
+    final value = _StructureSerde.unpack(unpacker, key);
     structures[key] = value;
   }
   return structures;

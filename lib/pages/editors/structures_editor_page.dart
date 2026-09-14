@@ -53,6 +53,7 @@ class _StructuresRegistry {
     newNames.sort();
     final index = newNames.indexOf(name);
     final structure = Structure(
+      name: name,
       isCorridor: false,
       isResource: false,
       isNoDirection: false,
@@ -76,7 +77,8 @@ class _StructuresRegistry {
     setState(() {
       names = newNames;
       final structure = structures.remove(name)!;
-      structures[newName] = structure;
+      final newStructure = structure.copyWith(name: newName);
+      structures[newName] = newStructure;
       final canva = canvas[name]!;
       canvas[newName] = canva;
     });

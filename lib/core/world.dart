@@ -9,6 +9,7 @@ abstract class Cell with _$Cell {
   Cell._();
   factory Cell({
     int? structureId,
+    String? structureTypeName,
     @Default(false) bool isCorridor,
     @Default(CellInfo(
       isStair: null,
@@ -144,6 +145,7 @@ class World {
       final worldPosition = position.toWorld(rotation, originX, originY);
       final existing = cell(layer, worldPosition.x, worldPosition.y)!;
       existing.structureId = structureId;
+      existing.structureTypeName = structure.name;
       existing.isCorridor = structure.isCorridor;
       existing.info = info.rotation(rotation);
     }
@@ -178,7 +180,7 @@ class World {
                 final oppositeDoor = worldEdge.opposite();
                 final oppositeCell = cell(layer, oppositeDoor.position.x, oppositeDoor.position.y);
                 if (oppositeCell == null || oppositeCell.structureId == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
-                  if (c.isCorridor) {
+                  if (c.structureTypeName == corridorTypeName) {
                     errors.push(WorldError.doorMismatch(layer: layer, worldDoor: worldEdge));
                   } else {
                     if (replaceStructureMismatchedDoor) {
@@ -255,6 +257,7 @@ Structure resolveStructure(StructureInstance instance, Map<String, Structure> st
       throw WorldError.corridorMissingCells();
     }
     return Structure(
+      name: corridorTypeName,
       isCorridor: true,
       isResource: false,
       isNoDirection: true,

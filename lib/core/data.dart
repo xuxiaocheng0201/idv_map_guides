@@ -188,6 +188,7 @@ abstract class CellInfo with _$CellInfo {
 abstract class Structure with _$Structure {
   Structure._();
   factory Structure({
+    required String name,
     required bool isCorridor,
     required bool isResource,
     required bool isNoDirection,
