@@ -151,3 +151,77 @@ class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoom
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
 }
+
+enum TheBringerOfDoomInsaneWorlds {
+  northB,
+  northZ1,
+  northCactus,
+  northLoop,
+  northStair,
+  southThreeRed,
+  southH,
+  southFloating,
+  eastC,
+  east1Lightning,
+  eastCactus,
+  eastBreakC,
+  eastShortT,
+  eastLongZ,
+  westFlipT,
+  west1BookGallery,
+  west1Library,
+  westVerticalL;
+
+  String get _assets => switch (this) {
+    northB => 'north_b',
+    northZ1 => 'north_z_1',
+    northCactus => 'north_cactus',
+    northLoop => 'north_loop',
+    northStair => 'north_stair',
+    southThreeRed => 'south_three_red',
+    southH => 'south_h',
+    southFloating => 'south_floating',
+    eastC => 'east_c',
+    east1Lightning => 'east_1_lightning',
+    eastCactus => 'east_cactus',
+    eastBreakC => 'east_break_c',
+    eastShortT => 'east_short_t',
+    eastLongZ => 'east_long_z',
+    westFlipT => 'west_flip_t',
+    west1BookGallery => 'west1_book_gallery',
+    west1Library => 'west_1_library',
+    westVerticalL => 'west_vertical_l',
+  };
+  String label(BuildContext context) {
+    return switch (this) {
+      northB => S.of(context).worldTheBringerOfDoomInsaneNorthB,
+      northZ1 => S.of(context).worldTheBringerOfDoomInsaneNorthZ1,
+      northCactus => S.of(context).worldTheBringerOfDoomInsaneNorthCactus,
+      northLoop => S.of(context).worldTheBringerOfDoomInsaneNorthLoop,
+      northStair => S.of(context).worldTheBringerOfDoomInsaneNorthStair,
+      southThreeRed => S.of(context).worldTheBringerOfDoomInsaneSouthThreeRed,
+      southH => S.of(context).worldTheBringerOfDoomInsaneSouthH,
+      southFloating => S.of(context).worldTheBringerOfDoomInsaneSouthFloating,
+      eastC => S.of(context).worldTheBringerOfDoomInsaneEastC,
+      east1Lightning => S.of(context).worldTheBringerOfDoomInsaneEast1Lightning,
+      eastCactus => S.of(context).worldTheBringerOfDoomInsaneEastCactus,
+      eastBreakC => S.of(context).worldTheBringerOfDoomInsaneEastBreakC,
+      eastShortT => S.of(context).worldTheBringerOfDoomInsaneEastShortT,
+      eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
+      westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
+      west1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1BookGallery,
+      west1Library => S.of(context).worldTheBringerOfDoomInsaneWest1Library,
+      westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
+    };
+  }
+}
+
+class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDoomInsaneWorlds> {
+  @override WorldType get type => WorldType.theBringerOfDoom;
+  @override WorldDifficulty get difficulty => WorldDifficulty.insane;
+  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => TheBringerOfDoomInsaneWorlds.values;
+  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
+  @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
+  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
+  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+}

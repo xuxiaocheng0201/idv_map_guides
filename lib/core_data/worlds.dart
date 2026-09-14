@@ -85,6 +85,7 @@ class WorldsManager<W extends Enum> {
 }
 
 final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
+final _theBringerOfDoomInsane = WorldsManager(provider: TheBringerOfDoomInsaneWorldsProvider());
 
 WorldsManager<dynamic>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
   return switch (type) {
@@ -93,7 +94,7 @@ WorldsManager<dynamic>? getWorldsManager(WorldType type, WorldDifficulty difficu
       WorldDifficulty.easy => null,
       WorldDifficulty.normal => null,
       WorldDifficulty.hard => _theBringerOfDoomHard,
-      WorldDifficulty.insane => null,
+      WorldDifficulty.insane => _theBringerOfDoomInsane,
     },
   }?.._preload();
 }

@@ -35,6 +35,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/maps/the_bringer_of_doom/hard/
+    - assets/maps/the_bringer_of_doom/insane/
 
 flutter_intl:
   enabled: true
