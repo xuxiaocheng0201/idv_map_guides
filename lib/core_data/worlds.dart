@@ -1,6 +1,7 @@
 import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
@@ -14,6 +15,7 @@ abstract class WorldsProvider<W> {
   String worldAssets(W world);
   MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
   SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
+  List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance);
 }
 
 class WorldsManager<W extends Enum> {

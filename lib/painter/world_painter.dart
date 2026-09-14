@@ -329,7 +329,7 @@ class WorldPainter extends CustomPainter {
 
     for (final entry in world.entrances.entries) {
       final entranceLayer = entry.key.layer();
-      if (entranceLayer != layer) continue;
+      if (entranceLayer != layer || !entry.key.displayable) continue;
       final entrance = entry.value;
       if (entrance.x < minX || entrance.x > maxX || entrance.y < minY || entrance.y > maxY) {
         continue;

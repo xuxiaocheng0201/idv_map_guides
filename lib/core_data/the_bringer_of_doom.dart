@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
@@ -43,6 +44,13 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
     Direction.south => SideEntranceFeature.north,
     Direction.west => SideEntranceFeature.east,
   };
+}
+
+List<(Node, Set<int>, bool)> _navigateStages(World world, EntranceType entrance) {
+  final entrancePos = world.entrances[entrance]!;
+  final startNode = Node(entrance.layer(), entrancePos.x, entrancePos.y);
+  final resources = Set.of(world.resources);
+  return [(startNode, resources, true)];
 }
 
 enum TheBringerOfDoomHardWorlds {
@@ -150,6 +158,7 @@ class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoom
   @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+  @override List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance) => _navigateStages(world, entrance);
 }
 
 enum TheBringerOfDoomInsaneWorlds {
@@ -224,4 +233,18 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+  @override
+  List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance) {
+    final entrancePos = world.entrances[entrance]!;
+    final startNode = Node(entrance.layer(), entrancePos.x, entrancePos.y);
+    final museRoomId = world.rooms['muse_room']!.firstOrNull!;
+    final altarId = world.rooms['altar']!.firstOrNull!;
+    final altarPos = world.entrances[EntranceType.alterBasement]!;
+    final alterNode = Node(EntranceType.alterBasement.layer(), altarPos.x, altarPos.y);
+    final otherResources = Set.of(world.resources)..remove(museRoomId)..remove(altarId);
+    return [
+      (startNode, <int>{museRoomId}, false),
+      (alterNode, otherResources, true),
+    ];
+  }
 }

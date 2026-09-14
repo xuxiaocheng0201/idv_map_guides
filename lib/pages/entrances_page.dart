@@ -47,6 +47,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
 
   Future<void> _loadAllData() async {
     for (final entrance in manager.provider.validEntrances) {
+      assert(entrance.displayable);
       final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>();
       for (final worldType in manager.provider.allWorlds) {
         final world = await manager.getWorld(worldType);
@@ -56,6 +57,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           EntranceType.main => EntranceFeature.main(feature: manager.provider.inferMainEntranceFeature(world, entrance)),
           EntranceType.sideGround => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
           EntranceType.sideSecond => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
+          EntranceType.alterBasement => throw UnsupportedError('alter basement is not displayable'),
         };
         featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<dynamic>>(
           equals: (a, b) => const ListEquality<bool>().equals(a, b),

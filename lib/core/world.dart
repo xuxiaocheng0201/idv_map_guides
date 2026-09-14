@@ -24,15 +24,21 @@ abstract class Cell with _$Cell {
 enum EntranceType {
   main,
   sideGround,
-  sideSecond;
+  sideSecond,
+  alterBasement;
 
-  GroundLayer layer() {
-    return switch (this) {
-      EntranceType.main => GroundLayer.ground,
-      EntranceType.sideGround => GroundLayer.ground,
-      EntranceType.sideSecond => GroundLayer.second,
-    };
-  }
+  bool get displayable => switch (this) {
+    EntranceType.main => true,
+    EntranceType.sideGround => true,
+    EntranceType.sideSecond => true,
+    EntranceType.alterBasement => false,
+  };
+  GroundLayer layer() => switch (this) {
+    EntranceType.main => GroundLayer.ground,
+    EntranceType.sideGround => GroundLayer.ground,
+    EntranceType.sideSecond => GroundLayer.second,
+    EntranceType.alterBasement => GroundLayer.basement,
+  };
 }
 
 class World {
@@ -42,6 +48,7 @@ class World {
   int _nextStructureId;
   Set<int> suspiciousStructures = <int>{};
   Set<int> resources = <int>{};
+  Map<String, Set<int>> rooms = <String, Set<int>>{};
 
   World({
     required Set<GroundLayer> layers,
@@ -150,6 +157,7 @@ class World {
       existing.info = info.rotation(rotation);
     }
     if (structure.isResource) resources.add(structureId);
+    if (!structure.isCorridor) rooms.putIfAbsent(structure.name, () => <int>{}).add(structureId);
     return structureId;
   }
 

@@ -62,6 +62,7 @@ extension EntranceTypeL10n on EntranceType {
       EntranceType.main => S.of(context).entranceTypeMain,
       EntranceType.sideGround => S.of(context).entranceTypeSideGround,
       EntranceType.sideSecond => S.of(context).entranceTypeSideSecond,
+      EntranceType.alterBasement => '地下室祭坛',
     };
   }
 }

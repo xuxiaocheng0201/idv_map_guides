@@ -241,6 +241,7 @@ extension _EntranceTypeSerde on EntranceType {
       0 => EntranceType.main,
       1 => EntranceType.sideGround,
       2 => EntranceType.sideSecond,
+      3 => EntranceType.alterBasement,
       _ => throw FormatException(),
     };
   }
@@ -249,6 +250,7 @@ extension _EntranceTypeSerde on EntranceType {
       EntranceType.main => 0,
       EntranceType.sideGround => 1,
       EntranceType.sideSecond => 2,
+      EntranceType.alterBasement => 3,
     });
   }
 }
