@@ -199,7 +199,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       return ListTile(
                         selected: index == _selectedIndex,
                         title: Text(name),
-                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isNoDirection ? '无向' : '有向'}'),
+                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isResource ? '必刷' : '普通'} | ${structure.isNoDirection ? '无向' : '有向'}'),
                         onTap: () => setState(() {
                           _selectedIndex = index;
                           _selectedCell = null;
