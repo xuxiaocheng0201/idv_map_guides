@@ -89,7 +89,7 @@
   "homeEnter": "Enter",
   "homeNotSupport": "Not support.",
 
-  "entrancesChooseMap": "Choose map",
+  "entrancesChooseMap": "Choose map ({world}-{difficulty})",
 
   "worldsShowMap": "Map",
   "worldsFullscreen": "Fullscreen",

@@ -71,7 +71,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).entrancesChooseMap),
+        title: Text(S.of(context).entrancesChooseMap(manager.provider.type.label(context), manager.provider.difficulty.label(context))),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
