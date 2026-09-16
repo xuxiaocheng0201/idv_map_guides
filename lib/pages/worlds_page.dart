@@ -1,4 +1,3 @@
-import 'dart:isolate';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -47,9 +46,7 @@ class _WorldListPageState extends State<WorldListPage> {
   bool _navigateMode = true;
   bool _showNavigateProperties = true;
   _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
-  final Map<dynamic, Node> _navigateStart = <dynamic, Node>{};
-  final Map<dynamic, Set<int>> _navigateResource = <dynamic, Set<int>>{};
-  bool _navigateExit = true;
+  final Map<dynamic, NavigateArguments> _navigateArguments = <dynamic, NavigateArguments>{};
 
   @override
   void didChangeDependencies() {
@@ -139,103 +136,105 @@ class _WorldListPageState extends State<WorldListPage> {
               _currentLayerIndex = 0;
             }
             final layer = layers[_currentLayerIndex];
-            final startNode = _navigateMode ? _navigateStart.update(_currentWorld, (n) => n, ifAbsent: () {
-              final entrancePos = world.entrances[entrance]!;
-              return Node(entrance.layer(), entrancePos.x, entrancePos.y);
+            final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
+              return manager.provider.navigateArguments(world, entrance);
             }) : null;
-            final resources = _navigateMode? _navigateResource.update(_currentWorld, (r) => r, ifAbsent: () => Set.of(world.resources)) : <int>{};
-            final exit = _navigateMode ? _navigateExit : false;
-            return Row(
-              children: [
-                Expanded(
-                  child: _isFullscreen ?
-                    Column(
-                      children: [
-                        SegmentedButton(
-                          selected: {_currentLayerIndex},
-                          segments: [
-                            for (int i = 0; i < layers.length; i++)
-                              ButtonSegment(
-                                value: i,
-                                label: Text(layers[i].label(context)),
-                              )
-                          ],
-                          emptySelectionAllowed: false,
-                          multiSelectionEnabled: false,
-                          onSelectionChanged: (i) => setState(() {
-                            _currentLayerIndex = i.first;
-                          }),
-                        ),
-                        const SizedBox(height: 4),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: _WorldLayerPaint(
-                              world: world,
-                              layer: layer,
-                              auto: true,
-                              startNode: startNode,
-                              resources: resources,
-                              exit: exit,
-                              onCellTap: _navigateMode
-                                ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
-                                : null,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ) :
-                    OrientationBuilder(
-                      builder: (context, orientation) {
-                        return Flex(
-                          direction: switch (orientation) {
-                            Orientation.portrait => Axis.vertical,
-                            Orientation.landscape => Axis.horizontal,
-                          },
+            return FutureBuilder(
+              initialData: null,
+              future: navigateArguments == null ? null : manager.getNavigateResult(_currentWorld, navigateArguments),
+              builder: (context, asyncSnapshot) {
+                final path = asyncSnapshot.data;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _isFullscreen ?
+                        Column(
                           children: [
-                            for (final layer in layers)
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        layer.label(context),
-                                        style: Theme.of(context).textTheme.titleMedium,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Expanded(
-                                        child: _WorldLayerPaint(
-                                          world: world,
-                                          layer: layer,
-                                          auto: true,
-                                          startNode: startNode,
-                                          resources: resources,
-                                          exit: exit,
-                                          onCellTap: _navigateMode
-                                            ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
-                                            : null,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                            SegmentedButton(
+                              selected: {_currentLayerIndex},
+                              segments: [
+                                for (int i = 0; i < layers.length; i++)
+                                  ButtonSegment(
+                                    value: i,
+                                    label: Text(layers[i].label(context)),
+                                  )
+                              ],
+                              emptySelectionAllowed: false,
+                              multiSelectionEnabled: false,
+                              onSelectionChanged: (i) => setState(() {
+                                _currentLayerIndex = i.first;
+                              }),
+                            ),
+                            const SizedBox(height: 4),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: _WorldLayerPaint(
+                                  world: world,
+                                  layer: layer,
+                                  auto: true,
+                                  arguments: navigateArguments,
+                                  path: path,
+                                  onCellTap: _navigateMode
+                                    ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
+                                    : null,
                                 ),
                               ),
+                            ),
                           ],
-                        );
-                      },
+                        ) :
+                        OrientationBuilder(
+                          builder: (context, orientation) {
+                            return Flex(
+                              direction: switch (orientation) {
+                                Orientation.portrait => Axis.vertical,
+                                Orientation.landscape => Axis.horizontal,
+                              },
+                              children: [
+                                for (final layer in layers)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            layer.label(context),
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Expanded(
+                                            child: _WorldLayerPaint(
+                                              world: world,
+                                              layer: layer,
+                                              auto: true,
+                                              arguments: navigateArguments,
+                                              path: path,
+                                              onCellTap: _navigateMode
+                                                ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
+                                                : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                     ),
-                ),
-                if (_navigateMode && _showNavigateProperties)
-                  SizedBox(
-                    width: 300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: _buildNavigateProperties(context, world, startNode!, resources, exit),
-                    ),
-                  ),
-              ],
+                    if (_navigateMode && _showNavigateProperties)
+                      SizedBox(
+                        width: 300,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: _buildNavigateProperties(context, world, navigateArguments!.start, navigateArguments.resources, navigateArguments.exits.isNotEmpty),
+                        ),
+                      ),
+                  ],
+                );
+              }
             );
           },
         ),
@@ -291,15 +290,16 @@ class _WorldListPageState extends State<WorldListPage> {
       case _NavigateEditMode.none:
         break;
       case _NavigateEditMode.start:
-        setState(() => _navigateStart[_currentWorld] = Node(layer, x, y));
+        setState(() => _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(start: Node(layer, x, y)));
         break;
       case _NavigateEditMode.resource:
         final structureId = cell.structureId!;
-        final resources = _navigateResource[_currentWorld]!;
+        final resources = Set<int>.of(_navigateArguments[_currentWorld]!.resources);
         setState(() {
           if (!resources.remove(structureId)) {
             resources.add(structureId);
           }
+          _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: resources);
         });
         break;
     }
@@ -329,13 +329,8 @@ class _WorldListPageState extends State<WorldListPage> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () {
-                  final entrancePos = world.entrances[entrance];
-                  if (entrancePos == null) return;
-                  setState(() => _navigateStart[_currentWorld] = Node(
-                    entrance.layer(),
-                    entrancePos.x,
-                    entrancePos.y,
-                  ));
+                  final origin = manager.provider.navigateArguments(world, entrance);
+                  setState(() => _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(start: origin.start));
                 },
                 icon: const Icon(Icons.restart_alt),
                 label: Text(S.of(context).worldsNavigateReset),
@@ -384,7 +379,11 @@ class _WorldListPageState extends State<WorldListPage> {
         SwitchListTile(
           title: Text(S.of(context).worldsNavigateExit),
           value: exit,
-          onChanged: (value) => setState(() => _navigateExit = value),
+          onChanged: (value) => setState(() {
+            _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(exits:
+              value ? manager.provider.navigateArguments(world, entrance).exits : <Node>{},
+            );
+          }),
         ),
       ],
     );
@@ -432,65 +431,51 @@ class _WorldLayerPaint extends StatelessWidget {
   final World world;
   final GroundLayer layer;
   final bool auto;
-  final Node? startNode;
-  final Set<int> resources;
-  final bool exit;
+  final NavigateArguments? arguments;
+  final List<Node>? path;
   final void Function(GroundLayer layer, int x, int y)? onCellTap;
 
   const _WorldLayerPaint({
     required this.world,
     required this.layer,
     required this.auto,
-    this.startNode,
-    this.resources = const <int>{},
-    required this.exit,
+    this.arguments,
+    this.path,
     this.onCellTap,
   });
-
-  static Future<List<Node>> _navigateResources(World world, Node start, Set<int> resources, bool exit) async {
-    return await Isolate.run(() {
-      return navigate(world, start, resources, exit);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: backgroundColor,
       child: Center(
-        child: FutureBuilder<List<Node>>(
-          future: Future(() => startNode == null ? <Node>[] : _navigateResources(world, startNode!, resources, exit)),
-          builder: (context, snapshot) {
-            final path = snapshot.data ?? <Node>[];
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
-                painter.path = path;
-                painter.resources = resources;
-                final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
-                final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapUp: onCellTap == null ? null : (details) {
-                    final local = details.localPosition;
-                    final x = painter.minX + (local.dx / cellSize).floor();
-                    final y = painter.maxY - (local.dy / cellSize).floor();
-                    if (x < world.minX || world.maxX < x || y < world.minY || world.maxY < y) {
-                      return;
-                    }
-                    onCellTap!(layer, x, y);
-                  },
-                  child: SizedBox.fromSize(
-                    size: paintSize,
-                    child: CustomPaint(
-                      size: paintSize,
-                      painter: painter,
-                    ),
-                  ),
-                );
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
+            painter.path = path ?? <Node>[];
+            painter.resources = arguments?.resources ?? <int>{};
+            final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
+            final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: onCellTap == null ? null : (details) {
+                final local = details.localPosition;
+                final x = painter.minX + (local.dx / cellSize).floor();
+                final y = painter.maxY - (local.dy / cellSize).floor();
+                if (x < world.minX || world.maxX < x || y < world.minY || world.maxY < y) {
+                  return;
+                }
+                onCellTap!(layer, x, y);
               },
+              child: SizedBox.fromSize(
+                size: paintSize,
+                child: CustomPaint(
+                  size: paintSize,
+                  painter: painter,
+                ),
+              ),
             );
-          }
+          },
         ),
       ),
     );

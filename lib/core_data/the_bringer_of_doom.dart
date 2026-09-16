@@ -46,11 +46,17 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
   };
 }
 
-List<(Node, Set<int>, bool)> _navigateStages(World world, EntranceType entrance) {
+NavigateArguments _navigateArguments(World world, EntranceType entrance) {
   final entrancePos = world.entrances[entrance]!;
   final startNode = Node(entrance.layer(), entrancePos.x, entrancePos.y);
   final resources = Set.of(world.resources);
-  return [(startNode, resources, true)];
+  final exitNodes = <Node>{};
+  for (final entry in world.entrances.entries) {
+    if (!entry.key.displayable) continue;
+    final node = Node(entry.key.layer(), entry.value.x, entry.value.y);
+    exitNodes.add(node);
+  }
+  return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
 }
 
 enum TheBringerOfDoomHardWorlds {
@@ -158,7 +164,7 @@ class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoom
   @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
-  @override List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance) => _navigateStages(world, entrance);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
 
 enum TheBringerOfDoomInsaneWorlds {
@@ -234,17 +240,12 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
   @override
-  List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance) {
-    final entrancePos = world.entrances[entrance]!;
-    final startNode = Node(entrance.layer(), entrancePos.x, entrancePos.y);
+  NavigateArguments navigateArguments(World world, EntranceType entrance) {
+    final origin = _navigateArguments(world, entrance);
     final museRoomId = world.rooms['muse_room']!.firstOrNull!;
-    final altarId = world.rooms['altar']!.firstOrNull!;
     final altarPos = world.entrances[EntranceType.alterBasement]!;
     final alterNode = Node(EntranceType.alterBasement.layer(), altarPos.x, altarPos.y);
-    final otherResources = Set.of(world.resources)..remove(museRoomId)..remove(altarId);
-    return [
-      (startNode, <int>{museRoomId}, false),
-      (alterNode, otherResources, true),
-    ];
+    final keyResource = KeyResource(museRoomId, 1, alterNode);
+    return origin.copyWith(keyResource: keyResource);
   }
 }

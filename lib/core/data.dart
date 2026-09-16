@@ -120,13 +120,11 @@ abstract class Position with _$Position implements Comparable<Position> {
     return result;
   }
 
-  @override
-  int compareTo(Position other) {
-    return compareSequentially([
-      compare<Position>((position) => position.x),
-      compare<Position>((position) => position.y),
-    ])(this, other);
-  }
+  static Comparator<Position> comparator = compareSequentially([
+    compare<Position>((position) => position.x),
+    compare<Position>((position) => position.y),
+  ]);
+  @override int compareTo(Position other) => comparator(this, other);
 }
 
 enum StairTransport {

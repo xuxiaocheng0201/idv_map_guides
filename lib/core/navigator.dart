@@ -1,5 +1,5 @@
-import 'dart:collection';
-
+import 'package:collection/collection.dart';
+import 'package:comparators/comparators.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
@@ -7,13 +7,62 @@ import 'package:idv_map_guides/core/world.dart';
 part 'navigator.freezed.dart';
 
 @freezed
-abstract class Node with _$Node {
+abstract class Node with _$Node implements Comparable<Node> {
   Node._();
   factory Node(GroundLayer layer, int x, int y) = _Node;
+
+  static Comparator<Node> comparator = compareSequentially([
+    compare<Node>((node) => node.layer.index),
+    compare<Node>((node) => node.x),
+    compare<Node>((node) => node.y),
+  ]);
+  @override int compareTo(Node other) => comparator(this, other);
+
+  String get identify => '${layer.index}.$x.$y';
 }
 
-List<Node> navigate(World world, Node start, Set<int> resources, bool exit) {
-  // Collect node list.
+@freezed
+abstract class KeyResource with _$KeyResource {
+  KeyResource._();
+  factory KeyResource(int id, double urgency, Node transport) = _KeyResource;
+}
+
+@freezed
+abstract class NavigateArguments with _$NavigateArguments {
+  NavigateArguments._();
+  factory NavigateArguments({
+    required Node start,
+    required Set<int> resources,
+    @Default(<Node>{}) Set<Node> exits,
+    KeyResource? keyResource,
+  }) = _NavigateArguments;
+
+  String get identify => '${start.identify}'
+      '/${resources.sorted(Comparable.compare).join('.')}'
+      '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(".")}${keyResource == null ? '' : ''
+      '/${keyResource!.id}.${keyResource!.urgency}.${keyResource!.transport.identify}'}';
+}
+
+@freezed
+abstract class _State with _$State {
+  _State._();
+  factory _State(
+      Set<int> collectedIds,
+      int currentIndex,
+      bool canTransport,
+  ) = __State;
+}
+
+List<Node> navigate(World world, NavigateArguments arguments) {
+  final start = arguments.start;
+  final resources = arguments.resources;
+  final exits = arguments.exits;
+  final keyResource = arguments.keyResource;
+
+  final effectiveResources = Set<int>.from(resources);
+  if (keyResource != null) effectiveResources.add(keyResource.id);
+
+  // 1. 构建节点列表与映射
   final nodes = <Node>[];
   final nodeToIndex = <Node, int>{};
   for (final layer in world.map.keys) {
@@ -33,7 +82,7 @@ List<Node> navigate(World world, Node start, Set<int> resources, bool exit) {
   final startIndex = nodeToIndex[start];
   if (startIndex == null) return [];
 
-  // Build directed adjacency list.
+  // 2. 构建有向邻接表
   final adj = List.generate(n, (_) => <int>[]);
   for (var i = 0; i < n; i++) {
     final u = nodes[i];
@@ -106,81 +155,127 @@ List<Node> navigate(World world, Node start, Set<int> resources, bool exit) {
   //   }
   // }
 
-  // Collect resources id.
-  final resourceNodes = <int, Set<int>>{};
-  for (var i = 0; i < n; i++) {
+  // 3. 资源位映射：将需要收集的资源 id 映射到 0..k-1 的位
+  final resourceList = effectiveResources.toList();
+  final resourceToBit = <int, int>{};
+  for (var i = 0; i < resourceList.length; i++) {
+    resourceToBit[resourceList[i]] = i;
+  }
+  final k = resourceList.length;
+  final fullMask = (1 << k) - 1; // 所有资源收集完成的掩码
+
+  // 4. 每个节点对应的资源位（一个节点最多一个资源）
+  final nodeResourceBit = List<int>.generate(n, (i) {
     final node = nodes[i];
     final cell = world.cell(node.layer, node.x, node.y)!;
     final sid = cell.structureId!;
-    if (resources.contains(sid)) {
-      resourceNodes.putIfAbsent(sid, () => <int>{}).add(i);
-    }
-  }
-  // Collect exit id.
+    final bit = resourceToBit[sid];
+    return bit != null ? (1 << bit) : 0;
+  });
+
+  // 5. 出口索引集合
   final exitIndices = <int>{};
-  for (final entry in world.entrances.entries) {
-    final layer = entry.key.layer();
-    final pos = entry.value;
-    final node = Node(layer, pos.x, pos.y);
+  for (final node in exits) {
     final idx = nodeToIndex[node];
     if (idx != null) exitIndices.add(idx);
   }
 
-  // BFS
-  (int, List<int>)? bfsToNearest(int from, Set<int> targets) {
-    if (targets.isEmpty) return null;
-    if (targets.contains(from)) return (from, [from]);
-    final prev = List.filled(n, -1);
-    final queue = Queue<int>()..add(from);
-    prev[from] = from;
-    while (queue.isNotEmpty) {
-      final u = queue.removeFirst();
-      for (final v in adj[u]) {
-        if (prev[v] != -1) continue;
-        prev[v] = u;
-        if (targets.contains(v)) {
-          final path = <int>[v];
-          var x = v;
-          while (x != from) {
-            x = prev[x];
-            path.add(x);
-          }
-          return (v, path.reversed.toList());
-        }
-        queue.addLast(v);
+  // 6. 关键资源相关
+  int? keyResourceBit;
+  double urgency = 0.0;
+  int? transportIndex;
+  if (keyResource != null) {
+    final bit = resourceToBit[keyResource.id];
+    if (bit == null) return []; // 理论上不会发生
+    keyResourceBit = 1 << bit;
+    urgency = keyResource.urgency;
+    transportIndex = nodeToIndex[keyResource.transport];
+    if (transportIndex == null) return [];
+  }
+
+  // 7. 状态编码：stateKey = (mask * n + currentIndex) * 2 + (canTransport ? 1 : 0)
+  int encode(int mask, int index, bool canTransport) {
+    return ((mask * n + index) << 1) | (canTransport ? 1 : 0);
+  }
+
+  // 8. 初始状态
+  final startMask = nodeResourceBit[startIndex];
+  final startKey = encode(startMask, startIndex, false);
+
+  final dist = <int, double>{startKey: 0.0};
+  final prev = <int, int>{};
+
+  final pq = HeapPriorityQueue<(double, int)>(
+        (a, b) => a.$1.compareTo(b.$1),
+  );
+  pq.add((0.0, startKey));
+
+  int? finalStateKey;
+
+  // 9. 状态压缩 Dijkstra
+  while (pq.isNotEmpty) {
+    final (d, stateKey) = pq.removeFirst();
+    if (d > (dist[stateKey] ?? double.infinity)) continue;
+
+    // 解码状态
+    final canTransport = (stateKey & 1) == 1;
+    final temp = stateKey >> 1;
+    final currentIndex = temp % n;
+    final mask = temp ~/ n;
+
+    // 完成条件：收集全部资源，且满足出口要求
+    if (mask == fullMask) {
+      if (exitIndices.isEmpty || exitIndices.contains(currentIndex)) {
+        finalStateKey = stateKey;
+        break;
       }
     }
-    return null;
-  }
 
-  // Greedy access resource.
-  final visitedResources = <int>{};
-  final pathIndices = <int>[];
-  var currentIndex = startIndex;
-  pathIndices.add(currentIndex);
-  while (true) {
-    final remainingTargets = <int>{};
-    for (final entry in resourceNodes.entries) {
-      if (visitedResources.contains(entry.key)) continue;
-      remainingTargets.addAll(entry.value);
+    // 动作1：传送（仅当当前在关键资源点、未使用传送、且存在传送目标）
+    if (keyResourceBit != null && !canTransport && transportIndex != null) {
+      if ((nodeResourceBit[currentIndex] & keyResourceBit) != 0) {
+        final newMask = mask | nodeResourceBit[transportIndex];
+        final newStateKey = encode(newMask, transportIndex, true);
+        final cur = dist[newStateKey] ?? double.infinity;
+        if (d < cur) {
+          dist[newStateKey] = d;
+          prev[newStateKey] = stateKey;
+          pq.add((d, newStateKey));
+        }
+      }
     }
-    if (remainingTargets.isEmpty) break;
-    final result = bfsToNearest(currentIndex, remainingTargets);
-    if (result == null) break;
-    final (target, path) = result;
-    pathIndices.addAll(path.skip(1));
-    currentIndex = target;
-    final cell = world.cell(nodes[currentIndex].layer, nodes[currentIndex].x, nodes[currentIndex].y)!;
-    visitedResources.add(cell.structureId!);
-  }
-  // access exit.
-  if (exit) {
-    final exitResult = bfsToNearest(currentIndex, exitIndices);
-    if (exitResult == null) return [];
-    final (_, exitPath) = exitResult;
-    pathIndices.addAll(exitPath.skip(1));
+
+    // 动作2：正常移动
+    final keyCollected = keyResourceBit == null || (mask & keyResourceBit) != 0;
+    final stepCost = keyCollected ? 1.0 : 1.0 + urgency;
+
+    for (final v in adj[currentIndex]) {
+      final newMask = mask | nodeResourceBit[v];
+      final newStateKey = encode(newMask, v, canTransport);
+      final nd = d + stepCost;
+      final cur = dist[newStateKey] ?? double.infinity;
+      if (nd < cur) {
+        dist[newStateKey] = nd;
+        prev[newStateKey] = stateKey;
+        pq.add((nd, newStateKey));
+      }
+    }
   }
 
-  // Return path.
-  return pathIndices.map((i) => nodes[i]).toList();
+  if (finalStateKey == null) return [];
+
+  // 10. 回溯路径
+  final pathIndices = <int>[];
+  var curKey = finalStateKey;
+  while (true) {
+    final temp = curKey >> 1;
+    final index = temp % n;
+    pathIndices.add(index);
+    if (curKey == startKey) break;
+    final p = prev[curKey];
+    if (p == null) break;
+    curKey = p;
+  }
+
+  return pathIndices.reversed.map((i) => nodes[i]).toList();
 }

@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
@@ -15,7 +17,13 @@ abstract class WorldsProvider<W> {
   String worldAssets(W world);
   MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
   SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
-  List<(Node, Set<int>, bool)> navigateStages(World world, EntranceType entrance);
+  NavigateArguments navigateArguments(World world, EntranceType entrance);
+}
+
+Future<List<Node>> _navigateAsync(World world, NavigateArguments arguments) async {
+  return await Isolate.run(() {
+    return navigate(world, arguments);
+  });
 }
 
 class WorldsManager<W extends Enum> {
@@ -27,6 +35,7 @@ class WorldsManager<W extends Enum> {
   }
 
   final Cache cache = Cache();
+
   Future<Map<String, Structure>> _getStructures() async {
     final result = await cache.get(
       key: 'structures',
@@ -42,6 +51,7 @@ class WorldsManager<W extends Enum> {
         throw result.error;
     }
   }
+
   Future<World> getWorld(W world) async {
     final structures = await _getStructures();
     final result = await cache.get(
@@ -83,6 +93,23 @@ class WorldsManager<W extends Enum> {
       result.putIfAbsent(feature, () => <W>{}).add(world);
     }
     return result;
+  }
+
+  Future<List<Node>> getNavigateResult(W world, NavigateArguments arguments) async {
+    final result = await cache.get(
+      key: 'navigate/${world.index}/${arguments.identify}',
+      fetch: () async {
+        final worldInstance = await getWorld(world);
+        final path = await _navigateAsync(worldInstance, arguments);
+        return Result.success(path);
+      },
+    );
+    switch (result) {
+      case Success<List<Node>>():
+        return result.value;
+      case Failure<List<Node>>():
+        throw result.error;
+    }
   }
 }
 
