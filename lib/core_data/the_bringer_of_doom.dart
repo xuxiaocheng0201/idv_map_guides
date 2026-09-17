@@ -159,13 +159,39 @@ enum TheBringerOfDoomHardWorlds {
 class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoomHardWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.hard;
-  @override List<TheBringerOfDoomHardWorlds> get allWorlds => TheBringerOfDoomHardWorlds.values;
+  @override List<TheBringerOfDoomHardWorlds> get allWorlds => _allHardWorlds();
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround, EntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
   @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
+
+List<TheBringerOfDoomHardWorlds> _allHardWorlds() => [
+  TheBringerOfDoomHardWorlds.eastForfeit,
+  TheBringerOfDoomHardWorlds.eastHammer,
+  TheBringerOfDoomHardWorlds.eastL,
+  TheBringerOfDoomHardWorlds.eastStair,
+  TheBringerOfDoomHardWorlds.eastThreeL,
+  TheBringerOfDoomHardWorlds.eastTwoL,
+  TheBringerOfDoomHardWorlds.north1,
+  TheBringerOfDoomHardWorlds.north1Sofa,
+  TheBringerOfDoomHardWorlds.north4,
+  TheBringerOfDoomHardWorlds.north4Safe,
+  TheBringerOfDoomHardWorlds.northConcave,
+  TheBringerOfDoomHardWorlds.northRed,
+  TheBringerOfDoomHardWorlds.northRedDiagonal,
+  TheBringerOfDoomHardWorlds.northT,
+  TheBringerOfDoomHardWorlds.southL,
+  TheBringerOfDoomHardWorlds.southOrz,
+  TheBringerOfDoomHardWorlds.southCross,
+  TheBringerOfDoomHardWorlds.southRed,
+  TheBringerOfDoomHardWorlds.southThreeMissingOne,
+  TheBringerOfDoomHardWorlds.westDiagonal,
+  TheBringerOfDoomHardWorlds.westHammer1,
+  TheBringerOfDoomHardWorlds.westHammer2,
+  TheBringerOfDoomHardWorlds.westOppositeT,
+];
 
 enum TheBringerOfDoomInsaneWorlds {
   northB,
@@ -243,7 +269,7 @@ enum TheBringerOfDoomInsaneWorlds {
 class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDoomInsaneWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.insane;
-  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => TheBringerOfDoomInsaneWorlds.values;
+  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => _allInsaneWorlds();
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
@@ -258,3 +284,11 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     return origin.copyWith(keyResource: keyResource);
   }
 }
+
+List<TheBringerOfDoomInsaneWorlds> _allInsaneWorlds() => [
+  TheBringerOfDoomInsaneWorlds.northB,
+  TheBringerOfDoomInsaneWorlds.northCactus,
+  TheBringerOfDoomInsaneWorlds.northLoop,
+  TheBringerOfDoomInsaneWorlds.northStair,
+  TheBringerOfDoomInsaneWorlds.northZ1,
+];
