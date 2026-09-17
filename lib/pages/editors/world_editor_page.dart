@@ -141,6 +141,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   late _WorldEditorRegistry _registry;
   GroundLayer _currentLayer = GroundLayer.ground;
   bool _isEditingEntrances = false;
+  bool _isPickingPosition = false;
   int? _selectedInstanceIndex;
   Position? _selectedCell;
 
@@ -190,6 +191,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                           _registry.read(setState);
                           _registry.buildWorld(setState);
                           setState(() {
+                            _isPickingPosition = false;
                             _selectedInstanceIndex = null;
                             _selectedCell = null;
                           });
@@ -223,6 +225,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
               _registry.read(setState);
               _registry.buildWorld(setState);
               setState(() {
+                _isPickingPosition = false;
                 _selectedInstanceIndex = null;
                 _selectedCell = null;
               });
@@ -287,6 +290,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                           tooltip: _isEditingEntrances ? '退出入口编辑' : '编辑入口',
                           onPressed: () => setState(() {
                             _isEditingEntrances = !_isEditingEntrances;
+                            _isPickingPosition = false;
                             _selectedInstanceIndex = null;
                             _selectedCell = null;
                           }),
@@ -312,6 +316,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                         ),
                         onTap: () => setState(() {
                           _selectedInstanceIndex = index;
+                          _isPickingPosition = false;
                         }),
                       );
                     },
@@ -501,6 +506,16 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
       setState(() => _selectedCell = position);
       return;
     }
+    if (_isPickingPosition) {
+      final instance = _registry.worldFile.instances[_selectedInstanceIndex!];
+      setState(() {
+        instance.originX = x;
+        instance.originY = y;
+        _isPickingPosition = false;
+      });
+      _registry.buildWorld(setState);
+      return;
+    }
     final cell = world.cell(_currentLayer, x, y);
     if (cell == null || cell.structureId == null) {
       setState(() => _selectedInstanceIndex = null);
@@ -647,6 +662,15 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             setState(() => instance.originY = newOriginY);
             _registry.buildWorld(setState);
           },
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: Icon(_isPickingPosition ? Icons.my_location : Icons.location_searching),
+          label: Text(_isPickingPosition ? '点击地图选择位置' : '在地图上选择位置'),
+          onPressed: () => setState(() {
+            _isPickingPosition = !_isPickingPosition;
+            _selectedCell = null;
+          }),
         ),
         const SizedBox(height: 8),
         Builder(
