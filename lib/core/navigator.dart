@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:comparators/comparators.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
@@ -7,24 +6,13 @@ import 'package:idv_map_guides/core/world.dart';
 part 'navigator.freezed.dart';
 
 @freezed
-abstract class Node with _$Node implements Comparable<Node> {
-  Node._();
-  factory Node(GroundLayer layer, int x, int y) = _Node;
-
-  static Comparator<Node> comparator = compareSequentially([
-    compare<Node>((node) => node.layer.index),
-    compare<Node>((node) => node.x),
-    compare<Node>((node) => node.y),
-  ]);
-  @override int compareTo(Node other) => comparator(this, other);
-
-  String get identify => '${layer.index}.$x.$y';
-}
-
-@freezed
 abstract class KeyResource with _$KeyResource {
   KeyResource._();
   factory KeyResource(int id, double urgency, Node transport) = _KeyResource;
+}
+
+extension NodeIdentify on Node {
+  String get identify => '${layer.index}.$x.$y';
 }
 
 @freezed
@@ -32,7 +20,7 @@ abstract class NavigateArguments with _$NavigateArguments {
   NavigateArguments._();
   factory NavigateArguments({
     required Node start,
-    required Set<int> resources,
+    required Set<Node> resources,
     @Default(<Node>{}) Set<Node> exits,
     KeyResource? keyResource,
   }) = _NavigateArguments;
@@ -59,7 +47,8 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   final exits = arguments.exits;
   final keyResource = arguments.keyResource;
 
-  final effectiveResources = Set<int>.from(resources);
+  // 资源已细化到 cell 级：普通资源为 Node（单元格），关键资源 id 仍为结构 id（int）
+  final effectiveResources = <Object>{...resources};
   if (keyResource != null) effectiveResources.add(keyResource.id);
 
   // 1. 构建节点列表与映射
@@ -157,20 +146,26 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   // 3. 资源位映射：将需要收集的资源 id 映射到 0..k-1 的位
   final resourceList = effectiveResources.toList();
-  final resourceToBit = <int, int>{};
+  final resourceToBit = <Object, int>{};
   for (var i = 0; i < resourceList.length; i++) {
     resourceToBit[resourceList[i]] = i;
   }
   final k = resourceList.length;
   final fullMask = (1 << k) - 1; // 所有资源收集完成的掩码
 
-  // 4. 每个节点对应的资源位（一个节点最多一个资源）
+  // 4. 每个节点对应的资源位掩码：
+  //    - cell 级资源按节点（Node）判断；
+  //    - 关键资源仍按结构 id 判断（进入该结构的任意单元格即可拾取）。
   final nodeResourceBit = List<int>.generate(n, (i) {
     final node = nodes[i];
     final cell = world.cell(node.layer, node.x, node.y)!;
-    final sid = cell.structureId!;
-    final bit = resourceToBit[sid];
-    return bit != null ? (1 << bit) : 0;
+    int bit = 0;
+    final cellBit = resourceToBit[node];
+    if (cellBit != null) bit |= 1 << cellBit;
+    if (keyResource != null && cell.structureId == keyResource.id) {
+      bit |= 1 << resourceToBit[keyResource.id]!;
+    }
+    return bit;
   });
 
   // 5. 出口索引集合

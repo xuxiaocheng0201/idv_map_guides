@@ -55,7 +55,6 @@ class _StructuresRegistry {
     final structure = Structure(
       name: name,
       isCorridor: false,
-      isResource: false,
       isNoDirection: false,
       cells: <Position, CellInfo>{},
     );
@@ -201,7 +200,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       return ListTile(
                         selected: index == _selectedIndex,
                         title: Text(name),
-                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isResource ? '必刷' : '普通'} | ${structure.isNoDirection ? '无向' : '有向'}'),
+                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isNoDirection ? '无向' : '有向'}'),
                         onTap: () => setState(() {
                           _selectedIndex = index;
                           _selectedCell = null;
@@ -317,13 +316,6 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             Switch(
               value: structure.isCorridor,
               onChanged: (value) => setState(() => structure.isCorridor = value),
-            ),
-            const SizedBox(width: 16),
-            Text(structure.isResource ? '必刷点' : '非必刷'),
-            const SizedBox(width: 8),
-            Switch(
-              value: structure.isResource,
-              onChanged: (value) => setState(() => structure.isResource = value),
             ),
             const SizedBox(width: 16),
             Text(structure.isNoDirection ? '无方向' : '有方向'),
@@ -463,6 +455,14 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                 ),
               ],
             ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            title: const Text('刷箱点', style: TextStyle(fontWeight: FontWeight.bold)),
+            value: cell.isResource,
+            onChanged: (value) => setState(() => structure.cells[position] = cell.copyWith(isResource: value)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
           const SizedBox(height: 8),
           const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
           for (final direction in Direction.values)

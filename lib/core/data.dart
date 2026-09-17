@@ -127,6 +127,21 @@ abstract class Position with _$Position implements Comparable<Position> {
   @override int compareTo(Position other) => comparator(this, other);
 }
 
+@freezed
+abstract class Node with _$Node implements Comparable<Node> {
+  Node._();
+  factory Node(GroundLayer layer, int x, int y) = _Node;
+
+  static Comparator<Node> comparator = compareSequentially([
+    compare<Node>((node) => node.layer.index),
+    compare<Node>((node) => node.x),
+    compare<Node>((node) => node.y),
+  ]);
+  @override int compareTo(Node other) => comparator(this, other);
+
+  Position get position => Position(x: x, y: y);
+}
+
 enum StairTransport {
   nothing,
   goUp,
@@ -149,6 +164,7 @@ abstract class CellInfo with _$CellInfo {
     @Default(EdgeType.nothing) EdgeType edgeEast,
     @Default(EdgeType.nothing) EdgeType edgeSouth,
     @Default(EdgeType.nothing) EdgeType edgeWest,
+    @Default(false) bool isResource,
   }) = _CellInfo;
 
   @useResult
@@ -188,7 +204,6 @@ abstract class Structure with _$Structure {
   factory Structure({
     required String name,
     required bool isCorridor,
-    required bool isResource,
     required bool isNoDirection,
     required Map<Position, CellInfo> cells,
   }) = _Structure;

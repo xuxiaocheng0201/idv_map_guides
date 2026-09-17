@@ -33,7 +33,7 @@ enum EntranceType {
     EntranceType.sideSecond => true,
     EntranceType.alterBasement => false,
   };
-  GroundLayer layer() => switch (this) {
+  GroundLayer get layer => switch (this) {
     EntranceType.main => GroundLayer.ground,
     EntranceType.sideGround => GroundLayer.ground,
     EntranceType.sideSecond => GroundLayer.second,
@@ -43,12 +43,13 @@ enum EntranceType {
 
 class World {
   final int minX, maxX, minY, maxY;
-  Map<GroundLayer, List<List<Cell>>> map;
-  Map<EntranceType, Position> entrances;
-  int _nextStructureId;
-  Set<int> suspiciousStructures = <int>{};
-  Set<int> resources = <int>{};
-  Map<String, Set<int>> rooms = <String, Set<int>>{};
+  final Map<GroundLayer, List<List<Cell>>> map;
+  final Map<EntranceType, Node> entrances = <EntranceType, Node>{};
+
+  int _nextStructureId = 0;
+  final Set<int> suspiciousStructures = <int>{};
+  final Set<Node> resources = <Node>{};
+  final Map<String, Set<int>> rooms = <String, Set<int>>{};
 
   World({
     required Set<GroundLayer> layers,
@@ -59,13 +60,15 @@ class World {
   }): map = {
         for (final layer in layers)
           layer: List.generate(maxX - minX + 1, (_) => List.generate(maxY - minY + 1, (_) => Cell())),
-      },
-      entrances = <EntranceType, Position>{},
-      _nextStructureId = 0;
+      };
 
   Set<GroundLayer> get layers => map.keys.toSet();
   int get width => maxX - minX + 1;
   int get height => maxY - minY + 1;
+  Set<Node> get entranceNodes => entrances.entries
+      .where((entry) => entry.key.displayable)
+      .map((entry) => Node(entry.key.layer, entry.value.x, entry.value.y))
+      .toSet();
 
   bool _isOutOfWorld(int x, int y) => x < minX || maxX < x || y < minY || maxY < y;
 
@@ -74,8 +77,7 @@ class World {
     return map[layer]?[x - minX][y - minY];
   }
 
-
-  int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation) {
+  int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation, bool isSuspicious) {
     // validate
     final errors = WorldErrors(errors: <WorldError>[]);
     if (structure.isNoDirection && !{Rotation.cw0, Rotation.cw90}.contains(rotation)) {
@@ -155,10 +157,19 @@ class World {
       existing.structureTypeName = structure.name;
       existing.isCorridor = structure.isCorridor;
       existing.info = info.rotation(rotation);
+      if (info.isResource) resources.add(Node(layer, worldPosition.x, worldPosition.y));
     }
-    if (structure.isResource) resources.add(structureId);
     if (!structure.isCorridor) rooms.putIfAbsent(structure.name, () => <int>{}).add(structureId);
+    if (isSuspicious) suspiciousStructures.add(structureId);
     return structureId;
+  }
+
+  void placeEntrance(EntranceType type, Position position) {
+    entrances[type] = Node(type.layer, position.x, position.y);
+  }
+
+  void removeEntrance(EntranceType type) {
+    entrances.remove(type);
   }
 
   void validate({required bool replaceStructureMismatchedDoor}) {
@@ -168,10 +179,10 @@ class World {
     }
     for (final entry in entrances.entries) {
       final (type, entrance) = (entry.key, entry.value);
-      final layer = type.layer();
+      final layer = type.layer;
       final c = cell(layer, entrance.x, entrance.y);
       if (c == null || c.structureId == null) {
-        errors.push(WorldError.entranceInEmpty(type: type, entrance: entrance));
+        errors.push(WorldError.entranceInEmpty(type: type, entrance: entrance.position));
       }
     }
     for (final layer in map.keys) {
@@ -267,7 +278,6 @@ Structure resolveStructure(StructureInstance instance, Map<String, Structure> st
     return Structure(
       name: corridorTypeName,
       isCorridor: true,
-      isResource: false,
       isNoDirection: true,
       cells: cells,
     );
@@ -308,13 +318,14 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
       continue;
     }
     try {
-      final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
-      if (instance.isSuspicious) world.suspiciousStructures.add(structureId);
+      world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation, instance.isSuspicious);
     } on WorldErrors catch (e) {
       errors.merge(e);
     }
   }
-  world.entrances = worldFile.entrances;
+  for (final entry in worldFile.entrances.entries) {
+    world.placeEntrance(entry.key, entry.value);
+  }
   try {
     world.validate(replaceStructureMismatchedDoor: true);
   } on WorldErrors catch (e) {

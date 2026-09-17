@@ -293,19 +293,19 @@ class _WorldListPageState extends State<WorldListPage> {
         setState(() => _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(start: Node(layer, x, y)));
         break;
       case _NavigateEditMode.resource:
-        final structureId = cell.structureId!;
-        final resources = Set<int>.of(_navigateArguments[_currentWorld]!.resources);
+        final node = Node(layer, x, y);
+        final resources = Set<Node>.of(_navigateArguments[_currentWorld]!.resources);
+        if (!resources.remove(node)) {
+          resources.add(node);
+        }
         setState(() {
-          if (!resources.remove(structureId)) {
-            resources.add(structureId);
-          }
           _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: resources);
         });
         break;
     }
   }
 
-  Widget _buildNavigateProperties(BuildContext context, World world, Node startNode, Set<int> resources, bool exit) {
+  Widget _buildNavigateProperties(BuildContext context, World world, Node startNode, Set<Node> resources, bool exit) {
     return Column(
       children: [
         Text(S.of(context).worldsNavigateSetting),
@@ -358,7 +358,7 @@ class _WorldListPageState extends State<WorldListPage> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => setState(() {
-                  resources.clear();
+                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: <Node>{});
                 }),
                 icon: const Icon(Icons.clear_all),
                 label: Text(S.of(context).worldsNavigateResourceClear),
@@ -366,8 +366,7 @@ class _WorldListPageState extends State<WorldListPage> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => setState(() {
-                  resources.clear();
-                  resources.addAll(world.resources);
+                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: Set<Node>.of(world.resources));
                 }),
                 icon: const Icon(Icons.restart_alt),
                 label: Text(S.of(context).worldsNavigateReset),
@@ -453,7 +452,7 @@ class _WorldLayerPaint extends StatelessWidget {
           builder: (context, constraints) {
             final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
             painter.path = path ?? <Node>[];
-            painter.resources = arguments?.resources ?? <int>{};
+            painter.resources = arguments?.resources ?? <Node>{};
             final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
             final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
             return GestureDetector(

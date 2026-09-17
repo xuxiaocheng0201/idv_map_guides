@@ -87,8 +87,7 @@ class _WorldEditorRegistry {
       final instance = worldFile.instances[i];
       try {
         final structure = resolveStructure(instance, structures);
-        final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation);
-        if (instance.isSuspicious) world.suspiciousStructures.add(structureId);
+        final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation, instance.isSuspicious);
         instanceIndexToStructureId[i] = structureId;
       } on WorldErrors catch (e) {
         errorsByInstanceIndex[i] = e;
@@ -96,7 +95,9 @@ class _WorldEditorRegistry {
         errorsByInstanceIndex[i] = WorldErrors(errors: [e]);
       }
     }
-    world.entrances = worldFile.entrances;
+    for (final entry in worldFile.entrances.entries) {
+      world.placeEntrance(entry.key, entry.value);
+    }
     try {
       world.validate(replaceStructureMismatchedDoor: false);
     } on WorldErrors catch (e) {
@@ -782,7 +783,6 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                         structure: Structure(
                           name: corridorTypeName,
                           isCorridor: true,
-                          isResource: false,
                           isNoDirection: true,
                           cells: _cells,
                         ),
@@ -798,7 +798,7 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
             const VerticalDivider(width: 1),
             SizedBox(
               width: 240,
-              child: _buildCellProperties(),
+              child: _buildCorridorProperties(),
             ),
           ],
         ),
@@ -834,7 +834,7 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
     );
   }
 
-  Widget _buildCellProperties() {
+  Widget _buildCorridorProperties() {
     final position = _selectedCell;
     if (position == null) {
       return const Center(

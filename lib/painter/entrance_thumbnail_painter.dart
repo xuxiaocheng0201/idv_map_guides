@@ -50,7 +50,7 @@ class EntranceThumbnailPainter extends CustomPainter {
     final cellSize = min(size.width / width, size.height / height);
     drawBackground(canvas, width, height, cellSize);
 
-    final entrancePos = world.entrances[entrance]!;
+    final entrancePos = world.entrances[entrance]!.position;
     final ex = entrancePos.x;
     final ey = entrancePos.y;
 
@@ -58,7 +58,7 @@ class EntranceThumbnailPainter extends CustomPainter {
       for (int dy = offsetMinY; dy <= offsetMaxY; dy++) {
         final worldX = ex + dx;
         final worldY = ey + dy;
-        final cell = world.cell(entrance.layer(), worldX, worldY);
+        final cell = world.cell(entrance.layer, worldX, worldY);
         if (cell == null || cell.structureId == null) continue;
 
         final rect = Rect.fromLTWH(
@@ -68,7 +68,7 @@ class EntranceThumbnailPainter extends CustomPainter {
           cellSize,
         );
 
-        drawCell(canvas, rect, cell.isCorridor, cellSize, false, false);
+        drawCell(canvas, rect, cell.isCorridor, cellSize, false);
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
@@ -76,7 +76,7 @@ class EntranceThumbnailPainter extends CustomPainter {
           switch (cell.info.getEdgeType(direction)) {
             case EdgeType.nothing:
               final (dx2, dy2) = direction.dxy;
-              final neighbor = world.cell(entrance.layer(), worldX + dx2, worldY + dy2);
+              final neighbor = world.cell(entrance.layer, worldX + dx2, worldY + dy2);
               if (neighbor == null || neighbor.structureId != cell.structureId) {
                 drawWall(canvas, rect, direction, cellSize);
               }
@@ -117,7 +117,7 @@ class EntranceThumbnailPainter extends CustomPainter {
     final ey = entrancePos.y;
     for (int dx = offsetMinX; dx <= offsetMaxX; dx++) {
       for (int dy = offsetMinY; dy <= offsetMaxY; dy++) {
-        final cell = world.cell(entrance.layer(), ex + dx, ey + dy);
+        final cell = world.cell(entrance.layer, ex + dx, ey + dy);
         if (cell == null || cell.structureId == null) {
           list.add(false);
         } else {
@@ -142,7 +142,7 @@ class EntranceThumbnailPainter extends CustomPainter {
       int maxY,
       ) {
     final pos = world.entrances[entrance]!;
-    final layer = entrance.layer();
+    final layer = entrance.layer;
 
     int leftEmptyColumns = 0;
     for (int x = pos.x + minX; x <= pos.x + maxX; x++) {

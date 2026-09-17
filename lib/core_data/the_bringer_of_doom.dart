@@ -7,14 +7,14 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 
 MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
-  final position = world.entrances[entrance]!;
-  final mainEntranceId = world.cell(entrance.layer(), position.x, position.y)!.structureId!;
+  final position = world.entrances[entrance]!.position;
+  final mainEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   final upDoor = position.add(0, 4);
   final leftDoor = position.add(-1, 1);
   final rightDoor = position.add(1, 1);
-  final upDoorCell = world.cell(entrance.layer(), upDoor.x, upDoor.y)!;
-  final leftDoorCell = world.cell(entrance.layer(), leftDoor.x, leftDoor.y)!;
-  final rightDoorCell = world.cell(entrance.layer(), rightDoor.x, rightDoor.y)!;
+  final upDoorCell = world.cell(entrance.layer, upDoor.x, upDoor.y)!;
+  final leftDoorCell = world.cell(entrance.layer, leftDoor.x, leftDoor.y)!;
+  final rightDoorCell = world.cell(entrance.layer, rightDoor.x, rightDoor.y)!;
   return MainEntranceFeature(
     hasUpDoor: upDoorCell.structureId == mainEntranceId && upDoorCell.info.edgeNorth == EdgeType.door,
     hasLeftDoor: leftDoorCell.structureId == mainEntranceId && leftDoorCell.info.edgeWest == EdgeType.door,
@@ -23,13 +23,13 @@ MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
 }
 
 SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
-  final position = world.entrances[entrance]!;
-  final sideEntranceId = world.cell(entrance.layer(), position.x, position.y)!.structureId!;
+  final position = world.entrances[entrance]!.position;
+  final sideEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   Direction? facing;
   for (final direction in Direction.values) {
     final (dx, dy) = direction.dxy;
     final facingPosition = position.add(dx, dy);
-    final facingCell = world.cell(entrance.layer(), facingPosition.x, facingPosition.y);
+    final facingCell = world.cell(entrance.layer, facingPosition.x, facingPosition.y);
     if (facingCell?.structureId == sideEntranceId) {
       if (facing == null) {
         facing = direction;
@@ -47,13 +47,13 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
 }
 
 NavigateArguments _navigateArguments(World world, EntranceType entrance) {
-  final entrancePos = world.entrances[entrance]!;
-  final startNode = Node(entrance.layer(), entrancePos.x, entrancePos.y);
+  final entrancePos = world.entrances[entrance]!.position;
+  final startNode = Node(entrance.layer, entrancePos.x, entrancePos.y);
   final resources = Set.of(world.resources);
   final exitNodes = <Node>{};
   for (final entry in world.entrances.entries) {
     if (!entry.key.displayable) continue;
-    final node = Node(entry.key.layer(), entry.value.x, entry.value.y);
+    final node = Node(entry.key.layer, entry.value.x, entry.value.y);
     exitNodes.add(node);
   }
   return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
@@ -244,7 +244,7 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     final origin = _navigateArguments(world, entrance);
     final museRoomId = world.rooms['muse_room']!.firstOrNull!;
     final altarPos = world.entrances[EntranceType.alterBasement]!;
-    final alterNode = Node(EntranceType.alterBasement.layer(), altarPos.x, altarPos.y);
+    final alterNode = Node(EntranceType.alterBasement.layer, altarPos.x, altarPos.y);
     final keyResource = KeyResource(museRoomId, 1, alterNode);
     return origin.copyWith(keyResource: keyResource);
   }

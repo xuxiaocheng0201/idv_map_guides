@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
 
 const backgroundColor = Color(0xFF223344);
@@ -27,15 +26,25 @@ void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   canvas.drawRect(rect, Paint()..color = backgroundColor);
 }
 
-void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious, bool isResource) {
+void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious) {
   var color = isCorridor ? corridorColor : roomColor;
   if (kDebugMode && isSuspicious) {
     color = Color.alphaBlend(suspiciousColor.withValues(alpha: 0.2), color);
   }
-  if (isResource) {
-    color = Color.alphaBlend(resourceColor.withValues(alpha: 0.2), color);
-  }
   canvas.drawRect(rect, Paint()..color = color);
+}
+
+void drawResource(Canvas canvas, Rect rect, double cellSize) {
+  final fillPaint = Paint()
+    ..color = resourceColor
+    ..style = PaintingStyle.fill;
+  final borderPaint = Paint()
+    ..color = pathMarkerColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = cellSize * 0.01;
+  final radius = cellSize * 0.14;
+  canvas.drawCircle(rect.center, radius, fillPaint);
+  canvas.drawCircle(rect.center, radius, borderPaint);
 }
 
 void drawStair(Canvas canvas, Rect rect, StairTransport stair, double cellSize) {
@@ -232,7 +241,7 @@ void _drawPathEnd(Canvas canvas, Offset center, double cellSize) {
 class WorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
-  Set<int> resources = const <int>{};
+  Set<Node> resources = const <Node>{};
   List<Node> path = [];
 
   final int minX;
@@ -299,8 +308,10 @@ class WorldPainter extends CustomPainter {
           cell.isCorridor,
           cellSize,
           world.suspiciousStructures.contains(cell.structureId),
-          resources.contains(cell.structureId),
         );
+        if (cell.info.isResource) {
+          drawResource(canvas, rect, cellSize);
+        }
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
@@ -328,7 +339,7 @@ class WorldPainter extends CustomPainter {
     }
 
     for (final entry in world.entrances.entries) {
-      final entranceLayer = entry.key.layer();
+      final entranceLayer = entry.key.layer;
       if (entranceLayer != layer || !entry.key.displayable) continue;
       final entrance = entry.value;
       if (entrance.x < minX || entrance.x > maxX || entrance.y < minY || entrance.y > maxY) {

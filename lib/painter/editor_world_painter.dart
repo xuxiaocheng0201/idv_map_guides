@@ -53,7 +53,10 @@ class EditorWorldPainter extends CustomPainter {
         final cell = world.cell(layer, x, y);
         if (cell == null || cell.structureId == null) continue;
         final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
-        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId), false);
+        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId));
+        if (cell.info.isResource) {
+          drawResource(canvas, rect, cellSize);
+        }
         if (cell.info.isStair != null) {
           drawStair(canvas, rect, cell.info.isStair!, cellSize);
         }
@@ -99,7 +102,7 @@ class EditorWorldPainter extends CustomPainter {
       }
     }
     for (final entry in world.entrances.entries) {
-      final layer = entry.key.layer();
+      final layer = entry.key.layer;
       if (layer == this.layer) {
         final entrance = entry.value;
         final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
