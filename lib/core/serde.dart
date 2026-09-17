@@ -102,17 +102,18 @@ extension _EdgeTypeSerde on EdgeType {
 extension _CellInfoSerde on CellInfo {
   static CellInfo unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 5) throw FormatException();
+    if (len != 6) throw FormatException();
     return CellInfo(
       isStair: _StairTransportSerde.unpackNullable(unpacker),
       edgeNorth: _EdgeTypeSerde.unpack(unpacker),
       edgeEast: _EdgeTypeSerde.unpack(unpacker),
       edgeSouth: _EdgeTypeSerde.unpack(unpacker),
       edgeWest: _EdgeTypeSerde.unpack(unpacker),
+      isResource: unpacker.unpackBool() ?? false,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(5);
+    packer.packListLength(6);
     if (isStair == null) {
       packer.packNull();
     } else {
@@ -122,17 +123,17 @@ extension _CellInfoSerde on CellInfo {
     edgeEast.pack(packer);
     edgeSouth.pack(packer);
     edgeWest.pack(packer);
+    packer.packBool(isResource);
   }
 }
 
 extension _StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker, String name) {
     final len = unpacker.unpackListLength();
-    if (len != 4) throw FormatException();
+    if (len != 3) throw FormatException();
     final isCorridor = unpacker.unpackBool();
-    final isResource = unpacker.unpackBool();
     final isNoDirection = unpacker.unpackBool();
-    if (isCorridor == null || isResource == null || isNoDirection == null) throw FormatException();
+    if (isCorridor == null || isNoDirection == null) throw FormatException();
     final mapLen = unpacker.unpackMapLength();
     final cells = <Position, CellInfo>{};
     for (int i = 0; i < mapLen; i++) {
@@ -143,15 +144,13 @@ extension _StructureSerde on Structure {
     return Structure(
       name: name,
       isCorridor: isCorridor,
-      isResource: isResource,
       isNoDirection: isNoDirection,
       cells: cells,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(4);
+    packer.packListLength(3);
     packer.packBool(isCorridor);
-    packer.packBool(isResource);
     packer.packBool(isNoDirection);
     final cells = this.cells.entries.sortedBy((e) => e.key);
     packer.packMapLength(cells.length);
