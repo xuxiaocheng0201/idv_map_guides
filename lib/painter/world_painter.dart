@@ -309,7 +309,7 @@ class WorldPainter extends CustomPainter {
           cellSize,
           world.suspiciousStructures.contains(cell.structureId),
         );
-        if (cell.info.isResource) {
+        if (resources.contains(Node(layer, x, y))) {
           drawResource(canvas, rect, cellSize);
         }
         if (cell.info.isStair != null) {
@@ -381,7 +381,7 @@ class WorldPainter extends CustomPainter {
       final bool nodeOnThisLayer = node.layer == layer;
       final bool isCrossLayerEntry = prevNode != null &&
           prevNode.layer == layer && !nodeOnThisLayer &&
-          (node.x != prevNode.x || node.y != prevNode.y);
+          (node.x - prevNode.x).abs() + (node.y - prevNode.y).abs() == 1;
       if (!nodeOnThisLayer && !isCrossLayerEntry) {
         if (current != null && current.length > 1) {
           polylines.add(current);

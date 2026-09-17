@@ -14,10 +14,10 @@ import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:idv_map_guides/painter/editor_world_painter.dart';
 import 'package:path/path.dart' as p;
 
-const int defaultWorldMinX = -25;
-const int defaultWorldMaxX = 25;
+const int defaultWorldMinX = -20;
+const int defaultWorldMaxX = 20;
 const int defaultWorldMinY = 0;
-const int defaultWorldMaxY = 50;
+const int defaultWorldMaxY = 30;
 
 var dataWorld = serializeWorld(WorldFile(
   layers: <GroundLayer>{GroundLayer.ground},

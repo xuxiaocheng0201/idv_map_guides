@@ -172,7 +172,7 @@ class _WorldListPageState extends State<WorldListPage> {
                                 child: _WorldLayerPaint(
                                   world: world,
                                   layer: layer,
-                                  auto: true,
+                                  auto: false,
                                   arguments: navigateArguments,
                                   path: path,
                                   onCellTap: _navigateMode
