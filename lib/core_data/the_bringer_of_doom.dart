@@ -182,10 +182,13 @@ enum TheBringerOfDoomInsaneWorlds {
   eastBreakC,
   eastShortT,
   eastLongZ,
+  west11,
   westFlipT,
   west1BookGallery,
   west1Library,
-  westVerticalL;
+  west5Bed,
+  westVerticalL,
+  westStair;
 
   String get _assets => switch (this) {
     northB => 'north_b',
@@ -202,10 +205,13 @@ enum TheBringerOfDoomInsaneWorlds {
     eastBreakC => 'east_break_c',
     eastShortT => 'east_short_t',
     eastLongZ => 'east_long_z',
+    west11 => 'west_11',
     westFlipT => 'west_flip_t',
     west1BookGallery => 'west1_book_gallery',
     west1Library => 'west_1_library',
+    west5Bed => 'west_5_bed',
     westVerticalL => 'west_vertical_l',
+    westStair => 'west_stair',
   };
   String label(BuildContext context) {
     return switch (this) {
@@ -223,10 +229,13 @@ enum TheBringerOfDoomInsaneWorlds {
       eastBreakC => S.of(context).worldTheBringerOfDoomInsaneEastBreakC,
       eastShortT => S.of(context).worldTheBringerOfDoomInsaneEastShortT,
       eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
+      west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
       westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
       west1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1BookGallery,
       west1Library => S.of(context).worldTheBringerOfDoomInsaneWest1Library,
+      west5Bed => S.of(context).worldTheBringerOfDoomInsaneWest5Bed,
       westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
+      westStair => S.of(context).worldTheBringerOfDoomInsaneWestStair,
     };
   }
 }
