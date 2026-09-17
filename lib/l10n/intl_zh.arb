@@ -110,5 +110,6 @@
   "worldsNavigateResourceEdit": "标记资源点",
   "worldsNavigateResourceEditExit": "退出标记",
   "worldsNavigateResourceClear": "清空",
-  "worldsNavigateExit": "导航至出口结束"
+  "worldsNavigateExit": "导航至出口结束",
+  "worldsNavigatePathLength": "导航总路程"
 }

@@ -110,5 +110,6 @@
   "worldsNavigateResourceEdit": "Mark resources",
   "worldsNavigateResourceEditExit": "Exit mark",
   "worldsNavigateResourceClear": "Clear",
-  "worldsNavigateExit": "Navigate to exit"
+  "worldsNavigateExit": "Navigate to exit",
+  "worldsNavigatePathLength": "Total length"
 }

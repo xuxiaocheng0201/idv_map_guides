@@ -229,7 +229,17 @@ class _WorldListPageState extends State<WorldListPage> {
                         width: 300,
                         child: Padding(
                           padding: const EdgeInsets.all(8),
-                          child: _buildNavigateProperties(context, world, navigateArguments!.start, navigateArguments.resources, navigateArguments.exits.isNotEmpty),
+                          child: SingleChildScrollView(
+                            child: _buildNavigateProperties(
+                              context,
+                              world,
+                              navigateArguments!.start,
+                              navigateArguments.resources,
+                              navigateArguments.exits,
+                              path,
+                              asyncSnapshot.connectionState != ConnectionState.done,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -305,13 +315,13 @@ class _WorldListPageState extends State<WorldListPage> {
     }
   }
 
-  Widget _buildNavigateProperties(BuildContext context, World world, Node startNode, Set<Node> resources, bool exit) {
+  Widget _buildNavigateProperties(BuildContext context, World world, Node startNode, Set<Node> resources, Set<Node> exits, List<Node>? path, bool loading) {
     return Column(
       children: [
         Text(S.of(context).worldsNavigateSetting),
         const SizedBox(height: 8),
         _buildNavigateCard(context,
-          mode: _NavigateEditMode.start,
+          selected: _navigateEditMode == _NavigateEditMode.start,
           icon: Icons.flag,
           title: S.of(context).worldsNavigateStartNode,
           body: Text(S.of(context).worldsNavigateStartNodeValue(startNode.layer.label(context), startNode.x, startNode.y)),
@@ -340,7 +350,7 @@ class _WorldListPageState extends State<WorldListPage> {
         ),
         const SizedBox(height: 8),
         _buildNavigateCard(context,
-          mode: _NavigateEditMode.resource,
+          selected: _navigateEditMode == _NavigateEditMode.resource,
           icon: Icons.inventory,
           title: S.of(context).worldsNavigateResource,
           body: Text(S.of(context).worldsNavigateResourceValue(resources.length)),
@@ -358,7 +368,8 @@ class _WorldListPageState extends State<WorldListPage> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => setState(() {
-                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: <Node>{});
+                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!
+                      .copyWith(resources: <Node>{});
                 }),
                 icon: const Icon(Icons.clear_all),
                 label: Text(S.of(context).worldsNavigateResourceClear),
@@ -366,7 +377,8 @@ class _WorldListPageState extends State<WorldListPage> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => setState(() {
-                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(resources: Set<Node>.of(world.resources));
+                  _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!
+                      .copyWith(resources: Set<Node>.of(world.resources));
                 }),
                 icon: const Icon(Icons.restart_alt),
                 label: Text(S.of(context).worldsNavigateReset),
@@ -375,27 +387,38 @@ class _WorldListPageState extends State<WorldListPage> {
           ),
         ),
         const SizedBox(height: 8),
-        SwitchListTile(
-          title: Text(S.of(context).worldsNavigateExit),
-          value: exit,
-          onChanged: (value) => setState(() {
-            _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!.copyWith(exits:
-              value ? manager.provider.navigateArguments(world, entrance).exits : <Node>{},
-            );
-          }),
+        _buildNavigateCard(context,
+          selected: false,
+          icon: Icons.exit_to_app,
+          title: S.of(context).worldsNavigateExit,
+          body: Switch(
+            value: exits.isNotEmpty,
+            onChanged: (value) => setState(() {
+              _navigateArguments[_currentWorld] = _navigateArguments[_currentWorld]!
+                  .copyWith(exits: value ? manager.provider.navigateArguments(world, entrance).exits : <Node>{});
+            }),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildNavigateCard(context,
+          selected: false,
+          icon: Icons.route_outlined,
+          title: S.of(context).worldsNavigatePathLength,
+          body: Center(
+            child: loading ? const CircularProgressIndicator(strokeWidth: 2) : Text('${path?.length ?? 0}'),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildNavigateCard(BuildContext context, {
-    required _NavigateEditMode mode,
+    required bool selected,
     required IconData icon,
     required String title,
     required Widget body,
-    required Widget Function(bool) action,
+    Widget Function(bool selected)? action,
   }) {
-    final selected = _navigateEditMode == mode;
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -418,8 +441,10 @@ class _WorldListPageState extends State<WorldListPage> {
           ),
           const SizedBox(height: 8),
           body,
-          const SizedBox(height: 8),
-          action(selected),
+          if (action != null) ...[
+            const SizedBox(height: 8),
+            action(selected),
+          ],
         ],
       ),
     );
