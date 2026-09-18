@@ -11,3 +11,6 @@
 /lib/**/*.freezed.dart
 /lib/**/*.g.dart
 !/assets
+
+!/.github
+sentry.properties

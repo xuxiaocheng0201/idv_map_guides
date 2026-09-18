@@ -29,6 +29,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   intl_utils: ^2.8.16
+  sentry_dart_plugin: ^3.4.0
   build_runner: ^2.16.0
   freezed: ^4.0.0
 
@@ -40,3 +41,7 @@ flutter:
 
 flutter_intl:
   enabled: true
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
