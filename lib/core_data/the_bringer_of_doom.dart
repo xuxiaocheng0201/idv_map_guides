@@ -76,6 +76,26 @@ NavigateArguments _navigateArguments(World world, EntranceType entrance) {
   return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
 }
 
+enum TheBringerOfDoomNoviceWorlds {
+  onlyOne;
+  String label(BuildContext context) {
+    return switch (this) {
+      onlyOne => S.of(context).worldTheBringerOfDoomNovice,
+    };
+  }
+}
+
+class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDoomNoviceWorlds> {
+  @override WorldType get type => WorldType.theBringerOfDoom;
+  @override WorldDifficulty get difficulty => WorldDifficulty.novice;
+  @override List<TheBringerOfDoomNoviceWorlds> get allWorlds => TheBringerOfDoomNoviceWorlds.values;
+  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main];
+  @override String worldAssets(TheBringerOfDoomNoviceWorlds world) => 'world.data';
+  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
+  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
+}
+
 enum TheBringerOfDoomHardWorlds {
   north1,
   north1Sofa,
