@@ -302,4 +302,7 @@ List<TheBringerOfDoomInsaneWorlds> _allInsaneWorlds() => [
   TheBringerOfDoomInsaneWorlds.northLoop,
   TheBringerOfDoomInsaneWorlds.northStair,
   TheBringerOfDoomInsaneWorlds.northZ1,
+  TheBringerOfDoomInsaneWorlds.southFloating,
+  TheBringerOfDoomInsaneWorlds.southH,
+  TheBringerOfDoomInsaneWorlds.southThreeRed,
 ];
