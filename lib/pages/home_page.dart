@@ -5,6 +5,7 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:toastification/toastification.dart';
 
 class HomePage extends StatefulWidget {
@@ -57,6 +58,14 @@ class _HomePageState extends State<HomePage> {
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
+            ),
+            FutureBuilder(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final info = snapshot.data;
+                final text = info == null ? 'null' : '${info.version}+${info.buildNumber}';
+                return Text(text);
+              },
             ),
             const SizedBox(height: 32),
 

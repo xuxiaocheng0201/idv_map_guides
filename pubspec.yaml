@@ -14,6 +14,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  package_info_plus: ^10.2.1
   sentry_flutter: ^9.30.0
   freezed_annotation: ^3.1.0
   toastification: ^3.2.0
