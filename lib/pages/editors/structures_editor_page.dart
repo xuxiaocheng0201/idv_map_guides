@@ -145,6 +145,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               }
               final content = await file.readAsBytes();
               dataStructures = content;
+              setState(() {
+                _selectedCell = null;
+                _selectedIndex = null;
+              });
               _registry.read(setState);
             },
           ),
