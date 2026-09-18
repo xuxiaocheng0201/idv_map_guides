@@ -300,10 +300,6 @@ Future<List<Node>> navigateAsync(Uint8List structuresFile, Uint8List worldFile, 
     final arguments = serializeNavigateArguments(navigateArguments);
     final path = await worker.doCompute(structuresFile, worldFile, arguments);
     return deserializeNavigatePath(path);
-  // } on SquadronException catch (e) {
-  //   print(e.message);
-  //   print(e.stackTrace);
-  //   rethrow;
   } finally {
     worker.stop();
   }
