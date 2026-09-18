@@ -10,6 +10,7 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
+import 'package:idv_map_guides/routes.dart';
 
 class WorldListPageArguments {
   final WorldsManager<dynamic> manager;
@@ -56,7 +57,11 @@ class _WorldListPageState extends State<WorldListPage> {
     final argument = ModalRoute.of(context)?.settings.arguments as WorldListPageArguments?;
     if (argument == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.popAndPushNamed(context, Routes.home);
+        }
       });
       return;
     }

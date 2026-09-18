@@ -37,7 +37,11 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     final argument = ModalRoute.of(context)?.settings.arguments as EntranceFeaturePageArgument?;
     if (argument == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.popAndPushNamed(context, Routes.home);
+        }
       });
       return;
     }
