@@ -1,6 +1,5 @@
-import 'dart:isolate';
-
 import 'package:cachemesh/cachemesh.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/navigator.dart';
@@ -21,9 +20,9 @@ abstract class WorldsProvider<W> {
 }
 
 Future<List<Node>> _navigateAsync(World world, NavigateArguments arguments) async {
-  return await Isolate.run(() {
+  return await compute((_) {
     return navigate(world, arguments);
-  });
+  }, ());
 }
 
 class WorldsManager<W extends Enum> {
