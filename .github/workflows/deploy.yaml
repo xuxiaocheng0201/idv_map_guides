@@ -34,10 +34,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Integrate platform
+      - name: Integrate Platform
         run: flutter create --platforms web .
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: flutter pub get
 
       - name: Generate intl
@@ -46,8 +46,11 @@ jobs:
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Compile Web Worker
+        run: dart compile js "./lib/core/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.js"
+
       - name: Build Web
-        run: flutter build web --release --wasm --base-href /${{ github.event.repository.name }}/
+        run: flutter build web --release --base-href /${{ github.event.repository.name }}/
 
       - name: Upload Debug Symbols to Sentry
         run: dart run sentry_dart_plugin

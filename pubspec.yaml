@@ -23,6 +23,7 @@ dependencies:
   comparators: ^1.2.0
   cachemesh: ^2.0.0
   collection: ^1.19.1
+  squadron: ^7.4.3
 
 dev_dependencies:
   flutter_test:
@@ -32,6 +33,7 @@ dev_dependencies:
   sentry_dart_plugin: ^3.4.0
   build_runner: ^2.16.0
   freezed: ^4.0.0
+  squadron_builder: ^9.3.2
 
 flutter:
   uses-material-design: true

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:messagepack/messagepack.dart';
 
@@ -55,6 +56,24 @@ extension _PositionSerde on Position {
   }
   void pack(Packer packer) {
     packer.packListLength(2);
+    packer.packInt(x);
+    packer.packInt(y);
+  }
+}
+
+extension _NodeSerde on Node {
+  static Node unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 3) throw FormatException();
+    final layer = _GroundLayerSerde.unpack(unpacker);
+    final x = unpacker.unpackInt();
+    final y = unpacker.unpackInt();
+    if (x == null || y == null) throw FormatException();
+    return Node(layer, x, y);
+  }
+  void pack(Packer packer) {
+    packer.packListLength(3);
+    layer.pack(packer);
     packer.packInt(x);
     packer.packInt(y);
   }
@@ -330,4 +349,95 @@ Uint8List serializeWorld(WorldFile world) {
 WorldFile deserializeWorld(Uint8List content) {
   final unpacker = Unpacker(content);
   return _WorldFileSerde.unpack(unpacker);
+}
+
+extension _KeyResourceSerde on KeyResource {
+  static KeyResource? unpackNullable(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len == 0) return null;
+    if (len != 3) throw FormatException();
+    final id = unpacker.unpackInt();
+    final urgency = unpacker.unpackDouble();
+    if (id == null || urgency == null) throw FormatException();
+    final transport = _NodeSerde.unpack(unpacker);
+    return KeyResource(id, urgency, transport);
+  }
+  void pack(Packer packer) {
+    packer.packListLength(3);
+    packer.packInt(id);
+    packer.packDouble(urgency);
+    transport.pack(packer);
+  }
+}
+
+extension _NavigateArgumentsSerde on NavigateArguments {
+  static NavigateArguments unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 4) throw FormatException();
+    final start = _NodeSerde.unpack(unpacker);
+    final resourcesLen = unpacker.unpackListLength();
+    final resources = <Node>{};
+    for (int i = 0; i < resourcesLen; i++) {
+      final resource = _NodeSerde.unpack(unpacker);
+      resources.add(resource);
+    }
+    final exitsLen = unpacker.unpackListLength();
+    final exits = <Node>{};
+    for (int i = 0; i < exitsLen; i++) {
+      final exit = _NodeSerde.unpack(unpacker);
+      exits.add(exit);
+    }
+    final keyResource = _KeyResourceSerde.unpackNullable(unpacker);
+    return NavigateArguments(start: start, resources: resources, exits: exits, keyResource: keyResource);
+  }
+  void pack(Packer packer) {
+    packer.packListLength(4);
+    start.pack(packer);
+    final resources = this.resources.sorted();
+    packer.packListLength(resources.length);
+    for (final resource in resources) {
+      resource.pack(packer);
+    }
+    final exits = this.exits.sorted();
+    packer.packListLength(exits.length);
+    for (final exit in exits) {
+      exit.pack(packer);
+    }
+    if (keyResource == null) {
+      packer.packListLength(0);
+    } else {
+      keyResource!.pack(packer);
+    }
+  }
+}
+
+Uint8List serializeNavigateArguments(NavigateArguments arguments) {
+  final packer = Packer();
+  arguments.pack(packer);
+  return packer.takeBytes();
+}
+
+NavigateArguments deserializeNavigateArguments(Uint8List content) {
+  final unpacker = Unpacker(content);
+  return _NavigateArgumentsSerde.unpack(unpacker);
+}
+
+Uint8List serializeNavigatePath(List<Node> path) {
+  final packer = Packer();
+  packer.packListLength(path.length);
+  for (final node in path) {
+    node.pack(packer);
+  }
+  return packer.takeBytes();
+}
+
+List<Node> deserializeNavigatePath(Uint8List content) {
+  final unpacker = Unpacker(content);
+  final pathLen = unpacker.unpackListLength();
+  final path = <Node>[];
+  for (int i = 0; i < pathLen; i++) {
+    final node = _NodeSerde.unpack(unpacker);
+    path.add(node);
+  }
+  return path;
 }

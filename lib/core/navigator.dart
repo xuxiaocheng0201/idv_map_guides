@@ -1,9 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:squadron/squadron.dart';
 
+import 'navigator.activator.g.dart';
 part 'navigator.freezed.dart';
+part 'navigator.worker.g.dart';
 
 @freezed
 abstract class KeyResource with _$KeyResource {
@@ -273,4 +279,32 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   }
 
   return pathIndices.reversed.map((i) => nodes[i]).toList();
+}
+
+@SquadronService(baseUrl: '~/workers')
+base class NavigateSquadron {
+  @SquadronMethod()
+  Future<Uint8List> doCompute(Uint8List structuresFile, Uint8List worldFile, Uint8List arguments) async {
+    final structures = deserializeStructures(structuresFile);
+    final world = deserializeWorld(worldFile);
+    final worldInstance = constructWorld(structures, world);
+    final navigateArguments = deserializeNavigateArguments(arguments);
+    final path = navigate(worldInstance, navigateArguments);
+    return serializeNavigatePath(path);
+  }
+}
+
+Future<List<Node>> navigateAsync(Uint8List structuresFile, Uint8List worldFile, NavigateArguments navigateArguments) async {
+  final worker = NavigateSquadronWorker();
+  try {
+    final arguments = serializeNavigateArguments(navigateArguments);
+    final path = await worker.doCompute(structuresFile, worldFile, arguments);
+    return deserializeNavigatePath(path);
+  // } on SquadronException catch (e) {
+  //   print(e.message);
+  //   print(e.stackTrace);
+  //   rethrow;
+  } finally {
+    worker.stop();
+  }
 }

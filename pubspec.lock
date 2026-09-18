@@ -129,6 +129,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.0"
+  cancelation_token:
+    dependency: transitive
+    description:
+      name: cancelation_token
+      sha256: "7f1cd2148f6d14dc307ddc22cece6ab52f60e3b7212ef0b8cb9fd294d7b06931"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.1.0"
   characters:
     dependency: transitive
     description:
@@ -469,6 +477,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "6.1.0"
+  logger:
+    dependency: transitive
+    description:
+      name: logger
+      sha256: "2a0dc097e7b01d942475bdd552356db2d0f768b05540bd4b2b53f1840f2239a7"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.8.0"
   logging:
     dependency: transitive
     description:
@@ -690,6 +706,22 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.10.2"
+  squadron:
+    dependency: "direct main"
+    description:
+      name: squadron
+      sha256: "197777c09d9d6f7ee2c24554c37632a2c3035c3b5160f6c096679b121073d674"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "7.4.3"
+  squadron_builder:
+    dependency: "direct dev"
+    description:
+      name: squadron_builder
+      sha256: "08debc30b15702c339728f59730061e4ef7e057cf5d2909f1c6b5919a0c2251b"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "9.3.2"
   stack_trace:
     dependency: transitive
     description:
@@ -762,6 +794,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.4.0"
+  using:
+    dependency: transitive
+    description:
+      name: using
+      sha256: "60cc4569f782c5d73637a16aac933aea59fa5d31ed019fd50128f209e25730d3"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.5"
   uuid:
     dependency: transitive
     description:

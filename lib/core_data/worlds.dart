@@ -1,5 +1,4 @@
 import 'package:cachemesh/cachemesh.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/navigator.dart';
@@ -19,12 +18,6 @@ abstract class WorldsProvider<W> {
   NavigateArguments navigateArguments(World world, EntranceType entrance);
 }
 
-Future<List<Node>> _navigateAsync(World world, NavigateArguments arguments) async {
-  return await compute((_) {
-    return navigate(world, arguments);
-  }, ());
-}
-
 class WorldsManager<W extends Enum> {
   final WorldsProvider<W> provider;
   WorldsManager({required this.provider});
@@ -35,44 +28,42 @@ class WorldsManager<W extends Enum> {
 
   final Cache cache = Cache();
 
-  Future<Map<String, Structure>> _getStructures() async {
+  Future<(Uint8List, Map<String, Structure>)> _getStructures() async {
     final result = await cache.get(
       key: 'structures',
       fetch: () async {
         final data = await _loadAssets('structures.data');
-        return Result.success(deserializeStructures(data));
+        return Result.success((data, deserializeStructures(data)));
       },
     );
     switch (result) {
-      case Success<Map<String, Structure>>():
+      case Success():
         return result.value;
-      case Failure<Map<String, Structure>>():
+      case Failure():
         throw result.error;
     }
   }
 
-  Future<World> getWorld(W world) async {
-    final structures = await _getStructures();
+  Future<(Uint8List, World)> _getWorld(W world) async {
+    final structures = (await _getStructures()).$2;
     final result = await cache.get(
       key: 'world/${world.index}',
       fetch: () async {
         final data = await _loadAssets(provider.worldAssets(world));
         final worldFile = deserializeWorld(data);
-        return Result.success(constructWorld(structures, worldFile));
+        return Result.success((data, constructWorld(structures, worldFile)));
       },
     );
     switch (result) {
-      case Success<World>():
+      case Success():
         return result.value;
-      case Failure<World>():
+      case Failure():
         throw result.error;
     }
   }
 
-  Future<void> _preload() async {
-    for (final world in provider.allWorlds) {
-      await getWorld(world);
-    }
+  Future<World> getWorld(W world) async {
+    return (await _getWorld(world)).$2;
   }
 
   Future<Map<MainEntranceFeature, Set<W>>> getWorldsByMainEntranceFeature(EntranceType entrance) async {
@@ -95,18 +86,19 @@ class WorldsManager<W extends Enum> {
   }
 
   Future<List<Node>> getNavigateResult(W world, NavigateArguments arguments) async {
+    final structuresFile = (await _getStructures()).$1;
+    final worldFile = (await _getWorld(world)).$1;
     final result = await cache.get(
       key: 'navigate/${world.index}/${arguments.identify}',
       fetch: () async {
-        final worldInstance = await getWorld(world);
-        final path = await _navigateAsync(worldInstance, arguments);
+        final path = await navigateAsync(structuresFile, worldFile, arguments);
         return Result.success(path);
       },
     );
     switch (result) {
-      case Success<List<Node>>():
+      case Success():
         return result.value;
-      case Failure<List<Node>>():
+      case Failure():
         throw result.error;
     }
   }
@@ -124,5 +116,5 @@ WorldsManager<dynamic>? getWorldsManager(WorldType type, WorldDifficulty difficu
       WorldDifficulty.hard => _theBringerOfDoomHard,
       WorldDifficulty.insane => _theBringerOfDoomInsane,
     },
-  }?.._preload();
+  };
 }
