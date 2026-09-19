@@ -77,6 +77,12 @@ class World {
     return map[layer]?[x - minX][y - minY];
   }
 
+  Node? entranceNode(EntranceType entrance) {
+    final position = entrances[entrance];
+    if (position == null) return null;
+    return Node(entrance.layer, position.x, position.y);
+  }
+
   int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation, bool isSuspicious) {
     // validate
     final errors = WorldErrors(errors: <WorldError>[]);

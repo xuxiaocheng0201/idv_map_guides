@@ -247,8 +247,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
 
     // 动作2：正常移动
-    final keyCollected = keyResourceBit == null || (mask & keyResourceBit) != 0;
-    final stepCost = keyCollected ? 1.0 : 1.0 + urgency;
+    final stepCost = (keyResourceBit != null && !canTransport) ? 1.0 + urgency : 1.0;
 
     for (final v in adj[currentIndex]) {
       final newMask = mask | nodeResourceBit[v];

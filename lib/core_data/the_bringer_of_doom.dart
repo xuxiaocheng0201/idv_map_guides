@@ -289,8 +289,7 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
   NavigateArguments navigateArguments(World world, EntranceType entrance) {
     final origin = _navigateArguments(world, entrance);
     final museRoomId = world.rooms['muse_room']!.firstOrNull!;
-    final altarPos = world.entrances[EntranceType.alterBasement]!;
-    final alterNode = Node(EntranceType.alterBasement.layer, altarPos.x, altarPos.y);
+    final alterNode = world.entranceNode(EntranceType.alterBasement)!;
     final keyResource = KeyResource(museRoomId, 1, alterNode);
     return origin.copyWith(keyResource: keyResource);
   }
