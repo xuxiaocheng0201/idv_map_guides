@@ -297,6 +297,12 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
 }
 
 List<TheBringerOfDoomInsaneWorlds> _allInsaneWorlds() => [
+  TheBringerOfDoomInsaneWorlds.east1Lightning,
+  TheBringerOfDoomInsaneWorlds.eastBreakC,
+  TheBringerOfDoomInsaneWorlds.eastC,
+  TheBringerOfDoomInsaneWorlds.eastCactus,
+  TheBringerOfDoomInsaneWorlds.eastLongZ,
+  TheBringerOfDoomInsaneWorlds.eastShortT,
   TheBringerOfDoomInsaneWorlds.northB,
   TheBringerOfDoomInsaneWorlds.northCactus,
   TheBringerOfDoomInsaneWorlds.northLoop,
