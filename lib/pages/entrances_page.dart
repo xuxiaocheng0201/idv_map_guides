@@ -123,14 +123,11 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             ],
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: TabBarView(
-                children: [
-                  for (final entry in worlds.entries)
-                    _buildThumbnailGrid(context, entrance, entry.key, entry.value),
-                ],
-              ),
+            child: TabBarView(
+              children: [
+                for (final entry in worlds.entries)
+                  _buildThumbnailGrid(context, entrance, entry.key, entry.value),
+              ],
             ),
           ),
         ],
@@ -140,49 +137,50 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
 
   Widget _buildThumbnailGrid(BuildContext context, EntranceType entrance, EntranceFeature _, LinkedHashMap<BoolList, List<dynamic>> worlds) {
     final worldsList = worlds.values.toList();
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 180,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+        ),
+        itemCount: worldsList.length,
+        itemBuilder: (context, index) {
+          final worlds = worldsList[index];
+          final firstWorld = worlds.first;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return Tooltip(
+                message: worlds.map((m) => m.label(context) as String).join(' / '),
+                verticalOffset: constraints.maxWidth / 2 + 4,
+                showDuration: const Duration(seconds: 3),
+                child: FutureBuilder<World>(
+                  future: manager.getWorld(firstWorld),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final world = snapshot.data!;
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          Routes.worlds,
+                          arguments: WorldListPageArguments(manager: manager, worlds: worlds, entrance: entrance),
+                        );
+                      },
+                      child: CustomPaint(
+                        painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+          );
+        },
       ),
-      itemCount: worldsList.length,
-      itemBuilder: (context, index) {
-        final worlds = worldsList[index];
-        final firstWorld = worlds.first;
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return Tooltip(
-              message: worlds.map((m) => m.label(context) as String).join(' / '),
-              verticalOffset: constraints.maxWidth / 2 + 4,
-              showDuration: const Duration(seconds: 3),
-              child: FutureBuilder<World>(
-                future: manager.getWorld(firstWorld),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final world = snapshot.data!;
-                  return InkWell(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        Routes.worlds,
-                        arguments: WorldListPageArguments(manager: manager, worlds: worlds, entrance: entrance),
-                      );
-                    },
-                    child: CustomPaint(
-                      painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
-                    ),
-                  );
-                },
-              ),
-            );
-          }
-        );
-      },
     );
   }
 }
