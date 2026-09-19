@@ -895,6 +895,31 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                 children: [
                   Text(direction.label(context)),
                   const SizedBox(width: 8),
+                  Builder(
+                    builder: (context) {
+                      final edgeType = cell.getEdgeType(direction);
+                      final isDoor = edgeType == EdgeType.door;
+                      final isToggleable = isDoor || edgeType == EdgeType.nothing;
+                      return Tooltip(
+                        message: isToggleable
+                          ? (isDoor ? '门（点击设为无）' : '无（点击设为门）')
+                          : '当前为「${edgeType.label(context)}」，无法使用快捷开关',
+                        child: Switch(
+                          value: isDoor,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: isToggleable
+                            ? (value) => setState(() {
+                              _cells[position] = cell.setEdgeType(
+                                direction,
+                                value ? EdgeType.door : EdgeType.nothing,
+                              );
+                            })
+                            : null,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButton<EdgeType>(
                       value: cell.getEdgeType(direction),
