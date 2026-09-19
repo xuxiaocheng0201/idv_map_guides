@@ -222,7 +222,7 @@ enum TheBringerOfDoomInsaneWorlds {
   west11,
   westFlipT,
   west1BookGallery,
-  west1Library,
+  west1Corner,
   west5Bed,
   westVerticalL,
   westStair;
@@ -244,8 +244,8 @@ enum TheBringerOfDoomInsaneWorlds {
     eastLongZ => 'east_long_z',
     west11 => 'west_11',
     westFlipT => 'west_flip_t',
-    west1BookGallery => 'west1_book_gallery',
-    west1Library => 'west_1_library',
+    west1BookGallery => 'west_1_book_gallery',
+    west1Corner => 'west_1_corner',
     west5Bed => 'west_5_bed',
     westVerticalL => 'west_vertical_l',
     westStair => 'west_stair',
@@ -269,7 +269,7 @@ enum TheBringerOfDoomInsaneWorlds {
       west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
       westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
       west1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1BookGallery,
-      west1Library => S.of(context).worldTheBringerOfDoomInsaneWest1Library,
+      west1Corner => S.of(context).worldTheBringerOfDoomInsaneWest1Corner,
       west5Bed => S.of(context).worldTheBringerOfDoomInsaneWest5Bed,
       westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
       westStair => S.of(context).worldTheBringerOfDoomInsaneWestStair,
@@ -280,7 +280,7 @@ enum TheBringerOfDoomInsaneWorlds {
 class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDoomInsaneWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.insane;
-  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => _allInsaneWorlds();
+  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => TheBringerOfDoomInsaneWorlds.values;
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
@@ -295,20 +295,3 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     return origin.copyWith(keyResource: keyResource);
   }
 }
-
-List<TheBringerOfDoomInsaneWorlds> _allInsaneWorlds() => [
-  TheBringerOfDoomInsaneWorlds.east1Lightning,
-  TheBringerOfDoomInsaneWorlds.eastBreakC,
-  TheBringerOfDoomInsaneWorlds.eastC,
-  TheBringerOfDoomInsaneWorlds.eastCactus,
-  TheBringerOfDoomInsaneWorlds.eastLongZ,
-  TheBringerOfDoomInsaneWorlds.eastShortT,
-  TheBringerOfDoomInsaneWorlds.northB,
-  TheBringerOfDoomInsaneWorlds.northCactus,
-  TheBringerOfDoomInsaneWorlds.northLoop,
-  TheBringerOfDoomInsaneWorlds.northStair,
-  TheBringerOfDoomInsaneWorlds.northZ1,
-  TheBringerOfDoomInsaneWorlds.southFloating,
-  TheBringerOfDoomInsaneWorlds.southH,
-  TheBringerOfDoomInsaneWorlds.southThreeRed,
-];

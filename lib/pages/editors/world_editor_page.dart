@@ -269,6 +269,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                         const SizedBox(width: 8),
                         IconButton(
                           icon: const Icon(Icons.delete),
+                          color: Colors.red,
                           tooltip: '删除当前结构',
                           onPressed: _selectedInstanceIndex == null ? null : _removeInstance,
                         ),
