@@ -128,6 +128,7 @@ void paintPath(
   }
 
   // 计算每个路径节点的偏移量（分配车道）
+  // FIXME: 优化直角转弯的地方，也许分布轴为斜线？，细节可参考噩梦-北Z1
   final laneOffsets = <(int, int), Offset>{}; // key: (polylineIndex, nodeIndex)
   for (final entry in cellNodes.entries) {
     final infos = entry.value;
