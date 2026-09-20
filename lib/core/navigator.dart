@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:comparators/comparators.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
@@ -13,10 +14,14 @@ import 'navigator.activator.g.dart';
 part 'navigator.freezed.dart';
 part 'navigator.worker.g.dart';
 
+/// 关键资源
+///
+/// 表示一个需要优先收集的资源：它位于 [position]，可以传送到 [transport]
+/// 并且在未传送前每走一步都会增加 [urgency] 的额外代价
 @freezed
 abstract class KeyResource with _$KeyResource {
   KeyResource._();
-  factory KeyResource(int id, double urgency, Node transport) = _KeyResource;
+  factory KeyResource(Node position, Node transport, double urgency) = _KeyResource;
 }
 
 extension NodeIdentify on Node {
@@ -34,31 +39,30 @@ abstract class NavigateArguments with _$NavigateArguments {
   }) = _NavigateArguments;
 
   String get identify => '${start.identify}'
-      '/${resources.sorted(Comparable.compare).join('.')}'
-      '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(".")}${keyResource == null ? '' : ''
-      '/${keyResource!.id}.${keyResource!.urgency}.${keyResource!.transport.identify}'}';
+      '/${resources.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
+      '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(",")}${keyResource == null ? '' : ''
+      '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}';
 }
 
 @freezed
-abstract class _State with _$State {
-  _State._();
-  factory _State(
-      Set<int> collectedIds,
-      int currentIndex,
-      bool canTransport,
-  ) = __State;
+abstract class _AStarState with _$AStarState {
+  _AStarState._();
+  factory _AStarState({
+    /// 已收集的资源索引
+    required Set<int> collectedResourceIndexes,
+    /// 当前所在节点在节点列表中的索引
+    required int currentNodeIndex,
+    /// 是否已经从关键资源点传送过
+    required bool hasTransported,
+  }) = __AStarState;
 }
 
 List<Node> navigate(World world, NavigateArguments arguments) {
-  final start = arguments.start;
-  final resources = arguments.resources;
-  final exits = arguments.exits;
-  final keyResource = arguments.keyResource;
+  assert(arguments.keyResource == null || arguments.resources.contains(arguments.keyResource!.position));
 
-  final effectiveResources = <Object>{...resources};
-  if (keyResource != null) effectiveResources.add(keyResource.id);
+  // 1. 构建所有可通行节点的列表和索引映射
 
-  // 1. 构建节点列表与映射
+  // 构建节点列表与映射
   final nodes = <Node>[];
   final nodeToIndex = <Node, int>{};
   for (final layer in world.map.keys) {
@@ -75,14 +79,53 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   }
   final n = nodes.length;
   if (n == 0) return [];
-  final startIndex = nodeToIndex[start];
+  // 起点映射
+  final startIndex = nodeToIndex[arguments.start];
   if (startIndex == null) return [];
+  // 资源点列表与映射
+  final resources = arguments.resources.toList();
+  final resourceToIndex = <Node, int>{};
+  for (var i = 0; i < resources.length; i++) {
+    resourceToIndex[resources[i]] = i;
+  }
+  final k = resources.length;
+  /// 获取节点索引对应的资源点索引
+  Set<int> getNodeResource(int nodeIndex) {
+    final node = nodes[nodeIndex];
+    final resourceIndex = resourceToIndex[node];
+    return resourceIndex == null ? <int>{} : <int>{resourceIndex};
+  } // 可使用 `.firstOrNull` 转为 int?
+  /// 获取资源点索引对应的节点索引
+  int getResourceNode(int resourceIndex) {
+    final node = resources[resourceIndex];
+    return nodeToIndex[node]!;
+  }
+  // 出口索引集合
+  final exitIndexes = <int>{};
+  for (final node in arguments.exits) {
+    final idx = nodeToIndex[node];
+    if (idx != null) exitIndexes.add(idx);
+  }
+  // 关键资源相关
+  int? keyResourceIndex;
+  int? keyResourceTransportedNodeIndex;
+  double defaultWeight = 1.0;
+  double keyResourceWeight = 0.0;
+  if (arguments.keyResource != null) {
+    final keyResource = arguments.keyResource!;
+    keyResourceIndex = resourceToIndex[keyResource.position]!;
+    keyResourceTransportedNodeIndex = nodeToIndex[keyResource.transport]!;
+    keyResourceWeight = keyResource.urgency;
+  }
 
-  // 2. 构建有向邻接表
+  // 2. 处理楼梯、门、洞、同一结构内等的移动
+
+  // 构建有向邻接表
   final adj = List.generate(n, (_) => <int>[]);
   for (var i = 0; i < n; i++) {
     final u = nodes[i];
     final cell = world.cell(u.layer, u.x, u.y)!;
+    // 楼梯
     switch (cell.info.isStair) {
       case null:
       case StairTransport.nothing:
@@ -104,6 +147,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         if (vi != null) adj[i].add(vi);
         break;
     }
+    // 平面移动
     for (final direction in Direction.values) {
       final (dx, dy) = direction.dxy;
       final nx = u.x + dx;
@@ -134,75 +178,20 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       }
     }
   }
-
-  // TODO: connect entrances
-  // final exitIndicesSet = <int>{};
-  // for (final entry in world.entrances.entries) {
-  //   final layer = entry.key.layer();
-  //   final pos = entry.value;
-  //   final node = Node(layer, pos.x, pos.y);
-  //   final idx = nodeToIndex[node];
-  //   if (idx != null) exitIndicesSet.add(idx);
-  // }
-  // final exitIndices = exitIndicesSet.toList();
-  // for (final i in exitIndices) {
-  //   for (final j in exitIndices) {
-  //     if (i == j) continue;
-  //     adj[i].add(j);
-  //   }
-  // }
-
-  // 3. 资源位映射：将需要收集的资源 id 映射到 0..k-1 的位
-  final resourceList = effectiveResources.toList();
-  final resourceToBit = <Object, int>{};
-  for (var i = 0; i < resourceList.length; i++) {
-    resourceToBit[resourceList[i]] = i;
-  }
-  final k = resourceList.length;
-  final fullMask = (1 << k) - 1;
-
-  // 4. 每个节点对应的资源位掩码
-  final nodeResourceBit = List<int>.generate(n, (i) {
-    final node = nodes[i];
-    final cell = world.cell(node.layer, node.x, node.y)!;
-    int bit = 0;
-    final cellBit = resourceToBit[node];
-    if (cellBit != null) bit |= 1 << cellBit;
-    if (keyResource != null && cell.structureId == keyResource.id) {
-      bit |= 1 << resourceToBit[keyResource.id]!;
-    }
-    return bit;
-  });
-
-  // 5. 出口索引集合
-  final exitIndices = <int>{};
-  for (final node in exits) {
-    final idx = nodeToIndex[node];
-    if (idx != null) exitIndices.add(idx);
-  }
-
-  // 6. 关键资源相关
-  int? keyResourceBit;
-  double urgency = 0.0;
-  int? transportIndex;
-  if (keyResource != null) {
-    final bit = resourceToBit[keyResource.id];
-    if (bit == null) return [];
-    keyResourceBit = 1 << bit;
-    urgency = keyResource.urgency;
-    transportIndex = nodeToIndex[keyResource.transport];
-    if (transportIndex == null) return [];
-  }
-
-  // 7. 反向邻接表，用于多源 BFS
-  final radj = List.generate(n, (_) => <int>[]);
+  // TODO: 各出入口间的移动
+  // 反向邻接表
+  final reverseAdj = List.generate(n, (_) => <int>[]);
   for (var u = 0; u < n; u++) {
     for (final v in adj[u]) {
-      radj[v].add(u);
+      reverseAdj[v].add(u);
     }
   }
 
-  List<int?> bfs(List<int> sources) {
+  // 3. 预计算各节点到出口、各资源点之间的距离
+
+  /// 反向多源BFS，cost[i] 表示从节点 i 到最近源点的最短步数。
+  /// 时间复杂度 O(n)
+  List<int?> bfs(Set<int> sources) {
     final dist = List<int?>.filled(n, null);
     if (sources.isEmpty) return dist;
     final q = Queue<int>();
@@ -212,283 +201,219 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     while (q.isNotEmpty) {
       final v = q.removeFirst();
-      final dv = dist[v]!;
-      for (final u in radj[v]) {
+      final preStep = dist[v]!;
+      for (final u in reverseAdj[v]) {
         if (dist[u] == null) {
-          dist[u] = dv + 1;
+          dist[u] = preStep + 1;
           q.add(u);
         }
       }
     }
     return dist;
   }
+  // 任意节点到最近出口的最短步数
+  final distToExit = exitIndexes.isEmpty ? List<int?>.filled(n, 0) : bfs(exitIndexes);
+  // 任意节点到各个资源点的最短步数，distToResource[b][i] 表示从节点 i 到资源点 b 的最短距离
+  final distToResource = List<List<int?>>.generate(k, (b) => bfs(<int>{getResourceNode(b)}));
+  /// 获取资源点到出口的最短距离
+  int? distResourceToExit(int resourceIndex) {
+    final nodeIndex = getResourceNode(resourceIndex);
+    return distToExit[nodeIndex];
+  }
+  /// 获取资源点 i 到资源点 j 的最短距离（可能不对称）
+  int? distResourceToResource(int resourceIndexI, int resourceIndexJ) {
+    if (resourceIndexI == resourceIndexJ) return 0;
+    final nodeIndexI = getResourceNode(resourceIndexI);
+    return distToResource[resourceIndexJ][nodeIndexI];
+  }
+  // 任意节点到关键资源点的最短步数
+  final distToKey = keyResourceIndex == null ? null : bfs(<int>{getResourceNode(keyResourceIndex)});
 
-  // 到任意出口的最短步数
-  final distToExit = exitIndices.isEmpty
-      ? List<int?>.filled(n, 0)
-      : bfs(exitIndices.toList());
+  // 4. A* / 分支限界搜索
 
-  // 每个资源位对应的节点集合
-  final bitNodes = List.generate(k, (_) => <int>[]);
-  for (var i = 0; i < n; i++) {
-    final bits = nodeResourceBit[i];
+  /// 计算 剩余资源点 + 当前点 + 出口 的最小生成树
+  /// 时间复杂度 O(k^2)
+  int? mst(int current, Set<int> collectedResources) {
+    // 尚未收集的资源点
+    final remainingResources = <int>[];
     for (var b = 0; b < k; b++) {
-      if ((bits & (1 << b)) != 0) bitNodes[b].add(i);
-    }
-  }
-
-  // 从任意节点到每个资源位的最短步数
-  final distToBit = List<List<int?>>.generate(k, (b) => bfs(bitNodes[b]));
-
-  const int inf = 1 << 60;
-
-  // 每个资源位到最近出口的步数
-  final bitToExit = List<int>.filled(k, inf);
-  for (var b = 0; b < k; b++) {
-    var best = inf;
-    for (final u in bitNodes[b]) {
-      final d = distToExit[u];
-      if (d != null && d < best) best = d;
-    }
-    bitToExit[b] = best;
-  }
-
-  // 资源位之间的最短步数矩阵
-  final bitDist = List.generate(k, (_) => List<int>.filled(k, inf));
-  for (var i = 0; i < k; i++) {
-    bitDist[i][i] = 0;
-    for (var j = 0; j < k; j++) {
-      if (i == j) continue;
-      var best = inf;
-      for (final u in bitNodes[i]) {
-        final d = distToBit[j][u];
-        if (d != null && d < best) best = d;
-      }
-      bitDist[i][j] = best;
-    }
-  }
-
-  // 到任意关键资源节点的最短步数
-  List<int?>? distToKey;
-  if (keyResourceBit != null) {
-    final keyNodes = <int>[];
-    for (var i = 0; i < n; i++) {
-      if ((nodeResourceBit[i] & keyResourceBit) != 0) keyNodes.add(i);
-    }
-    distToKey = bfs(keyNodes);
-  }
-
-  // 启发式：剩余资源位 + 当前点 + 出口 的 MST 下界，单位是步数
-  double hSteps(int index, int mask) {
-    final remainingBits = <int>[];
-    for (var b = 0; b < k; b++) {
-      if ((mask & (1 << b)) == 0) remainingBits.add(b);
-    }
-
-    if (remainingBits.isEmpty) {
-      if (exitIndices.isEmpty) return 0.0;
-      final d = distToExit[index];
-      return d == null ? double.infinity : d.toDouble();
-    }
-
-    final hasExit = exitIndices.isNotEmpty;
-    final m = 1 + remainingBits.length + (hasExit ? 1 : 0);
-    final distMst = List<List<double>>.generate(
-      m,
-          (_) => List<double>.filled(m, double.infinity),
-    );
-
-    // 当前点 -> 剩余资源位
-    for (var i = 0; i < remainingBits.length; i++) {
-      final b = remainingBits[i];
-      final d = distToBit[b][index];
-      if (d != null) {
-        distMst[0][i + 1] = d.toDouble();
-        distMst[i + 1][0] = d.toDouble();
+      if (!collectedResources.contains(b)) {
+        remainingResources.add(b);
       }
     }
+    // 如果所有资源已收集，只需走到任意出口
+    if (remainingResources.isEmpty) {
+      return distToExit[current];
+    }
 
-    // 剩余资源位之间
-    for (var i = 0; i < remainingBits.length; i++) {
-      for (var j = i + 1; j < remainingBits.length; j++) {
-        final bi = remainingBits[i];
-        final bj = remainingBits[j];
-        final dij = bitDist[bi][bj];
-        final dji = bitDist[bj][bi];
-        final d = dij < dji ? dij : dji;
-        if (d < inf) {
-          distMst[i + 1][j + 1] = d.toDouble();
-          distMst[j + 1][i + 1] = d.toDouble();
+    // 构造距离矩阵：节点 0 为当前点，1..remaining 为剩余资源点，最后为出口点
+    final hasExit = exitIndexes.isNotEmpty;
+    final m = 1 + remainingResources.length + (hasExit ? 1 : 0);
+    final distMst = List<List<int?>>.generate(m, (_) => List<int?>.filled(m, null));
+    int maxDist = 0;
+    // 当前点 -> 资源点
+    for (var i = 0; i < remainingResources.length; i++) {
+      final r = remainingResources[i];
+      final d = distToResource[r][current];
+      distMst[0][i + 1] = d;
+      distMst[i + 1][0] = d;
+      maxDist = max(maxDist, d ?? 0);
+    }
+    // 资源点 -> 资源点
+    for (var i = 0; i < remainingResources.length; i++) {
+      for (var j = i + 1; j < remainingResources.length; j++) {
+        final ri = remainingResources[i];
+        final rj = remainingResources[j];
+        final dij = distResourceToResource(ri, rj);
+        final dji = distResourceToResource(rj, ri);
+        final int? d;
+        if (dij == null) {
+          d = dji;
+        } else if (dji == null) {
+          d = dij;
+        } else {
+          d = dij < dji ? dij : dji; // 取较小值，保证对称
         }
+        distMst[i + 1][j + 1] = d;
+        distMst[j + 1][i + 1] = d;
+        maxDist = max(maxDist, d ?? 0);
       }
     }
-
-    // 出口虚拟点
     if (hasExit) {
       final exitPos = m - 1;
-      final de = distToExit[index];
-      if (de != null) {
-        distMst[0][exitPos] = de.toDouble();
-        distMst[exitPos][0] = de.toDouble();
-      }
-      for (var i = 0; i < remainingBits.length; i++) {
-        final d = bitToExit[remainingBits[i]];
-        if (d < inf) {
-          distMst[i + 1][exitPos] = d.toDouble();
-          distMst[exitPos][i + 1] = d.toDouble();
-        }
+      // 当前点 -> 出口
+      final de = distToExit[current];
+      distMst[0][exitPos] = de;
+      distMst[exitPos][0] = de;
+      maxDist = max(maxDist, de ?? 0);
+      // 资源点 -> 出口
+      for (var i = 0; i < remainingResources.length; i++) {
+        final r = remainingResources[i];
+        final d = distResourceToExit(r);
+        distMst[i + 1][exitPos] = d;
+        distMst[exitPos][i + 1] = d;
+        maxDist = max(maxDist, d ?? 0);
       }
     }
 
-    // Prim 求 MST
+    // Prim 算法求 MST
+    int inf = maxDist + 1; // 最大边权 + 1
     final visited = List<bool>.filled(m, false);
-    final minDist = List<double>.filled(m, double.infinity);
-    minDist[0] = 0.0;
-
-    var total = 0.0;
+    final minDist = List<int>.filled(m, inf);
+    minDist[0] = 0;
+    int total = 0;
     for (var it = 0; it < m; it++) {
-      var u = -1;
-      var best = double.infinity;
+      int best = inf;
+      int? u;
       for (var v = 0; v < m; v++) {
         if (!visited[v] && minDist[v] < best) {
           best = minDist[v];
           u = v;
         }
       }
-      if (u == -1 || best.isInfinite) return double.infinity;
+      if (best == inf || u == null) return null; // 图不连通
       visited[u] = true;
       total += best;
       for (var v = 0; v < m; v++) {
-        if (!visited[v] && distMst[u][v] < minDist[v]) {
-          minDist[v] = distMst[u][v];
+        if (!visited[v]) {
+          final d = distMst[u][v];
+          if (d != null && d < minDist[v]) {
+            minDist[v] = d;
+          }
         }
       }
     }
     return total;
   }
-
-  // 总启发式：处理传送前后的边权变化
-  double heuristic(int index, int mask, bool canTransport) {
-    if (keyResourceBit == null || canTransport) {
-      return hSteps(index, mask);
+  /// 启发式函数：使用最小生成树来计算下界
+  double heuristic(int current, Set<int> collectedResources, bool hasTransported) {
+    final distMst = mst(current, collectedResources);
+    // 没有关键资源点或已经传送过，直接使用普通 MST 作为下界
+    if (keyResourceIndex == null || hasTransported) {
+      return distMst == null ? double.infinity : defaultWeight * distMst.toDouble();
     }
-
-    final w0 = 1.0 + urgency;
-
-    // 不传送：所有剩余移动都按 w0 计费
-    final noTransport = w0 * hSteps(index, mask);
-
-    // 传送下界：至少先走到关键资源点，然后传送到 transportIndex，再至少到出口
-    if (transportIndex == null || distToKey == null) return noTransport;
-
-    final dKey = distToKey[index];
-    if (dKey == null) return noTransport;
-
-    final afterTransport = exitIndices.isEmpty
-        ? 0.0
-        : (distToExit[transportIndex] ?? 0).toDouble();
-
-    final transport = w0 * dKey + afterTransport;
-
-    return min(noTransport, transport).toDouble();
+    final weight = defaultWeight + keyResourceWeight; // 未传送时的每步代价
+    // 不传送，即以未传送代价走完全程
+    final noTransport = distMst == null ? double.infinity : weight * distMst.toDouble();
+    // 传送，先走到关键资源点，再直接到出口 TODO：也许使用更好的启发式？比如中间加一个普通资源点什么的来提升下界
+    final beforeTransport = distToKey![current];
+    if (beforeTransport == null) return noTransport;
+    final afterTransport = distToExit[keyResourceTransportedNodeIndex!];
+    if (afterTransport == null) return noTransport;
+    final doTransport = weight * beforeTransport.toDouble() + defaultWeight * afterTransport.toDouble();
+    // 取 传送/不传送 最小作为下界
+    return min(noTransport, doTransport);
   }
-
-  // 8. 状态编码：stateKey = ((mask * n + currentIndex) << 1) | canTransport
-  int encode(int mask, int index, bool canTransport) {
-    return ((mask * n + index) << 1) | (canTransport ? 1 : 0);
-  }
-
-  // 9. A* / 分支限界搜索
-  final startMask = nodeResourceBit[startIndex];
-  final startKey = encode(startMask, startIndex, false);
-
-  final dist = <int, double>{startKey: 0.0};
-  final prev = <int, int>{};
-
-  final pq = HeapPriorityQueue<(double, double, int)>((a, b) {
-    final c = a.$1.compareTo(b.$1);
-    return c != 0 ? c : a.$2.compareTo(b.$2);
-  });
-
-  final startH = heuristic(startIndex, startMask, false);
+  // 基本结构
+  final cost = <_AStarState, double>{}; // 每个状态的最小实际代价
+  final prev = <_AStarState, _AStarState>{}; // 记录前驱状态，用于回溯路径
+  final pq = HeapPriorityQueue<(double, double, _AStarState)>(compareSequentially([
+    compare<(double, double, _AStarState)>((item) => item.$1),
+    compare<(double, double, _AStarState)>((item) => item.$2),
+  ])); // 优先队列，元素为 (f, g, state)，先按 f 排序，再按 g 排序
+  // 起点设置
+  final startResources = getNodeResource(startIndex);
+  final startKey = _AStarState(collectedResourceIndexes: startResources, currentNodeIndex: startIndex, hasTransported: false);
+  cost[startKey] = 0.0;
+  final startH = heuristic(startIndex, startResources, false);
   pq.add((startH, 0.0, startKey));
-
-  var bestCost = double.infinity;
-  int? finalStateKey;
-
+  // 搜索
+  double bestCost = double.infinity;
+  _AStarState? bestFinalState;
   while (pq.isNotEmpty) {
-    final (f, d, stateKey) = pq.removeFirst();
-    if (d > (dist[stateKey] ?? double.infinity)) continue;
-    if (f >= bestCost) break;
-
-    final canTransport = (stateKey & 1) == 1;
-    final temp = stateKey >> 1;
-    final currentIndex = temp % n;
-    final mask = temp ~/ n;
-
-    // 完成条件
-    if (mask == fullMask) {
-      if (exitIndices.isEmpty || exitIndices.contains(currentIndex)) {
-        bestCost = d;
-        finalStateKey = stateKey;
-        break;
-      }
+    final (f, g, state) = pq.removeFirst();
+    if (g > (cost[state] ?? double.infinity)) continue; // 如果该状态已经有更优代价，跳过
+    if (f >= bestCost) break; // 如果 f 已经不小于当前最优完成代价，剪枝
+    final hasTransported = state.hasTransported;
+    final current = state.currentNodeIndex;
+    final collectedResources = state.collectedResourceIndexes;
+    // 完成条件：所有资源已收集，且到达出口
+    if (collectedResources.length == k && (exitIndexes.isEmpty || exitIndexes.contains(current))) {
+      bestCost = g;
+      bestFinalState = state;
+      break;
     }
-
     // 动作1：传送
-    if (keyResourceBit != null && !canTransport && transportIndex != null) {
-      if ((nodeResourceBit[currentIndex] & keyResourceBit) != 0) {
-        final newMask = mask | nodeResourceBit[transportIndex];
-        final newStateKey = encode(newMask, transportIndex, true);
-        final nd = d;
-        final cur = dist[newStateKey] ?? double.infinity;
-        if (nd < cur) {
-          final nh = heuristic(transportIndex, newMask, true);
-          if (nd + nh < bestCost) {
-            dist[newStateKey] = nd;
-            prev[newStateKey] = stateKey;
-            pq.add((nd + nh, nd, newStateKey));
-          }
+    if (keyResourceIndex != null && !hasTransported && getNodeResource(current).contains(keyResourceIndex)) {
+      final newResources = {...collectedResources, ...getNodeResource(keyResourceTransportedNodeIndex!)};
+      final newState = _AStarState(collectedResourceIndexes: newResources, currentNodeIndex: keyResourceTransportedNodeIndex, hasTransported: true);
+      final newG = g; // 传送本身不消耗步数
+      if (newG < (cost[newState] ?? double.infinity)) {
+        final newH = heuristic(keyResourceTransportedNodeIndex, newResources, true);
+        if (newG + newH < bestCost) {
+          cost[newState] = newG;
+          prev[newState] = state;
+          pq.add((newG + newH, newG, newState));
         }
       }
     }
-
     // 动作2：正常移动
-    final stepCost =
-    (keyResourceBit != null && !canTransport) ? 1.0 + urgency : 1.0;
-
-    for (final v in adj[currentIndex]) {
-      final newMask = mask | nodeResourceBit[v];
-      final newStateKey = encode(newMask, v, canTransport);
-      final nd = d + stepCost;
-      final cur = dist[newStateKey] ?? double.infinity;
-      if (nd < cur) {
-        final nh = heuristic(v, newMask, canTransport);
-        if (nd + nh < bestCost) {
-          dist[newStateKey] = nd;
-          prev[newStateKey] = stateKey;
-          pq.add((nd + nh, nd, newStateKey));
+    final weight = (keyResourceIndex != null && !hasTransported) ? defaultWeight + keyResourceWeight : defaultWeight;
+    for (final v in adj[current]) {
+      final newResources = {...collectedResources, ...getNodeResource(v)};
+      final newState = _AStarState(collectedResourceIndexes: newResources, currentNodeIndex: v, hasTransported: hasTransported);
+      final newG = g + weight;
+      if (newG < (cost[newState] ?? double.infinity)) {
+        final newH = heuristic(v, newResources, hasTransported);
+        if (newG + newH < bestCost) {
+          cost[newState] = newG;
+          prev[newState] = state;
+          pq.add((newG + newH, newG, newState));
         }
       }
     }
   }
-
-  if (finalStateKey == null) return [];
-
-  // 10. 回溯路径
-  final pathIndices = <int>[];
-  var curKey = finalStateKey;
+  if (bestFinalState == null) return []; // 未找到可行路径
+  // 回溯路径
+  final pathIndexes = <int>[];
+  var currentState = bestFinalState;
   while (true) {
-    final temp = curKey >> 1;
-    final index = temp % n;
-    pathIndices.add(index);
-    if (curKey == startKey) break;
-    final p = prev[curKey];
-    if (p == null) break;
-    curKey = p;
+    pathIndexes.add(currentState.currentNodeIndex);
+    if (currentState == startKey) break;
+    currentState = prev[currentState]!;
   }
-
-  return pathIndices.reversed.map((i) => nodes[i]).toList();
+  // 反转并映射为 Node 列表返回
+  return pathIndexes.reversed.map((i) => nodes[i]).toList();
 }
 
 @SquadronService(baseUrl: '~/workers')

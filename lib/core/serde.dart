@@ -356,17 +356,17 @@ extension _KeyResourceSerde on KeyResource {
     final len = unpacker.unpackListLength();
     if (len == 0) return null;
     if (len != 3) throw FormatException();
-    final id = unpacker.unpackInt();
-    final urgency = unpacker.unpackDouble();
-    if (id == null || urgency == null) throw FormatException();
+    final position = _NodeSerde.unpack(unpacker);
     final transport = _NodeSerde.unpack(unpacker);
-    return KeyResource(id, urgency, transport);
+    final urgency = unpacker.unpackDouble();
+    if (urgency == null) throw FormatException();
+    return KeyResource(position, transport, urgency);
   }
   void pack(Packer packer) {
     packer.packListLength(3);
-    packer.packInt(id);
-    packer.packDouble(urgency);
+    position.pack(packer);
     transport.pack(packer);
+    packer.packDouble(urgency);
   }
 }
 
