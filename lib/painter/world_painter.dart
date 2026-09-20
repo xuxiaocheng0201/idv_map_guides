@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/painter/path_drawer.dart';
 
 const backgroundColor = Color(0xFF223344);
 const corridorColor = Color(0xFF666666);
@@ -16,10 +17,6 @@ const stairGridColor = Color(0xFFBDBDBD);
 const entranceColor = Color(0xFF00CC55);
 const suspiciousColor = Color(0xFFFF0066);
 const resourceColor = Color(0xFFFF9900);
-const pathColor = Color(0xFF00EEFF);
-const pathStartColor = Color(0xFF00DD77);
-const pathEndColor = Color(0xFFFF3399);
-const pathMarkerColor = Color(0xFFFFFFFF);
 
 void drawBackground(Canvas canvas, int width, int height, double cellSize) {
   final rect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
@@ -203,41 +200,6 @@ void drawEntrance(Canvas canvas, Rect rect, double cellSize) {
   canvas.drawCircle(center, radius, paint);
 }
 
-void _drawPathStart(Canvas canvas, Offset center, double cellSize) {
-  final radius = cellSize * 0.26;
-  final fillPaint = Paint()
-    ..color = pathStartColor
-    ..style = PaintingStyle.fill;
-  final borderPaint = Paint()
-    ..color = pathMarkerColor
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = cellSize * 0.05;
-  final innerPaint = Paint()
-    ..color = pathMarkerColor
-    ..style = PaintingStyle.fill;
-  canvas.drawCircle(center, radius, fillPaint);
-  canvas.drawCircle(center, radius, borderPaint);
-  canvas.drawCircle(center, radius * 0.36, innerPaint);
-}
-
-void _drawPathEnd(Canvas canvas, Offset center, double cellSize) {
-  final radius = cellSize * 0.26;
-  final fillPaint = Paint()
-    ..color = pathEndColor
-    ..style = PaintingStyle.fill;
-  final borderPaint = Paint()
-    ..color = pathMarkerColor
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = cellSize * 0.05;
-  final innerPaint = Paint()
-    ..color = pathMarkerColor
-    ..style = PaintingStyle.fill;
-  canvas.drawCircle(center, radius, fillPaint);
-  canvas.drawCircle(center, radius, borderPaint);
-  final side = radius * 0.8;
-  canvas.drawRect(Rect.fromCenter(center: center, width: side, height: side), innerPaint);
-}
-
 class WorldPainter extends CustomPainter {
   final World world;
   final GroundLayer layer;
@@ -354,108 +316,11 @@ class WorldPainter extends CustomPainter {
       drawEntrance(canvas, rect, cellSize);
     }
 
-    _paintPath(canvas, cellSize);
+    paintPath(canvas, cellSize, path, layer, _cellCenter, null);
   }
 
-  void _paintPath(Canvas canvas, double cellSize) {
-    if (path.isEmpty) return;
-    final laneOffset = cellSize * 0.12;
-    final arrowSize = cellSize * 0.18;
-    final linePaint = Paint()
-      ..color = pathColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = cellSize * 0.12
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final arrowPaint = Paint()
-      ..color = pathColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = cellSize * 0.06
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final polylines = <List<Offset>>[];
-    List<Offset>? current;
-    Node? prevNode;
-    for (final node in path) {
-      final bool nodeOnThisLayer = node.layer == layer;
-      final bool isCrossLayerEntry = prevNode != null &&
-          prevNode.layer == layer && !nodeOnThisLayer &&
-          (node.x - prevNode.x).abs() + (node.y - prevNode.y).abs() == 1;
-      if (!nodeOnThisLayer && !isCrossLayerEntry) {
-        if (current != null && current.length > 1) {
-          polylines.add(current);
-        }
-        current = null;
-        prevNode = null;
-        continue;
-      }
-      final center = Offset((node.x - minX + 0.5) * cellSize, (maxY - node.y + 0.5) * cellSize);
-      if (current == null) {
-        current = <Offset>[center];
-      } else {
-        current.add(center);
-      }
-      prevNode = node;
-    }
-    if (current != null && current.length > 1) polylines.add(current);
-    if (polylines.isEmpty) return;
-
-    final shiftedPolylines = <List<Offset>>[];
-    for (final points in polylines) {
-      Offset unitNormal(Offset a, Offset b) {
-        final v = b - a;
-        final len = v.distance;
-        return Offset(-v.dy / len, v.dx / len);
-      }
-      final shifted = <Offset>[];
-      for (int i = 0; i < points.length; i++) {
-        final Offset normal;
-        if (i == 0) {
-          normal = unitNormal(points[i], points[i + 1]);
-        } else if (i == points.length - 1) {
-          normal = unitNormal(points[i - 1], points[i]);
-        } else {
-          final n1 = unitNormal(points[i - 1], points[i]);
-          final n2 = unitNormal(points[i], points[i + 1]);
-          final sum = n1 + n2;
-          final len = sum.distance;
-          normal = len < 1e-3 ? n1 : sum / len;
-        }
-        shifted.add(points[i] + normal * laneOffset);
-      }
-      shiftedPolylines.add(shifted);
-    }
-
-    for (final points in shiftedPolylines) {
-      final route = Path()..moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        route.lineTo(points[i].dx, points[i].dy);
-      }
-      canvas.drawPath(route, linePaint);
-
-      for (int i = 0; i < points.length - 1; i++) {
-        final a = points[i];
-        final b = points[i + 1];
-        final v = b - a;
-        final len = v.distance;
-
-        final u = v / len;
-        final n = Offset(-u.dy, u.dx);
-        final mid = Offset.lerp(a, b, 0.5)!;
-        final tip = mid + u * (arrowSize * 0.5);
-        final back = tip - u * arrowSize;
-        canvas.drawLine(tip, back + n * (arrowSize * 0.6), arrowPaint);
-        canvas.drawLine(tip, back - n * (arrowSize * 0.6), arrowPaint);
-      }
-    }
-
-    if (path.first.layer == layer) {
-      _drawPathStart(canvas, shiftedPolylines.first.first, cellSize);
-    }
-    if (path.last.layer == layer) {
-      _drawPathEnd(canvas, shiftedPolylines.last.last, cellSize);
-    }
+  Offset _cellCenter(int x, int y, double cellSize) {
+    return Offset((x - minX + 0.5) * cellSize, (maxY - y + 0.5) * cellSize);
   }
 
   @override
