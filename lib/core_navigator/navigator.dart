@@ -70,7 +70,10 @@ abstract class _AStarState with _$AStarState {
 }
 
 List<Node> navigate(World world, NavigateArguments arguments) {
-  assert(arguments.keyResource == null || arguments.resources.contains(arguments.keyResource!.position));
+  var keyResource = arguments.keyResource;
+  if (keyResource != null && !arguments.resources.contains(keyResource.position)) {
+    keyResource = null;
+  }
 
   // 1. 构建所有可通行节点的列表和索引映射
 
@@ -102,8 +105,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   int? keyResourceIndex;
   double defaultWeight = 1.0;
   double keyResourceWeight = 0.0;
-  if (arguments.keyResource != null) {
-    final keyResource = arguments.keyResource!;
+  if (keyResource != null) {
     keyResourceIndex = resourceToIndex[keyResource.position]!;
     keyResourceWeight = keyResource.urgency;
   }
@@ -126,9 +128,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   for (final e in arguments.exits) {
     addLandmark(e);
   }
-  if (arguments.keyResource != null) {
-    addLandmark(arguments.keyResource!.position);
-    addLandmark(arguments.keyResource!.transport);
+  if (keyResource != null) {
+    addLandmark(keyResource.position);
+    addLandmark(keyResource.transport);
   }
   final m = landmarkNodes.length;
   /// 获取资源点索引对应的地标索引
@@ -156,9 +158,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   // 关键资源点相关
   int? keyPositionLandmark;
   int? keyTransportLandmark;
-  if (arguments.keyResource != null) {
-    keyPositionLandmark = landmarkToIndex[arguments.keyResource!.position]!;
-    keyTransportLandmark = landmarkToIndex[arguments.keyResource!.transport]!;
+  if (keyResource != null) {
+    keyPositionLandmark = landmarkToIndex[keyResource.position]!;
+    keyTransportLandmark = landmarkToIndex[keyResource.transport]!;
   }
 
   // 3. 对每个地标做一次正向 BFS，得到它到所有节点的最短距离与父指针
