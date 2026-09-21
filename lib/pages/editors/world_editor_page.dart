@@ -83,7 +83,7 @@ class _WorldEditorRegistry {
     if (worldFile.instances.isEmpty) {
       globalErrors.push(WorldError.emptyMap());
     }
-    for (var i = 0; i < worldFile.instances.length; i++) {
+    for (int i = 0; i < worldFile.instances.length; i++) {
       final instance = worldFile.instances[i];
       try {
         final structure = resolveStructure(instance, structures);

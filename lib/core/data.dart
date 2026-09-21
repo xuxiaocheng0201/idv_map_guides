@@ -85,7 +85,7 @@ enum Direction {
   @useResult
   Direction rotate(Rotation rotation) {
     var result = this;
-    for (var i = 0; i < rotation.times(); i++) {
+    for (int i = 0; i < rotation.times(); i++) {
       result = switch (result) {
         Direction.north => Direction.east,
         Direction.east => Direction.south,
@@ -114,7 +114,7 @@ abstract class Position with _$Position implements Comparable<Position> {
   @useResult
   Position _rotate(Rotation rotation) {
     var result = this;
-    for (var i = 0; i < rotation.times(); i++) {
+    for (int i = 0; i < rotation.times(); i++) {
       result = Position(x: result.y, y: -result.x);
     }
     return result;
@@ -186,7 +186,7 @@ abstract class CellInfo with _$CellInfo {
   @useResult
   CellInfo rotation(Rotation rotation) {
     var result = this;
-    for (var i = 0; i < rotation.times(); i++) {
+    for (int i = 0; i < rotation.times(); i++) {
       result = result.copyWith(
         edgeNorth: result.edgeWest,
         edgeEast: result.edgeNorth,

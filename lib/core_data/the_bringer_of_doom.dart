@@ -290,8 +290,8 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     final origin = _navigateArguments(world, entrance);
     final museRoomId = world.rooms['muse_room']!.firstOrNull!;
     Node? museRoomNode;
-    find: for (var x = world.minX; x <= world.maxX; x++) {
-      for (var y = world.minY; y <= world.maxY; y++) {
+    find: for (int x = world.minX; x <= world.maxX; x++) {
+      for (int y = world.minY; y <= world.maxY; y++) {
         final cell = world.cell(GroundLayer.ground, x, y)!;
         if (cell.structureId == museRoomId && cell.info.isResource) {
           museRoomNode = Node(GroundLayer.ground, x, y);

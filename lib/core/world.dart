@@ -192,8 +192,8 @@ class World {
       }
     }
     for (final layer in map.keys) {
-      for (var x = minX; x <= maxX; x++) {
-        for (var y = minY; y <= maxY; y++) {
+      for (int x = minX; x <= maxX; x++) {
+        for (int y = minY; y <= maxY; y++) {
           final worldPosition = Position(x: x, y: y);
           final c = cell(layer, x, y)!;
           for (final direction in Direction.values) {
