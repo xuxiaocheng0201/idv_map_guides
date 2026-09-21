@@ -26,7 +26,15 @@ jobs:
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+
+      - name: Cache precomputed assets
+        uses: actions/cache@v6
+        with:
+          path: assets/**/*.precomputed
+          key: precomputed-${{ hashFiles('assets/**/*.precomputed') }}
+          restore-keys: |
+            precomputed-
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -34,26 +42,21 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Integrate Platform
-        run: flutter create --platforms web .
+      - name: Generate codes
+        run: |
+          flutter create --platforms web .
+          flutter pub get
+          dart run intl_utils:generate
+          dart run build_runner build
 
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Generate intl
-        run: dart run intl_utils:generate
-
-      - name: Run build_runner
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Precompute navigator
-        run: dart compile exe tool/precompute_navigator.dart -o precompute_navigator && ./precompute_navigator
-
-      - name: Compile Web Worker
-        run: dart compile js "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.js"
+      - name: Precompute assets
+        run: |
+          dart compile exe tool/precompute_navigator.dart -o precompute_navigator && ./precompute_navigator
 
       - name: Build Web
-        run: flutter build web --release --base-href /${{ github.event.repository.name }}/
+        run: |
+          dart compile js "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.js"
+          flutter build web --release --base-href /${{ github.event.repository.name }}/
 
       - name: Upload Debug Symbols to Sentry
         run: dart run sentry_dart_plugin

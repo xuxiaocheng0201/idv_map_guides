@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:messagepack/messagepack.dart';
 
@@ -95,4 +96,38 @@ List<Node> deserializeNavigatePath(Uint8List content) {
     path.add(node);
   }
   return path;
+}
+
+Uint8List serializePrecomputedNavigatePath<W extends BaseWorldsEnums>(String worldHash, Map<NavigateArguments, List<Node>> paths) {
+  final packer = Packer();
+  packer.packString(worldHash);
+  final pathList = paths.entries.sortedBy((entry) => entry.key.identify);
+  packer.packMapLength(pathList.length);
+  for (final entry in pathList) {
+    entry.key.pack(packer);
+    packer.packListLength(entry.value.length);
+    for (final node in entry.value) {
+      node.pack(packer);
+    }
+  }
+  return packer.takeBytes();
+}
+
+(String, Map<NavigateArguments, List<Node>>) deserializePrecomputedNavigatePath(Uint8List content) {
+  final unpacker = Unpacker(content);
+  final worldHash = unpacker.unpackString();
+  if (worldHash == null) throw FormatException();
+  final pathsLen = unpacker.unpackMapLength();
+  final paths = <NavigateArguments, List<Node>>{};
+  for (int i = 0; i < pathsLen; i++) {
+    final key = NavigateArgumentsSerde.unpack(unpacker);
+    final pathLen = unpacker.unpackListLength();
+    final path = <Node>[];
+    for (int i = 0; i < pathLen; i++) {
+      final node = NodeSerde.unpack(unpacker);
+      path.add(node);
+    }
+    paths[key] = path;
+  }
+  return (worldHash, paths);
 }

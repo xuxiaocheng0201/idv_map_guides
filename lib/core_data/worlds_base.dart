@@ -15,6 +15,7 @@ abstract class WorldsProvider<W extends BaseWorldsEnums> {
   MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
   SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
   NavigateArguments navigateArguments(World world, EntranceType entrance);
+  String precomputedNavigateAssets(W world) => '${worldAssets(world)}.navigator';
   List<NavigateArguments> preloadNavigateArguments(World world) => validEntrances.expand((e) {
     final origin = navigateArguments(world, e);
     return [origin, origin.copyWith(exits: <Node>{})];

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
@@ -7,7 +9,6 @@ import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
-import 'package:idv_map_guides/core_navigator/precomputed_navigator.g.dart' deferred as precomputed_navigator;
 import 'package:idv_map_guides/core_navigator/serde.dart';
 
 class WorldsManager<W extends BaseWorldsEnums> {
@@ -19,13 +20,12 @@ class WorldsManager<W extends BaseWorldsEnums> {
   }
 
   final Cache cache = Cache();
-
-  Future<(Uint8List, Map<String, Structure>)> _getStructures() async {
+  Future<T> _fetchWithCache<T>({required String key, required Future<T> Function() fetch}) async {
     final result = await cache.get(
-      key: 'structures',
+      key: key,
       fetch: () async {
-        final data = await _loadAssets('structures.data');
-        return Result.success((data, deserializeStructures(data)));
+        final data = await fetch();
+        return Result.success(data);
       },
     );
     switch (result) {
@@ -36,21 +36,49 @@ class WorldsManager<W extends BaseWorldsEnums> {
     }
   }
 
+  Future<(Uint8List, Map<String, Structure>)> _getStructures() async {
+    return await _fetchWithCache(
+      key: 'structures',
+      fetch: () async {
+        final data = await _loadAssets('structures.data');
+        return (data, deserializeStructures(data));
+      },
+    );
+  }
+
   Future<(Uint8List, World)> _getWorld(W world) async {
     final structures = (await _getStructures()).$2;
-    final result = await cache.get(
+    return await _fetchWithCache(
       key: 'world/${world.index}',
       fetch: () async {
         final data = await _loadAssets(provider.worldAssets(world));
         final worldFile = deserializeWorld(data);
-        return Result.success((data, constructWorld(structures, worldFile)));
+        return (data, constructWorld(structures, worldFile));
       },
     );
-    switch (result) {
-      case Success():
-        return result.value;
-      case Failure():
-        throw result.error;
+  }
+
+  Future<void> _getPrecomputedNavigator(W world) async {
+    await _fetchWithCache(
+      key: 'precomputed/navigate/${world.index}',
+      fetch: () async {
+        final data = await _loadAssets('${provider.precomputedNavigateAssets(world)}.precomputed');
+        final (_, paths) = deserializePrecomputedNavigatePath(data);
+        for (final entry in paths.entries) {
+          _fetchWithCache(
+            key: 'navigate/${world.index}/${entry.key.identify}',
+            fetch: () async => entry.value,
+          );
+        }
+        return ();
+      },
+    );
+  }
+
+  void preload() {
+    for (final world in provider.allWorlds) {
+      unawaited(_getWorld(world));
+      unawaited(_getPrecomputedNavigator(world));
     }
   }
 
@@ -67,6 +95,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
     }
     return result;
   }
+
   Future<Map<SideEntranceFeature, Set<W>>> getWorldsBySideEntranceFeature(EntranceType entrance) async {
     final result = <SideEntranceFeature, Set<W>>{};
     for (final world in provider.allWorlds) {
@@ -80,26 +109,11 @@ class WorldsManager<W extends BaseWorldsEnums> {
   Future<List<Node>> getNavigateResult(W world, NavigateArguments arguments) async {
     final structuresFile = (await _getStructures()).$1;
     final worldFile = (await _getWorld(world)).$1;
-    final result = await cache.get(
+    await _getPrecomputedNavigator(world);
+    return await _fetchWithCache(
       key: 'navigate/${world.index}/${arguments.identify}',
-      fetch: () async {
-        await precomputed_navigator.loadLibrary();
-        final key = '${provider.type.name}/${provider.difficulty.name}/${world.index}/${arguments.identify}';
-        final precomputed = precomputed_navigator.precomputedNavigateData[key];
-        if (precomputed != null) {
-          final path = deserializeNavigatePath(precomputed);
-          return Result.success(path);
-        }
-        final path = await navigateAsync(structuresFile, worldFile, arguments);
-        return Result.success(path);
-      },
+      fetch: () async => await navigateAsync(structuresFile, worldFile, arguments),
     );
-    switch (result) {
-      case Success():
-        return result.value;
-      case Failure():
-        throw result.error;
-    }
   }
 }
 
