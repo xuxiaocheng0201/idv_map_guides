@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 
 extension WorldTypeL10n on WorldType {
@@ -129,9 +130,9 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
   }
 }
 
-String worldLabel(dynamic world, BuildContext context) {
+String worldLabel(BaseWorldsEnums world, BuildContext context) {
   if (world is TheBringerOfDoomNoviceWorlds) return world.label(context);
   if (world is TheBringerOfDoomHardWorlds) return world.label(context);
   if (world is TheBringerOfDoomInsaneWorlds) return world.label(context);
-  return world.label(context) as String;
+  return (world as dynamic).label(context) as String; // unreachable
 }

@@ -8,6 +8,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_navigator/serde.dart';
 import 'package:squadron/squadron.dart';
 
 import 'navigator.activator.g.dart';

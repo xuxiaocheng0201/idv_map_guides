@@ -3,7 +3,10 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 
-abstract class WorldsProvider<W> {
+abstract interface class BaseWorldsEnums implements Enum {
+}
+
+abstract class WorldsProvider<W extends BaseWorldsEnums> {
   WorldType get type;
   WorldDifficulty get difficulty;
   List<W> get allWorlds;

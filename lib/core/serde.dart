@@ -4,10 +4,9 @@ import 'package:collection/collection.dart';
 import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
-import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:messagepack/messagepack.dart';
 
-extension _GroundLayerSerde on GroundLayer {
+extension GroundLayerSerde on GroundLayer {
   static GroundLayer unpack(Unpacker unpacker) {
     return switch (unpacker.unpackInt()) {
       0 => GroundLayer.basement,
@@ -25,7 +24,7 @@ extension _GroundLayerSerde on GroundLayer {
   }
 }
 
-extension _RotationSerde on Rotation {
+extension RotationSerde on Rotation {
   static Rotation unpack(Unpacker unpacker) {
     return switch (unpacker.unpackInt()) {
       0 => Rotation.cw0,
@@ -45,7 +44,7 @@ extension _RotationSerde on Rotation {
   }
 }
 
-extension _PositionSerde on Position {
+extension PositionSerde on Position {
   static Position unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
     if (len != 2) throw FormatException();
@@ -61,11 +60,11 @@ extension _PositionSerde on Position {
   }
 }
 
-extension _NodeSerde on Node {
+extension NodeSerde on Node {
   static Node unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
     if (len != 3) throw FormatException();
-    final layer = _GroundLayerSerde.unpack(unpacker);
+    final layer = GroundLayerSerde.unpack(unpacker);
     final x = unpacker.unpackInt();
     final y = unpacker.unpackInt();
     if (x == null || y == null) throw FormatException();
@@ -79,7 +78,7 @@ extension _NodeSerde on Node {
   }
 }
 
-extension _StairTransportSerde on StairTransport {
+extension StairTransportSerde on StairTransport {
   static StairTransport? unpackNullable(Unpacker unpacker) {
     return switch (unpacker.unpackInt()) {
       null => null,
@@ -98,7 +97,7 @@ extension _StairTransportSerde on StairTransport {
   }
 }
 
-extension _EdgeTypeSerde on EdgeType {
+extension EdgeTypeSerde on EdgeType {
   static EdgeType unpack(Unpacker unpacker) {
     return switch (unpacker.unpackInt()) {
       0 => EdgeType.nothing,
@@ -118,16 +117,16 @@ extension _EdgeTypeSerde on EdgeType {
   }
 }
 
-extension _CellInfoSerde on CellInfo {
+extension CellInfoSerde on CellInfo {
   static CellInfo unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
     if (len != 6) throw FormatException();
     return CellInfo(
-      isStair: _StairTransportSerde.unpackNullable(unpacker),
-      edgeNorth: _EdgeTypeSerde.unpack(unpacker),
-      edgeEast: _EdgeTypeSerde.unpack(unpacker),
-      edgeSouth: _EdgeTypeSerde.unpack(unpacker),
-      edgeWest: _EdgeTypeSerde.unpack(unpacker),
+      isStair: StairTransportSerde.unpackNullable(unpacker),
+      edgeNorth: EdgeTypeSerde.unpack(unpacker),
+      edgeEast: EdgeTypeSerde.unpack(unpacker),
+      edgeSouth: EdgeTypeSerde.unpack(unpacker),
+      edgeWest: EdgeTypeSerde.unpack(unpacker),
       isResource: unpacker.unpackBool() ?? false,
     );
   }
@@ -146,7 +145,7 @@ extension _CellInfoSerde on CellInfo {
   }
 }
 
-extension _StructureSerde on Structure {
+extension StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker, String name) {
     final len = unpacker.unpackListLength();
     if (len != 3) throw FormatException();
@@ -156,8 +155,8 @@ extension _StructureSerde on Structure {
     final mapLen = unpacker.unpackMapLength();
     final cells = <Position, CellInfo>{};
     for (int i = 0; i < mapLen; i++) {
-      final key = _PositionSerde.unpack(unpacker);
-      final value = _CellInfoSerde.unpack(unpacker);
+      final key = PositionSerde.unpack(unpacker);
+      final value = CellInfoSerde.unpack(unpacker);
       cells[key] = value;
     }
     return Structure(
@@ -198,28 +197,28 @@ Map<String, Structure> deserializeStructures(Uint8List content) {
   for (int i = 0; i < mapLen; i++) {
     final key = unpacker.unpackString();
     if (key == null) throw FormatException();
-    final value = _StructureSerde.unpack(unpacker, key);
+    final value = StructureSerde.unpack(unpacker, key);
     structures[key] = value;
   }
   return structures;
 }
 
-extension _StructureInstanceSerde on StructureInstance {
+extension StructureInstanceSerde on StructureInstance {
   static StructureInstance unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
     if (len != 7) throw FormatException();
     final typeName = unpacker.unpackString();
     final isSuspicious = unpacker.unpackBool();
-    final layer = _GroundLayerSerde.unpack(unpacker);
+    final layer = GroundLayerSerde.unpack(unpacker);
     final originX = unpacker.unpackInt();
     final originY = unpacker.unpackInt();
-    final rotation = _RotationSerde.unpack(unpacker);
+    final rotation = RotationSerde.unpack(unpacker);
     if (typeName == null || isSuspicious == null || originX == null || originY == null) throw FormatException();
     final mapLen = unpacker.unpackMapLength();
     final cells = <Position, CellInfo>{};
     for (int i = 0; i < mapLen; i++) {
-      final key = _PositionSerde.unpack(unpacker);
-      final value = _CellInfoSerde.unpack(unpacker);
+      final key = PositionSerde.unpack(unpacker);
+      final value = CellInfoSerde.unpack(unpacker);
       cells[key] = value;
     }
     return StructureInstance(
@@ -253,7 +252,7 @@ extension _StructureInstanceSerde on StructureInstance {
   }
 }
 
-extension _EntranceTypeSerde on EntranceType {
+extension EntranceTypeSerde on EntranceType {
   static EntranceType unpack(Unpacker unpacker) {
     return switch (unpacker.unpackInt()) {
       0 => EntranceType.main,
@@ -273,14 +272,14 @@ extension _EntranceTypeSerde on EntranceType {
   }
 }
 
-extension _WorldFileSerde on WorldFile {
+extension WorldFileSerde on WorldFile {
   static WorldFile unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
     if (len != 7) throw FormatException();
     final layersLen = unpacker.unpackListLength();
     final layers = <GroundLayer>{};
     for (int i = 0; i < layersLen; i++) {
-      final layer = _GroundLayerSerde.unpack(unpacker);
+      final layer = GroundLayerSerde.unpack(unpacker);
       layers.add(layer);
     }
     final minX = unpacker.unpackInt();
@@ -291,14 +290,14 @@ extension _WorldFileSerde on WorldFile {
     final instancesLen = unpacker.unpackListLength();
     final instances = <StructureInstance>[];
     for (int i = 0; i < instancesLen; i++) {
-      final instance = _StructureInstanceSerde.unpack(unpacker);
+      final instance = StructureInstanceSerde.unpack(unpacker);
       instances.add(instance);
     }
     final entrancesLen = unpacker.unpackMapLength();
     final entrances = <EntranceType, Position>{};
     for (int i = 0; i < entrancesLen; i++) {
-      final type = _EntranceTypeSerde.unpack(unpacker);
-      final position = _PositionSerde.unpack(unpacker);
+      final type = EntranceTypeSerde.unpack(unpacker);
+      final position = PositionSerde.unpack(unpacker);
       entrances[type] = position;
     }
     return WorldFile(
@@ -348,96 +347,5 @@ Uint8List serializeWorld(WorldFile world) {
 
 WorldFile deserializeWorld(Uint8List content) {
   final unpacker = Unpacker(content);
-  return _WorldFileSerde.unpack(unpacker);
-}
-
-extension _KeyResourceSerde on KeyResource {
-  static KeyResource? unpackNullable(Unpacker unpacker) {
-    final len = unpacker.unpackListLength();
-    if (len == 0) return null;
-    if (len != 3) throw FormatException();
-    final position = _NodeSerde.unpack(unpacker);
-    final transport = _NodeSerde.unpack(unpacker);
-    final urgency = unpacker.unpackDouble();
-    if (urgency == null) throw FormatException();
-    return KeyResource(position, transport, urgency);
-  }
-  void pack(Packer packer) {
-    packer.packListLength(3);
-    position.pack(packer);
-    transport.pack(packer);
-    packer.packDouble(urgency);
-  }
-}
-
-extension _NavigateArgumentsSerde on NavigateArguments {
-  static NavigateArguments unpack(Unpacker unpacker) {
-    final len = unpacker.unpackListLength();
-    if (len != 4) throw FormatException();
-    final start = _NodeSerde.unpack(unpacker);
-    final resourcesLen = unpacker.unpackListLength();
-    final resources = <Node>{};
-    for (int i = 0; i < resourcesLen; i++) {
-      final resource = _NodeSerde.unpack(unpacker);
-      resources.add(resource);
-    }
-    final exitsLen = unpacker.unpackListLength();
-    final exits = <Node>{};
-    for (int i = 0; i < exitsLen; i++) {
-      final exit = _NodeSerde.unpack(unpacker);
-      exits.add(exit);
-    }
-    final keyResource = _KeyResourceSerde.unpackNullable(unpacker);
-    return NavigateArguments(start: start, resources: resources, exits: exits, keyResource: keyResource);
-  }
-  void pack(Packer packer) {
-    packer.packListLength(4);
-    start.pack(packer);
-    final resources = this.resources.sorted();
-    packer.packListLength(resources.length);
-    for (final resource in resources) {
-      resource.pack(packer);
-    }
-    final exits = this.exits.sorted();
-    packer.packListLength(exits.length);
-    for (final exit in exits) {
-      exit.pack(packer);
-    }
-    if (keyResource == null) {
-      packer.packListLength(0);
-    } else {
-      keyResource!.pack(packer);
-    }
-  }
-}
-
-Uint8List serializeNavigateArguments(NavigateArguments arguments) {
-  final packer = Packer();
-  arguments.pack(packer);
-  return packer.takeBytes();
-}
-
-NavigateArguments deserializeNavigateArguments(Uint8List content) {
-  final unpacker = Unpacker(content);
-  return _NavigateArgumentsSerde.unpack(unpacker);
-}
-
-Uint8List serializeNavigatePath(List<Node> path) {
-  final packer = Packer();
-  packer.packListLength(path.length);
-  for (final node in path) {
-    node.pack(packer);
-  }
-  return packer.takeBytes();
-}
-
-List<Node> deserializeNavigatePath(Uint8List content) {
-  final unpacker = Unpacker(content);
-  final pathLen = unpacker.unpackListLength();
-  final path = <Node>[];
-  for (int i = 0; i < pathLen; i++) {
-    final node = _NodeSerde.unpack(unpacker);
-    path.add(node);
-  }
-  return path;
+  return WorldFileSerde.unpack(unpacker);
 }

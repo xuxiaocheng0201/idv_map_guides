@@ -9,7 +9,7 @@ import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 
-WorldsProvider<dynamic>? worldProvider(WorldType type, WorldDifficulty diff) {
+WorldsProvider<BaseWorldsEnums>? worldProvider(WorldType type, WorldDifficulty diff) {
   return switch (type) {
     WorldType.theBringerOfDoom => switch (diff) {
       WorldDifficulty.novice => TheBringerOfDoomNoviceWorldsProvider(),

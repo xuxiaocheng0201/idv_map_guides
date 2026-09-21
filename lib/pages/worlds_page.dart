@@ -8,14 +8,15 @@ import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
 class WorldListPageArguments {
-  final WorldsManager<dynamic> manager;
-  final List<dynamic> worlds;
+  final WorldsManager<BaseWorldsEnums> manager;
+  final List<BaseWorldsEnums> worlds;
   final EntranceType entrance;
   const WorldListPageArguments({required this.manager, required this.worlds, required this.entrance});
 }
@@ -34,11 +35,11 @@ class WorldListPage extends StatefulWidget {
 }
 
 class _WorldListPageState extends State<WorldListPage> {
-  late WorldsManager<dynamic> manager;
-  late List<dynamic> worlds;
+  late WorldsManager<BaseWorldsEnums> manager;
+  late List<BaseWorldsEnums> worlds;
   late EntranceType entrance;
   bool _initialized = false;
-  dynamic _currentWorld;
+  late BaseWorldsEnums _currentWorld;
 
   final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
   bool _isFullscreen = false;
@@ -48,7 +49,7 @@ class _WorldListPageState extends State<WorldListPage> {
   bool _navigateMode = true;
   bool _showNavigateProperties = true;
   _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
-  final Map<dynamic, NavigateArguments> _navigateArguments = <dynamic, NavigateArguments>{};
+  final Map<BaseWorldsEnums, NavigateArguments> _navigateArguments = <BaseWorldsEnums, NavigateArguments>{};
 
   @override
   void didChangeDependencies() {

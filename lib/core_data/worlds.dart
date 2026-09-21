@@ -8,8 +8,9 @@ import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/precomputed_navigator.g.dart' deferred as precomputed_navigator;
+import 'package:idv_map_guides/core_navigator/serde.dart';
 
-class WorldsManager<W extends Enum> {
+class WorldsManager<W extends BaseWorldsEnums> {
   final WorldsProvider<W> provider;
   WorldsManager({required this.provider});
 
@@ -106,7 +107,7 @@ final _theBringerOfDoomNovice = WorldsManager(provider: TheBringerOfDoomNoviceWo
 final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
 final _theBringerOfDoomInsane = WorldsManager(provider: TheBringerOfDoomInsaneWorldsProvider());
 
-WorldsManager<dynamic>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
+WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
   return switch (type) {
     WorldType.theBringerOfDoom => switch (difficulty) {
       WorldDifficulty.novice => _theBringerOfDoomNovice,

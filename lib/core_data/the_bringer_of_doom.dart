@@ -74,7 +74,7 @@ NavigateArguments _navigateArguments(World world, EntranceType entrance) {
   return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
 }
 
-enum TheBringerOfDoomNoviceWorlds {
+enum TheBringerOfDoomNoviceWorlds implements BaseWorldsEnums {
   onlyOne,
 }
 
@@ -89,7 +89,7 @@ class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
 
-enum TheBringerOfDoomHardWorlds {
+enum TheBringerOfDoomHardWorlds implements BaseWorldsEnums {
   north1,
   north1Sofa,
   north4,
@@ -164,7 +164,7 @@ class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoom
   @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
 
-enum TheBringerOfDoomInsaneWorlds {
+enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   northB,
   northZ1,
   northCactus,

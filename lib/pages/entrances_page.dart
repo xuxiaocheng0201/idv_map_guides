@@ -7,13 +7,14 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
 class EntranceFeaturePageArgument {
-  final WorldsManager<dynamic> manager;
+  final WorldsManager<BaseWorldsEnums> manager;
   const EntranceFeaturePageArgument({required this.manager});
 }
 
@@ -25,9 +26,9 @@ class EntranceFeaturePage extends StatefulWidget {
 }
 
 class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTickerProviderStateMixin {
-  late WorldsManager<dynamic> manager;
+  late WorldsManager<BaseWorldsEnums> manager;
   bool _loading = true;
-  final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>> _worlds = {};
+  final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
   bool _initialized = false;
 
   @override
@@ -53,7 +54,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   Future<void> _loadAllData() async {
     for (final entrance in manager.provider.validEntrances) {
       assert(entrance.displayable);
-      final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<dynamic>>>();
+      final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>();
       for (final worldType in manager.provider.allWorlds) {
         final world = await manager.getWorld(worldType);
         final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
@@ -64,7 +65,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           EntranceType.sideSecond => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
           EntranceType.alterBasement => throw UnsupportedError('alter basement is not displayable'),
         };
-        featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<dynamic>>(
+        featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<BaseWorldsEnums>>(
           equals: (a, b) => const ListEquality<bool>().equals(a, b),
           hashCode: (a) => const ListEquality<bool>().hash(a),
         )).putIfAbsent(signature, () => []).add(worldType);
@@ -136,7 +137,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     );
   }
 
-  Widget _buildThumbnailGrid(BuildContext context, EntranceType entrance, EntranceFeature _, LinkedHashMap<BoolList, List<dynamic>> worlds) {
+  Widget _buildThumbnailGrid(BuildContext context, EntranceType entrance, EntranceFeature _, LinkedHashMap<BoolList, List<BaseWorldsEnums>> worlds) {
     final worldsList = worlds.values.toList();
     return Padding(
       padding: const EdgeInsets.all(8),
