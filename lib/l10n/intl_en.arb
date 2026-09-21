@@ -111,6 +111,7 @@
   "worldsNavigateResourceEdit": "Mark resources",
   "worldsNavigateResourceEditExit": "Exit mark",
   "worldsNavigateResourceClear": "Clear",
+  "worldsNavigateKeyResource": "Prioritize muse room",
   "worldsNavigateExit": "Navigate to exit",
   "worldsNavigatePathLength": "Total length"
 }
