@@ -57,6 +57,15 @@ abstract class _BfsResult with _$BfsResult {
 }
 
 @freezed
+abstract class _MstCacheKey with _$MstCacheKey {
+  _MstCacheKey._();
+  factory _MstCacheKey({
+    required int currentLandmark,
+    required Set<int> collectedResources,
+  }) = __MstCacheKey;
+}
+
+@freezed
 abstract class _AStarState with _$AStarState {
   _AStarState._();
   factory _AStarState({
@@ -357,9 +366,18 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     return total;
   }
+  // 缓存 mst，本地测试大约减少 1/3 的重复调用
+  final mstCache = <_MstCacheKey, int?>{};
+  int? mstWithCache(int currentLandmark, Set<int> collectedResources) {
+    final key = _MstCacheKey(currentLandmark: currentLandmark, collectedResources: collectedResources);
+    if (mstCache.containsKey(key)) return mstCache[key];
+    final cost = mst(currentLandmark, collectedResources);
+    mstCache[key] = cost;
+    return cost;
+  }
   /// 启发式函数：使用最小生成树来计算下界
   double heuristic(int currentLandmark, Set<int> collectedResources, bool hasTransported) {
-    final distMst = mst(currentLandmark, collectedResources);
+    final distMst = mstWithCache(currentLandmark, collectedResources);
     // 没有关键资源点或已经传送过，直接使用普通 MST 作为下界
     if (keyResourceIndex == null || hasTransported) {
       return distMst == null ? double.infinity : defaultWeight * distMst.toDouble();
@@ -367,7 +385,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     final weight = defaultWeight + keyResourceWeight; // 未传送时的每步代价
     // 不传送，即以未传送代价走完全程
     final noTransport = distMst == null ? double.infinity : weight * distMst.toDouble();
-    // 传送，先走到关键资源点，再直接到出口 TODO：也许使用更好的启发式？比如中间加一个普通资源点什么的来提升下界
+    // 传送，先走到关键资源点，再直接到出口
     final beforeTransport = distLandmarkToLandmark(currentLandmark, keyPositionLandmark!);
     if (beforeTransport == null) return noTransport;
     final afterTransport = distLandmarkToExit(keyTransportLandmark!);
