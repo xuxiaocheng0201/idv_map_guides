@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:messagepack/messagepack.dart';
 
 extension _GroundLayerSerde on GroundLayer {

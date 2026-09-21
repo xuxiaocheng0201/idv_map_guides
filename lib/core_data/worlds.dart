@@ -1,11 +1,11 @@
 import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
+import 'package:idv_map_guides/core_navigator/navigator.dart';
 
 abstract class WorldsProvider<W> {
   WorldType get type;

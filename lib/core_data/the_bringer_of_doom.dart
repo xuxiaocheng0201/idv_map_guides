@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/navigator.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
+import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 
 MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
