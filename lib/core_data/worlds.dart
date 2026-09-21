@@ -5,18 +5,8 @@ import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
-
-abstract class WorldsProvider<W> {
-  WorldType get type;
-  WorldDifficulty get difficulty;
-  List<W> get allWorlds;
-  List<EntranceType> get validEntrances;
-  String worldAssets(W world);
-  MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
-  SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
-  NavigateArguments navigateArguments(World world, EntranceType entrance);
-}
 
 class WorldsManager<W extends Enum> {
   final WorldsProvider<W> provider;

@@ -1,6 +1,4 @@
-import 'package:flutter/widgets.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:idv_map_guides/generated/l10n.dart';
 
 part 'classification.freezed.dart';
 
@@ -10,11 +8,6 @@ enum WorldType {
   String get assets => switch (this) {
     WorldType.theBringerOfDoom => 'the_bringer_of_doom',
   };
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldType.theBringerOfDoom => S.of(context).worldTheBringerOfDoom,
-    };
-  }
 }
 
 enum WorldDifficulty {
@@ -31,15 +24,6 @@ enum WorldDifficulty {
     WorldDifficulty.hard => 'hard',
     WorldDifficulty.insane => 'insane',
   };
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldDifficulty.novice => S.of(context).difficultyNovice,
-      WorldDifficulty.easy => S.of(context).difficultyEasy,
-      WorldDifficulty.normal => S.of(context).difficultyNormal,
-      WorldDifficulty.hard => S.of(context).difficultyHard,
-      WorldDifficulty.insane => S.of(context).difficultyInsane,
-    };
-  }
 }
 
 @freezed
@@ -50,15 +34,6 @@ abstract class MainEntranceFeature with _$MainEntranceFeature implements Compara
     required bool hasLeftDoor,
     required bool hasRightDoor,
   }) = _MainEntranceFeature;
-
-  String label(BuildContext context) {
-    final s = S.of(context);
-    final StringBuffer sb = StringBuffer();
-    if (hasUpDoor) sb.write(s.mainEntranceFeatureHasUp);
-    if (hasLeftDoor) sb.write(s.mainEntranceFeatureHasLeft);
-    if (hasRightDoor) sb.write(s.mainEntranceFeatureHasRight);
-    return sb.toString();
-  }
 
   @override
   int compareTo(MainEntranceFeature b) {
@@ -86,17 +61,7 @@ enum SideEntranceFeature {
   east,
   south,
   west,
-  other;
-
-  String label(BuildContext context) {
-    return switch (this) {
-      SideEntranceFeature.north => S.of(context).sideEntranceFeatureNorth,
-      SideEntranceFeature.east => S.of(context).sideEntranceFeatureEast,
-      SideEntranceFeature.south => S.of(context).sideEntranceFeatureSouth,
-      SideEntranceFeature.west => S.of(context).sideEntranceFeatureWest,
-      SideEntranceFeature.other => S.of(context).sideEntranceFeatureOther,
-    };
-  }
+  other,
 }
 
 @freezed
@@ -104,14 +69,6 @@ sealed class EntranceFeature with _$EntranceFeature implements Comparable<Entran
   const EntranceFeature._();
   const factory EntranceFeature.main({required MainEntranceFeature feature}) = EntranceFeature_Main;
   const factory EntranceFeature.side({required SideEntranceFeature feature}) = EntranceFeature_Side;
-
-  String label(BuildContext context) {
-    final me = this;
-    return switch (me) {
-      EntranceFeature_Main() => me.feature.label(context),
-      EntranceFeature_Side() => me.feature.label(context),
-    };
-  }
 
   @override
   int compareTo(EntranceFeature other) {

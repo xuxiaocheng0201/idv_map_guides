@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
@@ -108,7 +109,7 @@ class _WorldListPageState extends State<WorldListPage> {
                   for (final world in worlds)
                     ButtonSegment(
                       value: world,
-                      label: Text(world.label(context) as String),
+                      label: Text(worldLabel(world, context)),
                     )
                 ],
                 emptySelectionAllowed: false,

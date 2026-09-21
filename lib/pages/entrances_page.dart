@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
+import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
@@ -152,7 +153,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           return LayoutBuilder(
             builder: (context, constraints) {
               return Tooltip(
-                message: worlds.map((m) => m.label(context) as String).join(' / '),
+                message: worlds.map((m) => worldLabel(m, context)).join(' / '),
                 verticalOffset: constraints.maxWidth / 2 + 4,
                 showDuration: const Duration(seconds: 3),
                 child: FutureBuilder<World>(

@@ -1,10 +1,8 @@
-import 'package:flutter/widgets.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
-import 'package:idv_map_guides/core_data/worlds.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
-import 'package:idv_map_guides/generated/l10n.dart';
 
 MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
   final position = world.entrances[entrance]!.position;
@@ -77,12 +75,7 @@ NavigateArguments _navigateArguments(World world, EntranceType entrance) {
 }
 
 enum TheBringerOfDoomNoviceWorlds {
-  onlyOne;
-  String label(BuildContext context) {
-    return switch (this) {
-      onlyOne => S.of(context).worldTheBringerOfDoomNovice,
-    };
-  }
+  onlyOne,
 }
 
 class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDoomNoviceWorlds> {
@@ -158,39 +151,6 @@ enum TheBringerOfDoomHardWorlds {
     westHammerLantern => 'west_hammer_lantern',
     westFork => 'west_fork',
   };
-  String label(BuildContext context) {
-    return switch (this) {
-      north1 => S.of(context).worldTheBringerOfDoomHardNorth1,
-      north1Sofa => S.of(context).worldTheBringerOfDoomHardNorth1Sofa,
-      north4 => S.of(context).worldTheBringerOfDoomHardNorth4,
-      north4Safe => S.of(context).worldTheBringerOfDoomHardNorth4Safe,
-      northT => S.of(context).worldTheBringerOfDoomHardNorthT,
-      northConcave => S.of(context).worldTheBringerOfDoomHardNorthConcave,
-      northRed => S.of(context).worldTheBringerOfDoomHardNorthRed,
-      northRedDiagonal => S.of(context).worldTheBringerOfDoomHardNorthRedDiagonal,
-      southL => S.of(context).worldTheBringerOfDoomHardSouthL,
-      southOrz => S.of(context).worldTheBringerOfDoomHardSouthOrz,
-      southThreeMissingOne => S.of(context).worldTheBringerOfDoomHardSouthThreeMissingOne,
-      southCross => S.of(context).worldTheBringerOfDoomHardSouthCross,
-      southRed => S.of(context).worldTheBringerOfDoomHardSouthRed,
-      eastL => S.of(context).worldTheBringerOfDoomHardEastL,
-      eastThreeL => S.of(context).worldTheBringerOfDoomHardEastThreeL,
-      eastTwoL => S.of(context).worldTheBringerOfDoomHardEastTwoL,
-      eastForfeit => S.of(context).worldTheBringerOfDoomHardEastForfeit,
-      eastHammer => S.of(context).worldTheBringerOfDoomHardEastHammer,
-      eastStair => S.of(context).worldTheBringerOfDoomHardEastStair,
-      westY => S.of(context).worldTheBringerOfDoomHardWestY,
-      westYFrog => S.of(context).worldTheBringerOfDoomHardWestYFrog,
-      westFlipT => S.of(context).worldTheBringerOfDoomHardWestFlipT,
-      westOppositeT => S.of(context).worldTheBringerOfDoomHardWestOppositeT,
-      westDiagonal => S.of(context).worldTheBringerOfDoomHardWestDiagonal,
-      westPots => S.of(context).worldTheBringerOfDoomHardWestPots,
-      westHammer1 => S.of(context).worldTheBringerOfDoomHardWestHammer1,
-      westHammer2 => S.of(context).worldTheBringerOfDoomHardWestHammer2,
-      westHammerLantern => S.of(context).worldTheBringerOfDoomHardWestHammerLantern,
-      westFork => S.of(context).worldTheBringerOfDoomHardWestFork,
-    };
-  }
 }
 
 class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoomHardWorlds> {
@@ -250,31 +210,6 @@ enum TheBringerOfDoomInsaneWorlds {
     westVerticalL => 'west_vertical_l',
     westStair => 'west_stair',
   };
-  String label(BuildContext context) {
-    return switch (this) {
-      northB => S.of(context).worldTheBringerOfDoomInsaneNorthB,
-      northZ1 => S.of(context).worldTheBringerOfDoomInsaneNorthZ1,
-      northCactus => S.of(context).worldTheBringerOfDoomInsaneNorthCactus,
-      northLoop => S.of(context).worldTheBringerOfDoomInsaneNorthLoop,
-      northStair => S.of(context).worldTheBringerOfDoomInsaneNorthStair,
-      southThreeRed => S.of(context).worldTheBringerOfDoomInsaneSouthThreeRed,
-      southH => S.of(context).worldTheBringerOfDoomInsaneSouthH,
-      southFloating => S.of(context).worldTheBringerOfDoomInsaneSouthFloating,
-      eastC => S.of(context).worldTheBringerOfDoomInsaneEastC,
-      east1Lightning => S.of(context).worldTheBringerOfDoomInsaneEast1Lightning,
-      eastCactus => S.of(context).worldTheBringerOfDoomInsaneEastCactus,
-      eastBreakC => S.of(context).worldTheBringerOfDoomInsaneEastBreakC,
-      eastShortT => S.of(context).worldTheBringerOfDoomInsaneEastShortT,
-      eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
-      west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
-      westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
-      west1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1BookGallery,
-      west1Corner => S.of(context).worldTheBringerOfDoomInsaneWest1Corner,
-      west5Bed => S.of(context).worldTheBringerOfDoomInsaneWest5Bed,
-      westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
-      westStair => S.of(context).worldTheBringerOfDoomInsaneWestStair,
-    };
-  }
 }
 
 class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDoomInsaneWorlds> {
@@ -302,5 +237,17 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     final alterNode = world.entranceNode(EntranceType.alterBasement)!;
     final keyResource = KeyResource(museRoomNode!, alterNode, 1.0);
     return origin.copyWith(keyResource: keyResource);
+  }
+  @override
+  List<NavigateArguments> preloadNavigateArguments(World world) {
+    return validEntrances.expand((e) {
+      final origin = navigateArguments(world, e);
+      return <NavigateArguments>[
+        origin,
+        origin.copyWith(exits: <Node>{}),
+        origin.copyWith(keyResource: null),
+        origin.copyWith(keyResource: null, exits: <Node>{}),
+      ];
+    }).toList();
   }
 }

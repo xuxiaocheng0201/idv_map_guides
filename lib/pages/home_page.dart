@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
+import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
