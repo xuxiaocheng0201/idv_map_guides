@@ -7,6 +7,7 @@ import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
+import 'package:idv_map_guides/core_navigator/precomputed_navigator.g.dart' deferred as precomputed_navigator;
 
 class WorldsManager<W extends Enum> {
   final WorldsProvider<W> provider;
@@ -81,6 +82,13 @@ class WorldsManager<W extends Enum> {
     final result = await cache.get(
       key: 'navigate/${world.index}/${arguments.identify}',
       fetch: () async {
+        await precomputed_navigator.loadLibrary();
+        final key = '${provider.type.name}/${provider.difficulty.name}/${world.index}/${arguments.identify}';
+        final precomputed = precomputed_navigator.precomputedNavigateData[key];
+        if (precomputed != null) {
+          final path = deserializeNavigatePath(precomputed);
+          return Result.success(path);
+        }
         final path = await navigateAsync(structuresFile, worldFile, arguments);
         return Result.success(path);
       },

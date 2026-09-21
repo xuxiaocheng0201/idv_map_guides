@@ -11,6 +11,8 @@
 /lib/**/*.freezed.dart
 /lib/**/*.g.dart
 !/assets
+/assets/**/*.precomputed
+!/tool
 
 !/.github
 sentry.properties
