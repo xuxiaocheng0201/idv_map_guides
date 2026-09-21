@@ -130,5 +130,5 @@ WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty
       WorldDifficulty.hard => _theBringerOfDoomHard,
       WorldDifficulty.insane => _theBringerOfDoomInsane,
     },
-  };
+  }?..preload();
 }
