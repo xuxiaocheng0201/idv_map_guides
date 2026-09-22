@@ -94,6 +94,9 @@
   "homeNotSupport": "Not support.",
 
   "entrancesChooseMap": "Choose map ({world}-{difficulty})",
+  "entrancesNavigateSetting": "Default navigate mode",
+  "entrancesNavigateSettingDefault": "Default",
+  "entrancesNavigateSettingEmpty": "Empty",
 
   "worldsShowMap": "Map",
   "worldsFullscreen": "Fullscreen",

@@ -18,6 +18,19 @@ class EntranceFeaturePageArgument {
   const EntranceFeaturePageArgument({required this.manager});
 }
 
+class DefaultNavigateSettings {
+  final EntranceType? startEntrance;
+  final bool useResources;
+  final bool useKeyResource;
+  final bool useExits;
+  const DefaultNavigateSettings({
+    this.startEntrance,
+    this.useResources = true,
+    this.useKeyResource = true,
+    this.useExits = true,
+  });
+}
+
 class EntranceFeaturePage extends StatefulWidget {
   const EntranceFeaturePage({super.key});
 
@@ -30,6 +43,9 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   bool _loading = true;
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
   bool _initialized = false;
+
+  DefaultNavigateSettings _defaultNavigateSettings = const DefaultNavigateSettings();
+  bool _showNavigateProperties = false;
 
   @override
   void didChangeDependencies() {
@@ -80,10 +96,156 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     return Scaffold(
       appBar: AppBar(
         title: Text(S.of(context).entrancesChooseMap(manager.provider.type.label(context), manager.provider.difficulty.label(context))),
+        actions: [
+          IconButton(
+            onPressed: _loading ? null : () => setState(() => _showNavigateProperties = !_showNavigateProperties),
+            icon: Icon(_showNavigateProperties ? Icons.settings : Icons.settings_outlined),
+            tooltip: S.of(context).worldsNavigateSetting,
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _buildEntranceTabBar(context),
+          : Row(
+            children: [
+              Expanded(child: _buildEntranceTabBar(context)),
+              if (_showNavigateProperties)
+                SizedBox(
+                  width: 300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: SingleChildScrollView(
+                      child: _buildNavigateProperties(context),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildNavigateProperties(BuildContext context) {
+    final settings = _defaultNavigateSettings;
+    void update(DefaultNavigateSettings value) {
+      setState(() => _defaultNavigateSettings = value);
+    }
+    return Column(
+      children: [
+        Text(
+          S.of(context).entrancesNavigateSetting,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        _buildNavigateCard(
+          context,
+          icon: Icons.flag,
+          title: S.of(context).worldsNavigateStartNode,
+          body: SegmentedButton<EntranceType?>(
+            segments: [
+              ButtonSegment<EntranceType?>(value: null, label: Text(S.of(context).entrancesNavigateSettingDefault)),
+              for (final entrance in manager.provider.validEntrances)
+                ButtonSegment<EntranceType?>(value: entrance, label: Text(entrance.label(context))),
+            ],
+            selected: {settings.startEntrance},
+            showSelectedIcon: false,
+            onSelectionChanged: (value) => update(
+              DefaultNavigateSettings(
+                startEntrance: value.first,
+                useResources: settings.useResources,
+                useKeyResource: settings.useKeyResource,
+                useExits: settings.useExits,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildNavigateCard(
+          context,
+          icon: Icons.inventory,
+          title: S.of(context).worldsNavigateResource,
+          body: SegmentedButton<bool>(
+            segments: [
+              ButtonSegment<bool>(value: true, label: Text(S.of(context).entrancesNavigateSettingDefault)),
+              ButtonSegment<bool>(value: false, label: Text(S.of(context).entrancesNavigateSettingEmpty)),
+            ],
+            selected: {settings.useResources},
+            showSelectedIcon: false,
+            onSelectionChanged: (value) => update(
+              DefaultNavigateSettings(
+                startEntrance: settings.startEntrance,
+                useResources: value.first,
+                useKeyResource: settings.useKeyResource,
+                useExits: settings.useExits,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildNavigateCard(
+          context,
+          icon: Icons.key,
+          title: S.of(context).worldsNavigateKeyResource,
+          body: Switch(
+            value: settings.useKeyResource,
+            onChanged: (value) => update(
+              DefaultNavigateSettings(
+                startEntrance: settings.startEntrance,
+                useResources: settings.useResources,
+                useKeyResource: value,
+                useExits: settings.useExits,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildNavigateCard(
+          context,
+          icon: Icons.exit_to_app,
+          title: S.of(context).worldsNavigateExit,
+          body: Switch(
+            value: settings.useExits,
+            onChanged: (value) => update(
+              DefaultNavigateSettings(
+                startEntrance: settings.startEntrance,
+                useResources: settings.useResources,
+                useKeyResource: settings.useKeyResource,
+                useExits: value,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigateCard(BuildContext context, {
+    required IconData icon,
+    required String title,
+    Widget? body,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            ],
+          ),
+          if (body != null) ...[
+            const SizedBox(height: 8),
+            body,
+          ],
+        ],
+      ),
     );
   }
 
@@ -142,7 +304,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     return Padding(
       padding: const EdgeInsets.all(8),
       child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 180,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
@@ -169,7 +331,12 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                         Navigator.pushNamed(
                           context,
                           Routes.worlds,
-                          arguments: WorldListPageArguments(manager: manager, worlds: worlds, entrance: entrance),
+                          arguments: WorldListPageArguments(
+                            manager: manager,
+                            worlds: worlds,
+                            entrance: entrance,
+                            settings: _defaultNavigateSettings,
+                          ),
                         );
                       },
                       child: CustomPaint(
@@ -179,7 +346,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                   },
                 ),
               );
-            }
+            },
           );
         },
       ),

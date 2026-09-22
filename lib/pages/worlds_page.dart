@@ -11,6 +11,7 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
@@ -18,7 +19,8 @@ class WorldListPageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
   final List<BaseWorldsEnums> worlds;
   final EntranceType entrance;
-  const WorldListPageArguments({required this.manager, required this.worlds, required this.entrance});
+  final DefaultNavigateSettings settings;
+  const WorldListPageArguments({required this.manager, required this.worlds, required this.entrance, required this.settings});
 }
 
 enum _NavigateEditMode {
@@ -38,6 +40,7 @@ class _WorldListPageState extends State<WorldListPage> {
   late WorldsManager<BaseWorldsEnums> manager;
   late List<BaseWorldsEnums> worlds;
   late EntranceType entrance;
+  late DefaultNavigateSettings _defaultNavigateSettings;
   bool _initialized = false;
   late BaseWorldsEnums _currentWorld;
 
@@ -70,6 +73,7 @@ class _WorldListPageState extends State<WorldListPage> {
     manager = argument.manager;
     worlds = argument.worlds;
     entrance = argument.entrance;
+    _defaultNavigateSettings = argument.settings;
     _currentWorld = worlds.first;
   }
 
@@ -77,6 +81,23 @@ class _WorldListPageState extends State<WorldListPage> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  NavigateArguments _initialNavigateArguments(World world) {
+    final settings = _defaultNavigateSettings;
+    final baseEntrance = settings.startEntrance ?? entrance;
+    final origin = manager.provider.navigateArguments(world, baseEntrance);
+    var result = origin;
+    if (!settings.useResources) {
+      result = result.copyWith(resources: <Node>{});
+    }
+    if (!settings.useKeyResource) {
+      result = result.copyWith(keyResource: null);
+    }
+    if (!settings.useExits == true) {
+      result = result.copyWith(exits: <Node>{});
+    }
+    return result;
   }
 
   @override
@@ -144,7 +165,7 @@ class _WorldListPageState extends State<WorldListPage> {
             }
             final layer = layers[_currentLayerIndex];
             final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
-              return manager.provider.navigateArguments(world, entrance);
+              return _initialNavigateArguments(world);
             }) : null;
             return FutureBuilder(
               initialData: null,
@@ -322,7 +343,7 @@ class _WorldListPageState extends State<WorldListPage> {
   }
 
   Widget _buildNavigateProperties(BuildContext context, World world, NavigateArguments currentArguments, List<Node>? path, bool loading) {
-    final originArguments = manager.provider.navigateArguments(world, entrance);
+    final originArguments = manager.provider.navigateArguments(world, _defaultNavigateSettings.startEntrance ?? entrance);
     final args = _navigateArguments[_currentWorld]!;
     return Column(
       children: [

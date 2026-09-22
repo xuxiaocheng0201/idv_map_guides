@@ -94,6 +94,9 @@
   "homeNotSupport": "暂不支持此组合，请耐心等待更新",
 
   "entrancesChooseMap": "选择地图（{world}-{difficulty}）",
+  "entrancesNavigateSetting": "默认导航设置",
+  "entrancesNavigateSettingDefault": "默认",
+  "entrancesNavigateSettingEmpty": "置空",
 
   "worldsShowMap": "地图展示",
   "worldsFullscreen": "全屏模式",
