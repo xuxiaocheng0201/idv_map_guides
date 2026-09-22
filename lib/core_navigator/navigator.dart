@@ -22,7 +22,11 @@ part 'navigator.worker.g.dart';
 @freezed
 abstract class KeyResource with _$KeyResource {
   KeyResource._();
-  factory KeyResource(Node position, Node transport, double urgency) = _KeyResource;
+  factory KeyResource({
+    required Node position,
+    required Node transport,
+    @Default(1.0) double urgency,
+  }) = _KeyResource;
 }
 
 extension NodeIdentify on Node {
@@ -35,14 +39,14 @@ abstract class NavigateArguments with _$NavigateArguments {
   factory NavigateArguments({
     required Node start,
     required Set<Node> resources,
-    @Default(<Node>{}) Set<Node> exits,
+    required Set<Node> exits,
     KeyResource? keyResource,
   }) = _NavigateArguments;
 
   String get identify => '${start.identify}'
       '/${resources.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
-      '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(",")}${keyResource == null ? '' : ''
-      '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}';
+      '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(",")}'
+      '${keyResource == null ? '' : '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}';
 }
 
 @freezed
@@ -151,10 +155,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     return nodeToIndex[landmarkNodes[landmarkIndex]]!;
   }
   /// 获取地标索引对应的资源点索引
-  Set<int> getLandmarkResource(int landmarkIndex) {
+  int? getLandmarkResource(int landmarkIndex) {
     final node = landmarkNodes[landmarkIndex];
-    final resourceIndex = resourceToIndex[node];
-    return resourceIndex == null ? <int>{} : <int>{resourceIndex};
+    return resourceToIndex[node];
   }
   // 起点
   final startLandmark = landmarkToIndex[arguments.start]!;
@@ -401,7 +404,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     compare<(double, double, _AStarState)>((item) => item.$1),
     compare<(double, double, _AStarState)>((item) => item.$2),
   ])); // 优先队列，元素为 (f, g, state)，先按 f 排序，再按 g 排序
-  final startResources = getLandmarkResource(startLandmark);
+  final startResources = <int>{?getLandmarkResource(startLandmark)};
   final startKey = _AStarState(
     collectedResourceIndexes: startResources,
     currentLandmarkIndex: startLandmark,
@@ -429,7 +432,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     if (keyResourceIndex != null && !hasTransported && currentLandmark == keyPositionLandmark) {
       final newResources = {
         ...collectedResources,
-        ...getLandmarkResource(keyTransportLandmark!),
+        ?getLandmarkResource(keyTransportLandmark!),
       };
       final newState = _AStarState(
         collectedResourceIndexes: newResources,
@@ -454,7 +457,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       if (d == null) continue;
       final newResources = {
         ...collectedResources,
-        ...getLandmarkResource(nextLandmark),
+        ?getLandmarkResource(nextLandmark),
       };
       final newState = _AStarState(
         collectedResourceIndexes: newResources,

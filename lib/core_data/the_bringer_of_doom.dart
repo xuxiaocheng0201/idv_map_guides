@@ -235,7 +235,7 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
       }
     }
     final alterNode = world.entranceNode(EntranceType.alterBasement)!;
-    final keyResource = KeyResource(museRoomNode!, alterNode, 1.0);
+    final keyResource = KeyResource(position: museRoomNode!, transport: alterNode);
     return origin.copyWith(keyResource: keyResource);
   }
   @override
