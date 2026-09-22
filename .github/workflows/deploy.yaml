@@ -55,8 +55,8 @@ jobs:
 
       - name: Build Web
         run: |
-          dart compile js "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.js"
-          flutter build web --release --base-href /${{ github.event.repository.name }}/
+          dart compile wasm "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.wasm"
+          flutter build web --release --wasm --base-href /${{ github.event.repository.name }}/
 
       - name: Upload Debug Symbols to Sentry
         run: dart run sentry_dart_plugin
