@@ -205,6 +205,7 @@ class WorldPainter extends CustomPainter {
   final GroundLayer layer;
   Set<Node> resources = const <Node>{};
   List<Node> path = [];
+  List<Node> path2 = [];
 
   final int minX;
   final int maxX;
@@ -317,6 +318,7 @@ class WorldPainter extends CustomPainter {
     }
 
     paintPath(canvas, cellSize, path, layer, _cellCenter, null);
+    paintPath(canvas, cellSize, path2, layer, _cellCenter, resourceColor);
   }
 
   Offset _cellCenter(int x, int y, double cellSize) {

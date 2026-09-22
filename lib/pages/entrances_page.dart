@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
@@ -13,22 +14,24 @@ import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
+part 'entrances_page.freezed.dart';
+
 class EntranceFeaturePageArgument {
   final WorldsManager<BaseWorldsEnums> manager;
   const EntranceFeaturePageArgument({required this.manager});
 }
 
-class DefaultNavigateSettings {
-  final EntranceType? startEntrance;
-  final bool useResources;
-  final bool useKeyResource;
-  final bool useExits;
-  const DefaultNavigateSettings({
-    this.startEntrance,
-    this.useResources = true,
-    this.useKeyResource = true,
-    this.useExits = true,
-  });
+@freezed
+abstract class DefaultNavigateSettings with _$DefaultNavigateSettings {
+  const factory DefaultNavigateSettings({
+    EntranceType? startEntrance,
+    @Default(true) bool useResources,
+    @Default(true) bool useKeyResource,
+    @Default(true) bool useExits,
+    // 双人模式
+    @Default(false) bool useDouble,
+    EntranceType? startEntrance2,
+  }) = _DefaultNavigateSettings;
 }
 
 class EntranceFeaturePage extends StatefulWidget {
@@ -126,9 +129,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
 
   Widget _buildNavigateProperties(BuildContext context) {
     final settings = _defaultNavigateSettings;
-    void update(DefaultNavigateSettings value) {
-      setState(() => _defaultNavigateSettings = value);
-    }
     return Column(
       children: [
         Text(
@@ -136,6 +136,16 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
+        _buildNavigateCard(
+          context,
+          icon: Icons.people_alt,
+          title: S.of(context).worldsNavigateDoubleMode,
+          body: Switch(
+            value: settings.useDouble,
+            onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useDouble: value)),
+          ),
+        ),
+        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
           icon: Icons.flag,
@@ -148,16 +158,31 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             ],
             selected: {settings.startEntrance},
             showSelectedIcon: false,
-            onSelectionChanged: (value) => update(
-              DefaultNavigateSettings(
-                startEntrance: value.first,
-                useResources: settings.useResources,
-                useKeyResource: settings.useKeyResource,
-                useExits: settings.useExits,
-              ),
-            ),
+            emptySelectionAllowed: false,
+            multiSelectionEnabled: false,
+            onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(startEntrance: value.first)),
           ),
         ),
+        if (settings.useDouble) ...[
+          const SizedBox(height: 8),
+          _buildNavigateCard(
+            context,
+            icon: Icons.flag,
+            title: S.of(context).worldsNavigateDoubleStartNode,
+            body: SegmentedButton<EntranceType?>(
+              segments: [
+                ButtonSegment<EntranceType?>(value: null, label: Text(S.of(context).entrancesNavigateSettingDefault)),
+                for (final entrance in manager.provider.validEntrances)
+                  ButtonSegment<EntranceType?>(value: entrance, label: Text(entrance.label(context))),
+              ],
+              selected: {settings.startEntrance2},
+              showSelectedIcon: false,
+              emptySelectionAllowed: false,
+              multiSelectionEnabled: false,
+              onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(startEntrance2: value.first)),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         _buildNavigateCard(
           context,
@@ -170,14 +195,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             ],
             selected: {settings.useResources},
             showSelectedIcon: false,
-            onSelectionChanged: (value) => update(
-              DefaultNavigateSettings(
-                startEntrance: settings.startEntrance,
-                useResources: value.first,
-                useKeyResource: settings.useKeyResource,
-                useExits: settings.useExits,
-              ),
-            ),
+            onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useResources: value.first)),
           ),
         ),
         const SizedBox(height: 8),
@@ -187,14 +205,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           title: S.of(context).worldsNavigateKeyResource,
           body: Switch(
             value: settings.useKeyResource,
-            onChanged: (value) => update(
-              DefaultNavigateSettings(
-                startEntrance: settings.startEntrance,
-                useResources: settings.useResources,
-                useKeyResource: value,
-                useExits: settings.useExits,
-              ),
-            ),
+            onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useKeyResource: value)),
           ),
         ),
         const SizedBox(height: 8),
@@ -204,14 +215,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           title: S.of(context).worldsNavigateExit,
           body: Switch(
             value: settings.useExits,
-            onChanged: (value) => update(
-              DefaultNavigateSettings(
-                startEntrance: settings.startEntrance,
-                useResources: settings.useResources,
-                useKeyResource: settings.useKeyResource,
-                useExits: value,
-              ),
-            ),
+            onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useExits: value)),
           ),
         ),
       ],

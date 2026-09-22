@@ -9,6 +9,7 @@ import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
+import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
 
 class WorldsManager<W extends BaseWorldsEnums> {
@@ -113,6 +114,16 @@ class WorldsManager<W extends BaseWorldsEnums> {
     return await _fetchWithCache(
       key: 'navigate/${world.index}/${arguments.identify}',
       fetch: () async => await navigateAsync(structuresFile, worldFile, arguments),
+    );
+  }
+
+  Future<({List<Node> path1, List<Node> path2})> getNavigateDoubleResult(W world, NavigateDoubleArguments arguments) async {
+    final structuresFile = (await _getStructures()).$1;
+    final worldFile = (await _getWorld(world)).$1;
+    await _getPrecomputedNavigator(world);
+    return await _fetchWithCache(
+      key: 'navigate_double/${world.index}/${arguments.identify}',
+      fetch: () async => await navigateDoubleAsync(structuresFile, worldFile, arguments),
     );
   }
 }

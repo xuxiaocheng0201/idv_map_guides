@@ -26,9 +26,9 @@ abstract class NavigateDoubleArguments with _$NavigateDoubleArguments {
     required Set<Node> exits,
     KeyResource? keyResource,
     /// 一人到达关键资源点后，另一人继续移动时每步额外增加的代价
-    @Default(0.0) double transportWaitingUrgency,
+    @Default(1.0) double transportWaitingUrgency,
     /// 平衡两人路线长度的权重，最终评分 = 带权总路程 + balanceWeight * |len1 - len2|
-    @Default(1.0) double balanceWeight,
+    @Default(0.5) double balanceWeight,
   }) = _NavigateDoubleArguments;
 
   String get identify => '${start1.identify}/${start2.identify}'
@@ -65,8 +65,6 @@ abstract class _DoubleAStarState with _$DoubleAStarState {
     required int transportPhase,
     /// 0 无等待者，1 表示第一个人在 keyResource.position 等待，2 表示第二个人在等待
     required int waitingAgent, // TODO: 合并字段
-    /// len1 - len2，用于路线长度平衡
-    required int lenDiff,
   }) = __DoubleAStarState;
 }
 
@@ -347,7 +345,6 @@ class _DoubleCost {
     collectedResources: startCollected,
     transportPhase: startPhase,
     waitingAgent: startWaiting,
-    lenDiff: 0,
   );
 
   final cost = <_DoubleAStarState, _DoubleCost>{};
@@ -429,7 +426,6 @@ class _DoubleCost {
           collectedResources: newResources,
           transportPhase: newPhase,
           waitingAgent: newWaiting,
-          lenDiff: newLen1 - newLen2,
         );
 
         final old = cost[newState];
@@ -483,7 +479,6 @@ class _DoubleCost {
           collectedResources: newResources,
           transportPhase: newPhase,
           waitingAgent: newWaiting,
-          lenDiff: newLen1 - newLen2,
         );
 
         final old = cost[newState];
@@ -524,7 +519,6 @@ class _DoubleCost {
         collectedResources: newResources,
         transportPhase: 2,
         waitingAgent: 0,
-        lenDiff: state.lenDiff,
       );
 
       final old = cost[newState];

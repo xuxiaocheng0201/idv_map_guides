@@ -10,6 +10,7 @@ import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
+import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
@@ -27,6 +28,7 @@ enum _NavigateEditMode {
   none,
   start,
   resource,
+  start2,
 }
 
 class WorldListPage extends StatefulWidget {
@@ -52,7 +54,9 @@ class _WorldListPageState extends State<WorldListPage> {
   bool _navigateMode = true;
   bool _showNavigateProperties = true;
   _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
+  bool _navigateDouble = false;
   final Map<BaseWorldsEnums, NavigateArguments> _navigateArguments = <BaseWorldsEnums, NavigateArguments>{};
+  final Map<BaseWorldsEnums, NavigateDoubleArguments> _navigateDoubleArguments = <BaseWorldsEnums, NavigateDoubleArguments>{};
 
   @override
   void didChangeDependencies() {
@@ -74,6 +78,7 @@ class _WorldListPageState extends State<WorldListPage> {
     worlds = argument.worlds;
     entrance = argument.entrance;
     _defaultNavigateSettings = argument.settings;
+    _navigateDouble = _defaultNavigateSettings.useDouble;
     _currentWorld = worlds.first;
   }
 
@@ -87,6 +92,24 @@ class _WorldListPageState extends State<WorldListPage> {
     final settings = _defaultNavigateSettings;
     final baseEntrance = settings.startEntrance ?? entrance;
     final origin = manager.provider.navigateArguments(world, baseEntrance);
+    var result = origin;
+    if (!settings.useResources) {
+      result = result.copyWith(resources: <Node>{});
+    }
+    if (!settings.useKeyResource) {
+      result = result.copyWith(keyResource: null);
+    }
+    if (!settings.useExits == true) {
+      result = result.copyWith(exits: <Node>{});
+    }
+    return result;
+  }
+
+  NavigateDoubleArguments _initialNavigateDoubleArguments(World world) {
+    final settings = _defaultNavigateSettings;
+    final baseEntrance1 = settings.startEntrance ?? entrance;
+    final baseEntrance2 = settings.startEntrance2 ?? settings.startEntrance ?? entrance;
+    final origin = manager.provider.navigateDoubleArguments(world, baseEntrance1, baseEntrance2);
     var result = origin;
     if (!settings.useResources) {
       result = result.copyWith(resources: <Node>{});
@@ -134,6 +157,7 @@ class _WorldListPageState extends State<WorldListPage> {
                       label: Text(worldLabel(world, context)),
                     )
                 ],
+                showSelectedIcon: false,
                 emptySelectionAllowed: false,
                 multiSelectionEnabled: false,
                 onSelectionChanged: (w) => setState(() {
@@ -167,11 +191,44 @@ class _WorldListPageState extends State<WorldListPage> {
             final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
               return _initialNavigateArguments(world);
             }) : null;
+            final navigateDoubleArguments = _navigateMode ? _navigateDoubleArguments.putIfAbsent(_currentWorld, () {
+              return _initialNavigateDoubleArguments(world);
+            }) : null;
+            Future<dynamic>? navigationFuture;
+            if (_navigateMode) {
+              if (_navigateDouble) {
+                navigationFuture = navigateDoubleArguments == null ? null : manager.getNavigateDoubleResult(_currentWorld, navigateDoubleArguments);
+              } else {
+                navigationFuture = navigateArguments == null ? null : manager.getNavigateResult(_currentWorld, navigateArguments);
+              }
+            }
             return FutureBuilder(
               initialData: null,
-              future: navigateArguments == null ? null : manager.getNavigateResult(_currentWorld, navigateArguments),
+              future: navigationFuture,
               builder: (context, asyncSnapshot) {
-                final path = asyncSnapshot.data;
+                List<Node>? path1;
+                List<Node>? path2;
+                final data = asyncSnapshot.data;
+                if (_navigateDouble) {
+                  if (data is ({List<Node> path1, List<Node> path2})) {
+                    path1 = data.path1;
+                    path2 = data.path2;
+                  }
+                } else {
+                  if (data is List<Node>) path1 = data;
+                }
+                final loading = asyncSnapshot.connectionState != ConnectionState.done;
+                Widget buildLayerPaint(GroundLayer layer, bool auto) {
+                  return _WorldLayerPaint(
+                    world: world,
+                    layer: layer,
+                    auto: auto,
+                    resources: (navigateArguments?.resources ?? navigateDoubleArguments?.resources)!,
+                    path: path1,
+                    path2: path2,
+                    onCellTap: _navigateMode ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y) : null,
+                  );
+                }
                 return Row(
                   children: [
                     Expanded(
@@ -187,6 +244,7 @@ class _WorldListPageState extends State<WorldListPage> {
                                     label: Text(layers[i].label(context)),
                                   )
                               ],
+                              showSelectedIcon: false,
                               emptySelectionAllowed: false,
                               multiSelectionEnabled: false,
                               onSelectionChanged: (i) => setState(() {
@@ -197,16 +255,7 @@ class _WorldListPageState extends State<WorldListPage> {
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: _WorldLayerPaint(
-                                  world: world,
-                                  layer: layer,
-                                  auto: false,
-                                  arguments: navigateArguments,
-                                  path: path,
-                                  onCellTap: _navigateMode
-                                    ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
-                                    : null,
-                                ),
+                                child: buildLayerPaint(layer, false),
                               ),
                             ),
                           ],
@@ -232,16 +281,7 @@ class _WorldListPageState extends State<WorldListPage> {
                                           ),
                                           const SizedBox(height: 4),
                                           Expanded(
-                                            child: _WorldLayerPaint(
-                                              world: world,
-                                              layer: layer,
-                                              auto: true,
-                                              arguments: navigateArguments,
-                                              path: path,
-                                              onCellTap: _navigateMode
-                                                ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y)
-                                                : null,
-                                            ),
+                                            child: buildLayerPaint(layer, true),
                                           ),
                                         ],
                                       ),
@@ -261,9 +301,11 @@ class _WorldListPageState extends State<WorldListPage> {
                             child: _buildNavigateProperties(
                               context,
                               world,
-                              navigateArguments!,
-                              path,
-                              asyncSnapshot.connectionState != ConnectionState.done,
+                              navigateArguments,
+                              navigateDoubleArguments,
+                              path1,
+                              path2,
+                              loading,
                             ),
                           ),
                         ),
@@ -323,11 +365,18 @@ class _WorldListPageState extends State<WorldListPage> {
     final cell = world.cell(layer, x, y);
     if (cell == null || cell.structureId == null) return;
     final currentArguments = _navigateArguments[_currentWorld]!;
+    final currentDoubleArguments = _navigateDoubleArguments[_currentWorld]!;
     switch (_navigateEditMode) {
       case _NavigateEditMode.none:
         break;
       case _NavigateEditMode.start:
-        setState(() => _navigateArguments[_currentWorld] = currentArguments.copyWith(start: Node(layer, x, y)));
+        setState(() {
+          _navigateArguments[_currentWorld] = currentArguments.copyWith(start: Node(layer, x, y));
+          _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(start1: Node(layer, x, y));
+        });
+        break;
+      case _NavigateEditMode.start2:
+        setState(() => _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(start2: Node(layer, x, y)));
         break;
       case _NavigateEditMode.resource:
         final node = Node(layer, x, y);
@@ -337,14 +386,25 @@ class _WorldListPageState extends State<WorldListPage> {
         }
         setState(() {
           _navigateArguments[_currentWorld] = currentArguments.copyWith(resources: resources);
+          _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(resources: resources);
         });
         break;
     }
   }
 
-  Widget _buildNavigateProperties(BuildContext context, World world, NavigateArguments currentArguments, List<Node>? path, bool loading) {
+  Widget _buildNavigateProperties(
+    BuildContext context,
+    World world,
+    NavigateArguments? currentArguments,
+    NavigateDoubleArguments? currentDoubleArguments,
+    List<Node>? path1,
+    List<Node>? path2,
+    bool loading,
+  ) {
     final originArguments = manager.provider.navigateArguments(world, _defaultNavigateSettings.startEntrance ?? entrance);
+    final originDoubleArguments = manager.provider.navigateDoubleArguments(world, _defaultNavigateSettings.startEntrance ?? entrance, _defaultNavigateSettings.startEntrance2 ?? _defaultNavigateSettings.startEntrance ?? entrance);
     final args = _navigateArguments[_currentWorld]!;
+    final argsDouble = _navigateDoubleArguments[_currentWorld]!;
     return Column(
       children: [
         Text(S.of(context).worldsNavigateSetting),
@@ -352,7 +412,7 @@ class _WorldListPageState extends State<WorldListPage> {
         Builder(
           builder: (context) {
             final isStartEditing = _navigateEditMode == _NavigateEditMode.start;
-            final start = currentArguments.start;
+            final start = (currentArguments?.start ?? currentDoubleArguments?.start1)!;
             return _buildNavigateCard(context,
               selected: isStartEditing,
               icon: Icons.flag,
@@ -370,6 +430,7 @@ class _WorldListPageState extends State<WorldListPage> {
                   OutlinedButton.icon(
                     onPressed: () {
                       setState(() => _navigateArguments[_currentWorld] = args.copyWith(start: originArguments.start));
+                      setState(() => _navigateDoubleArguments[_currentWorld] = argsDouble.copyWith(start1: originDoubleArguments.start1));
                     },
                     icon: const Icon(Icons.restart_alt),
                     label: Text(S.of(context).worldsNavigateReset),
@@ -383,7 +444,7 @@ class _WorldListPageState extends State<WorldListPage> {
         Builder(
           builder: (context) {
             final isResourceEditing = _navigateEditMode == _NavigateEditMode.resource;
-            final resources = currentArguments.resources;
+            final resources = (currentArguments?.resources ?? currentDoubleArguments?.resources)!;
             return _buildNavigateCard(context,
               selected: isResourceEditing,
               icon: Icons.inventory,
@@ -425,7 +486,7 @@ class _WorldListPageState extends State<WorldListPage> {
             icon: Icons.key,
             title: S.of(context).worldsNavigateKeyResource,
             headerAction: Switch(
-              value: currentArguments.keyResource != null,
+              value: currentArguments?.keyResource != null,
               onChanged: (value) => setState(() {
                 _navigateArguments[_currentWorld] = args.copyWith(keyResource: value ? originArguments.keyResource : null);
               }),
@@ -438,7 +499,7 @@ class _WorldListPageState extends State<WorldListPage> {
           icon: Icons.exit_to_app,
           title: S.of(context).worldsNavigateExit,
           headerAction: Switch(
-            value: currentArguments.exits.isNotEmpty,
+            value: currentArguments?.exits.isNotEmpty ?? false,
             onChanged: (value) => setState(() {
               _navigateArguments[_currentWorld] = args.copyWith(exits: value ? originArguments.exits : <Node>{});
             }),
@@ -452,7 +513,7 @@ class _WorldListPageState extends State<WorldListPage> {
           title: S.of(context).worldsNavigatePathLength,
           headerAction: SizedBox(
             height: 36,
-            child: loading ? const CircularProgressIndicator(strokeWidth: 2) : Text('${path?.length ?? 0}'),
+            child: loading ? const CircularProgressIndicator(strokeWidth: 2) : Text('${path1?.length ?? 0}'),
           ),
         ),
       ],
@@ -499,16 +560,18 @@ class _WorldLayerPaint extends StatelessWidget {
   final World world;
   final GroundLayer layer;
   final bool auto;
-  final NavigateArguments? arguments;
+  final Set<Node>? resources;
   final List<Node>? path;
+  final List<Node>? path2;
   final void Function(GroundLayer layer, int x, int y)? onCellTap;
 
   const _WorldLayerPaint({
     required this.world,
     required this.layer,
     required this.auto,
-    this.arguments,
+    this.resources,
     this.path,
+    this.path2,
     this.onCellTap,
   });
 
@@ -521,7 +584,8 @@ class _WorldLayerPaint extends StatelessWidget {
           builder: (context, constraints) {
             final painter = auto ? WorldPainter.auto(world: world, layer: layer) : WorldPainter(world: world, layer: layer);
             painter.path = path ?? <Node>[];
-            painter.resources = arguments?.resources ?? <Node>{};
+            painter.path2 = path2 ?? <Node>[];
+            painter.resources = resources ?? <Node>{};
             final cellSize = min(constraints.maxWidth / painter.width, constraints.maxHeight / painter.height);
             final paintSize = Size(painter.width * cellSize, painter.height * cellSize);
             return GestureDetector(

@@ -116,5 +116,7 @@
   "worldsNavigateResourceClear": "清空",
   "worldsNavigateKeyResource": "优先抵达缪斯房",
   "worldsNavigateExit": "导航至出口结束",
-  "worldsNavigatePathLength": "导航总路程"
+  "worldsNavigatePathLength": "导航总路程",
+  "worldsNavigateDoubleMode": "双人模式",
+  "worldsNavigateDoubleStartNode": "第二人起点"
 }
