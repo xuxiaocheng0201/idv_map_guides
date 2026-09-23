@@ -9,10 +9,8 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
-import 'package:idv_map_guides/core_navigator/navigator.dart';
-import 'package:idv_map_guides/core_navigator/navigator_double.dart';
+import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
@@ -55,8 +53,7 @@ class _WorldListPageState extends State<WorldListPage> {
   bool _showNavigateProperties = true;
   _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
   bool _navigateDouble = false;
-  final Map<BaseWorldsEnums, NavigateArguments> _navigateArguments = <BaseWorldsEnums, NavigateArguments>{};
-  final Map<BaseWorldsEnums, NavigateDoubleArguments> _navigateDoubleArguments = <BaseWorldsEnums, NavigateDoubleArguments>{};
+  final Map<BaseWorldsEnums, UnionNavigateArguments> _navigateArguments = <BaseWorldsEnums, UnionNavigateArguments>{};
 
   @override
   void didChangeDependencies() {
@@ -86,41 +83,6 @@ class _WorldListPageState extends State<WorldListPage> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
-  }
-
-  NavigateArguments _initialNavigateArguments(World world) {
-    final settings = _defaultNavigateSettings;
-    final baseEntrance = settings.startEntrance ?? entrance;
-    final origin = manager.provider.navigateArguments(world, baseEntrance);
-    var result = origin;
-    if (!settings.useResources) {
-      result = result.copyWith(resources: <Node>{});
-    }
-    if (!settings.useKeyResource) {
-      result = result.copyWith(keyResource: null);
-    }
-    if (!settings.useExits == true) {
-      result = result.copyWith(exits: <Node>{});
-    }
-    return result;
-  }
-
-  NavigateDoubleArguments _initialNavigateDoubleArguments(World world) {
-    final settings = _defaultNavigateSettings;
-    final baseEntrance1 = settings.startEntrance ?? entrance;
-    final baseEntrance2 = settings.startEntrance2 ?? settings.startEntrance ?? entrance;
-    final origin = manager.provider.navigateDoubleArguments(world, baseEntrance1, baseEntrance2);
-    var result = origin;
-    if (!settings.useResources) {
-      result = result.copyWith(resources: <Node>{});
-    }
-    if (!settings.useKeyResource) {
-      result = result.copyWith(keyResource: null);
-    }
-    if (!settings.useExits == true) {
-      result = result.copyWith(exits: <Node>{});
-    }
-    return result;
   }
 
   @override
@@ -189,17 +151,19 @@ class _WorldListPageState extends State<WorldListPage> {
             }
             final layer = layers[_currentLayerIndex];
             final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
-              return _initialNavigateArguments(world);
-            }) : null;
-            final navigateDoubleArguments = _navigateMode ? _navigateDoubleArguments.putIfAbsent(_currentWorld, () {
-              return _initialNavigateDoubleArguments(world);
+              return UnionNavigateArguments.fromProvider(
+                provider: manager.provider,
+                world: world,
+                setting: _defaultNavigateSettings,
+                defaultEntrance: entrance,
+              );
             }) : null;
             Future<dynamic>? navigationFuture;
-            if (_navigateMode) {
+            if (_navigateMode && navigateArguments != null) {
               if (_navigateDouble) {
-                navigationFuture = navigateDoubleArguments == null ? null : manager.getNavigateDoubleResult(_currentWorld, navigateDoubleArguments);
+                navigationFuture = manager.getNavigateDoubleResult(_currentWorld, navigateArguments.twoArgument);
               } else {
-                navigationFuture = navigateArguments == null ? null : manager.getNavigateResult(_currentWorld, navigateArguments);
+                navigationFuture = manager.getNavigateResult(_currentWorld, navigateArguments.oneArgument);
               }
             }
             return FutureBuilder(
@@ -223,7 +187,7 @@ class _WorldListPageState extends State<WorldListPage> {
                     world: world,
                     layer: layer,
                     auto: auto,
-                    resources: (navigateArguments?.resources ?? navigateDoubleArguments?.resources)!,
+                    resources: navigateArguments?.resources ?? <Node>{},
                     path: path1,
                     path2: path2,
                     onCellTap: _navigateMode ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y) : null,
@@ -302,7 +266,6 @@ class _WorldListPageState extends State<WorldListPage> {
                               context,
                               world,
                               navigateArguments,
-                              navigateDoubleArguments,
                               path1,
                               path2,
                               loading,
@@ -312,7 +275,7 @@ class _WorldListPageState extends State<WorldListPage> {
                       ),
                   ],
                 );
-              }
+              },
             );
           },
         ),
@@ -365,55 +328,50 @@ class _WorldListPageState extends State<WorldListPage> {
     final cell = world.cell(layer, x, y);
     if (cell == null || cell.structureId == null) return;
     final currentArguments = _navigateArguments[_currentWorld]!;
-    final currentDoubleArguments = _navigateDoubleArguments[_currentWorld]!;
     switch (_navigateEditMode) {
       case _NavigateEditMode.none:
         break;
       case _NavigateEditMode.start:
-        setState(() {
-          _navigateArguments[_currentWorld] = currentArguments.copyWith(start: Node(layer, x, y));
-          _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(start1: Node(layer, x, y));
-        });
+        setState(() => _navigateArguments[_currentWorld] = currentArguments.copyWith(start: Node(layer, x, y)));
         break;
       case _NavigateEditMode.start2:
-        setState(() => _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(start2: Node(layer, x, y)));
+        setState(() => _navigateArguments[_currentWorld] = currentArguments.copyWith(start2: Node(layer, x, y)));
         break;
       case _NavigateEditMode.resource:
         final node = Node(layer, x, y);
         final resources = Set<Node>.of(currentArguments.resources);
         if (!resources.remove(node)) {
           resources.add(node);
-        }
-        setState(() {
-          _navigateArguments[_currentWorld] = currentArguments.copyWith(resources: resources);
-          _navigateDoubleArguments[_currentWorld] = currentDoubleArguments.copyWith(resources: resources);
-        });
+        } // FIXME: optimize
+        setState(() => _navigateArguments[_currentWorld] = currentArguments.copyWith(resources: resources));
         break;
     }
   }
 
-  Widget _buildNavigateProperties(
-    BuildContext context,
-    World world,
-    NavigateArguments? currentArguments,
-    NavigateDoubleArguments? currentDoubleArguments,
-    List<Node>? path1,
-    List<Node>? path2,
-    bool loading,
-  ) {
-    final originArguments = manager.provider.navigateArguments(world, _defaultNavigateSettings.startEntrance ?? entrance);
-    final originDoubleArguments = manager.provider.navigateDoubleArguments(world, _defaultNavigateSettings.startEntrance ?? entrance, _defaultNavigateSettings.startEntrance2 ?? _defaultNavigateSettings.startEntrance ?? entrance);
-    final args = _navigateArguments[_currentWorld]!;
-    final argsDouble = _navigateDoubleArguments[_currentWorld]!;
+  Widget _buildNavigateProperties(BuildContext context, World world, UnionNavigateArguments? currentArguments, List<Node>? path1, List<Node>? path2, bool loading) {
+    final origin = UnionNavigateArguments.fromProvider(provider: manager.provider, world: world, setting: _defaultNavigateSettings, defaultEntrance: entrance);
+    final current = _navigateArguments[_currentWorld]!;
     return Column(
       children: [
         Text(S.of(context).worldsNavigateSetting),
         const SizedBox(height: 8),
+        _buildNavigateCard(
+          context,
+          selected: false,
+          icon: Icons.people_alt,
+          title: S.of(context).worldsNavigateDoubleMode,
+          headerAction: Switch(
+            value: _navigateDouble,
+            onChanged: (value) => setState(() => _navigateDouble = value),
+          ),
+        ),
+        const SizedBox(height: 8),
         Builder(
           builder: (context) {
             final isStartEditing = _navigateEditMode == _NavigateEditMode.start;
-            final start = (currentArguments?.start ?? currentDoubleArguments?.start1)!;
-            return _buildNavigateCard(context,
+            final start = current.start;
+            return _buildNavigateCard(
+              context,
               selected: isStartEditing,
               icon: Icons.flag,
               title: S.of(context).worldsNavigateStartNode,
@@ -423,14 +381,17 @@ class _WorldListPageState extends State<WorldListPage> {
                   _navigateEditMode = isStartEditing ? _NavigateEditMode.none : _NavigateEditMode.start;
                 }),
                 icon: const Icon(Icons.touch_app),
-                label: Text(isStartEditing ? S.of(context).worldsNavigateStartNodeEditExit : S.of(context).worldsNavigateStartNodeEdit),
+                label: Text(isStartEditing
+                    ? S.of(context).worldsNavigateStartNodeEditExit
+                    : S.of(context).worldsNavigateStartNodeEdit),
               ),
               action: Row(
                 children: [
                   OutlinedButton.icon(
                     onPressed: () {
-                      setState(() => _navigateArguments[_currentWorld] = args.copyWith(start: originArguments.start));
-                      setState(() => _navigateDoubleArguments[_currentWorld] = argsDouble.copyWith(start1: originDoubleArguments.start1));
+                      setState(() {
+                        _navigateArguments[_currentWorld] = current.copyWith(start: origin.start);
+                      });
                     },
                     icon: const Icon(Icons.restart_alt),
                     label: Text(S.of(context).worldsNavigateReset),
@@ -438,14 +399,53 @@ class _WorldListPageState extends State<WorldListPage> {
                 ],
               ),
             );
-          }
+          },
         ),
+        if (_navigateDouble) ...[
+          const SizedBox(height: 8),
+          Builder(
+            builder: (context) {
+              final isStart2Editing = _navigateEditMode == _NavigateEditMode.start2;
+              final start2 = current.start2;
+              return _buildNavigateCard(
+                context,
+                selected: isStart2Editing,
+                icon: Icons.flag,
+                title: S.of(context).worldsNavigateDoubleStartNode,
+                body: Text(S.of(context).worldsNavigateStartNodeValue(start2.layer.label(context), start2.x, start2.y)),
+                headerAction: (isStart2Editing ? FilledButton.icon : OutlinedButton.icon)(
+                  onPressed: () => setState(() {
+                    _navigateEditMode = isStart2Editing ? _NavigateEditMode.none : _NavigateEditMode.start2;
+                  }),
+                  icon: const Icon(Icons.touch_app),
+                  label: Text(isStart2Editing
+                      ? S.of(context).worldsNavigateStartNodeEditExit
+                      : S.of(context).worldsNavigateStartNodeEdit),
+                ),
+                action: Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _navigateArguments[_currentWorld] = current.copyWith(start2: origin.start2);
+                        });
+                      },
+                      icon: const Icon(Icons.restart_alt),
+                      label: Text(S.of(context).worldsNavigateReset),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
         const SizedBox(height: 8),
         Builder(
           builder: (context) {
             final isResourceEditing = _navigateEditMode == _NavigateEditMode.resource;
-            final resources = (currentArguments?.resources ?? currentDoubleArguments?.resources)!;
-            return _buildNavigateCard(context,
+            final resources = current.resources;
+            return _buildNavigateCard(
+              context,
               selected: isResourceEditing,
               icon: Icons.inventory,
               title: S.of(context).worldsNavigateResource,
@@ -455,13 +455,15 @@ class _WorldListPageState extends State<WorldListPage> {
                   _navigateEditMode = isResourceEditing ? _NavigateEditMode.none : _NavigateEditMode.resource;
                 }),
                 icon: const Icon(Icons.touch_app),
-                label: Text(isResourceEditing ? S.of(context).worldsNavigateResourceEditExit : S.of(context).worldsNavigateResourceEdit),
+                label: Text(isResourceEditing
+                    ? S.of(context).worldsNavigateResourceEditExit
+                    : S.of(context).worldsNavigateResourceEdit),
               ),
               action: Row(
                 children: [
                   OutlinedButton.icon(
                     onPressed: () => setState(() {
-                      _navigateArguments[_currentWorld] = args.copyWith(resources: originArguments.resources);
+                      _navigateArguments[_currentWorld] = current.copyWith(resources: origin.resources);
                     }),
                     icon: const Icon(Icons.restart_alt),
                     label: Text(S.of(context).worldsNavigateReset),
@@ -469,7 +471,7 @@ class _WorldListPageState extends State<WorldListPage> {
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: () => setState(() {
-                      _navigateArguments[_currentWorld] = args.copyWith(resources: <Node>{});
+                      _navigateArguments[_currentWorld] = current.copyWith(resources: <Node>{});
                     }),
                     icon: const Icon(Icons.clear_all),
                     label: Text(S.of(context).worldsNavigateResourceClear),
@@ -477,31 +479,33 @@ class _WorldListPageState extends State<WorldListPage> {
                 ],
               ),
             );
-          }
+          },
         ),
-        if (originArguments.keyResource != null) ...[
+        if (origin.keyResource != null) ...[
           const SizedBox(height: 8),
-          _buildNavigateCard(context,
+          _buildNavigateCard(
+            context,
             selected: false,
             icon: Icons.key,
             title: S.of(context).worldsNavigateKeyResource,
             headerAction: Switch(
-              value: currentArguments?.keyResource != null,
+              value: current.keyResource != null,
               onChanged: (value) => setState(() {
-                _navigateArguments[_currentWorld] = args.copyWith(keyResource: value ? originArguments.keyResource : null);
+                _navigateArguments[_currentWorld] = current.copyWith(keyResource: value ? origin.keyResource : null);
               }),
             ),
           ),
         ],
         const SizedBox(height: 8),
-        _buildNavigateCard(context,
+        _buildNavigateCard(
+          context,
           selected: false,
           icon: Icons.exit_to_app,
           title: S.of(context).worldsNavigateExit,
           headerAction: Switch(
-            value: currentArguments?.exits.isNotEmpty ?? false,
+            value: current.exits.isNotEmpty,
             onChanged: (value) => setState(() {
-              _navigateArguments[_currentWorld] = args.copyWith(exits: value ? originArguments.exits : <Node>{});
+              _navigateArguments[_currentWorld] = current.copyWith(exits: value ? origin.exits : <Node>{});
             }),
           ),
         ),
@@ -513,7 +517,11 @@ class _WorldListPageState extends State<WorldListPage> {
           title: S.of(context).worldsNavigatePathLength,
           headerAction: SizedBox(
             height: 36,
-            child: loading ? const CircularProgressIndicator(strokeWidth: 2) : Text('${path1?.length ?? 0}'),
+            child: loading
+                ? const CircularProgressIndicator(strokeWidth: 2)
+                : _navigateDouble
+                ? Text('${path1?.length ?? 0} ${path2?.length ?? 0}')
+                : Text('${path1?.length ?? 0}'),
           ),
         ),
       ],

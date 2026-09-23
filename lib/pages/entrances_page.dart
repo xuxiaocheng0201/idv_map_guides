@@ -9,29 +9,15 @@ import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
+import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
-part 'entrances_page.freezed.dart';
-
 class EntranceFeaturePageArgument {
   final WorldsManager<BaseWorldsEnums> manager;
   const EntranceFeaturePageArgument({required this.manager});
-}
-
-@freezed
-abstract class DefaultNavigateSettings with _$DefaultNavigateSettings {
-  const factory DefaultNavigateSettings({
-    EntranceType? startEntrance,
-    @Default(true) bool useResources,
-    @Default(true) bool useKeyResource,
-    @Default(true) bool useExits,
-    // 双人模式
-    @Default(false) bool useDouble,
-    EntranceType? startEntrance2,
-  }) = _DefaultNavigateSettings;
 }
 
 class EntranceFeaturePage extends StatefulWidget {
@@ -47,7 +33,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
   bool _initialized = false;
 
-  DefaultNavigateSettings _defaultNavigateSettings = const DefaultNavigateSettings();
+  DefaultNavigateSettings _defaultNavigateSettings = DefaultNavigateSettings();
   bool _showNavigateProperties = false;
 
   @override

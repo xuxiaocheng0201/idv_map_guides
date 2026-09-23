@@ -4,6 +4,7 @@ import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
 
 const pathColor = Color(0xFF00EEFF);
+const path2Color = Color(0xFFEE8800);
 const pathStartColor = Color(0xFF00DD77);
 const pathEndColor = Color(0xFFFF3399);
 const pathMarkerColor = Color(0xFFFFFFFF);
@@ -62,7 +63,7 @@ void paintPath(
   List<Node> path,
   GroundLayer layer,
   Offset Function(int, int, double) cellCenter,
-  Color? color,
+  Color color,
 ) {
   if (path.isEmpty) return;
 
@@ -175,7 +176,7 @@ void paintPath(
 
   // 绘制折线
   final linePaint = Paint()
-    ..color = color ?? pathColor
+    ..color = color
     ..style = PaintingStyle.stroke
     ..strokeWidth = cellSize * 0.08
     ..strokeCap = StrokeCap.round
@@ -190,7 +191,7 @@ void paintPath(
   // 绘制箭头
   final double arrowSize = cellSize * 0.2;
   final arrowPaint = Paint()
-    ..color = color ?? pathColor
+    ..color = color
     ..style = PaintingStyle.stroke
     ..strokeWidth = cellSize * 0.06
     ..strokeCap = StrokeCap.round

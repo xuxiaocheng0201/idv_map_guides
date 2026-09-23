@@ -317,8 +317,9 @@ class WorldPainter extends CustomPainter {
       drawEntrance(canvas, rect, cellSize);
     }
 
-    paintPath(canvas, cellSize, path, layer, _cellCenter, null);
-    paintPath(canvas, cellSize, path2, layer, _cellCenter, resourceColor);
+    // Ensure path1 is above.
+    paintPath(canvas, cellSize, path2, layer, _cellCenter, path2Color);
+    paintPath(canvas, cellSize, path, layer, _cellCenter, pathColor);
   }
 
   Offset _cellCenter(int x, int y, double cellSize) {
