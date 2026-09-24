@@ -43,7 +43,8 @@ abstract class NavigateArguments with _$NavigateArguments {
     KeyResource? keyResource,
   }) = _NavigateArguments;
 
-  String get identify => '${start.identify}'
+  String get identify =>
+      '${start.identify}'
       '/${resources.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
       '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(",")}'
       '${keyResource == null ? '' : '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}';
@@ -116,7 +117,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   final k = resources.length;
   // 关键资源相关
   int? keyResourceIndex;
-  double defaultWeight = 1.0;
+  const double defaultWeight = 1.0;
   double keyResourceWeight = 0.0;
   if (keyResource != null) {
     keyResourceIndex = resourceToIndex[keyResource.position]!;
@@ -129,7 +130,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   final landmarkNodes = <Node>[];
   final landmarkToIndex = <Node, int>{};
   void addLandmark(Node node) {
-    assert (nodeToIndex.containsKey(node));
+    assert(nodeToIndex.containsKey(node));
     if (landmarkToIndex.containsKey(node)) return;
     landmarkToIndex[node] = landmarkNodes.length;
     landmarkNodes.add(node);
@@ -147,19 +148,11 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   }
   final m = landmarkNodes.length;
   /// 获取资源点索引对应的地标索引
-  int getResourceLandmark(int resourceIndex) {
-    return landmarkToIndex[resources[resourceIndex]]!;
-  }
+  int getResourceLandmark(int resourceIndex) => landmarkToIndex[resources[resourceIndex]]!;
   /// 获取地标索引对应的节点索引
-  int getLandmarkNode(int landmarkIndex) {
-    return nodeToIndex[landmarkNodes[landmarkIndex]]!;
-  }
+  int getLandmarkNode(int landmarkIndex) => nodeToIndex[landmarkNodes[landmarkIndex]]!;
   /// 获取地标索引对应的资源点索引
-  int? getLandmarkResource(int landmarkIndex) {
-    final node = landmarkNodes[landmarkIndex];
-    return resourceToIndex[node];
-  }
-  // 起点
+  int? getLandmarkResource(int landmarkIndex) => resourceToIndex[landmarkNodes[landmarkIndex]];
   final startLandmark = landmarkToIndex[arguments.start]!;
   // 出口
   final exitLandmarks = <int>[];
@@ -189,16 +182,12 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         break;
       case StairTransport.goUp:
         final upLayer = u.layer.up()!;
-        final targetCell = world.cell(upLayer, u.x, u.y)!;
-        assert(targetCell.info.isStair == StairTransport.goDown);
         final v = Node(upLayer, u.x, u.y);
         final vi = nodeToIndex[v];
         if (vi != null) adj[i].add(vi);
         break;
       case StairTransport.goDown:
         final downLayer = u.layer.down()!;
-        final targetCell = world.cell(downLayer, u.x, u.y)!;
-        assert(targetCell.info.isStair == StairTransport.goUp);
         final v = Node(downLayer, u.x, u.y);
         final vi = nodeToIndex[v];
         if (vi != null) adj[i].add(vi);
@@ -257,22 +246,31 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     return _BfsResult(dist: dist, parent: parent);
   }
   // 地标到任意节点的最短步数
-  final bfsFromLandmark = List<_BfsResult>.generate(m, (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)));
+  final bfsFromLandmark = List<_BfsResult>.generate(
+    m,
+    (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)),
+  );
   /// 地标 i 地标 j 的最短距离（有向）
-  int? distLandmarkToLandmark(int landmarkI, int landmarkJ) {
-    return bfsFromLandmark[landmarkI].dist[getLandmarkNode(landmarkJ)];
-  }
+  final landmarkDist = List<List<int?>>.generate(
+    m,
+    (i) => List<int?>.generate(
+      m,
+      (j) => bfsFromLandmark[i].dist[getLandmarkNode(j)],
+    ),
+  );
+  int? distLandmarkToLandmark(int i, int j) => landmarkDist[i][j];
+  /// 地标到最近出口的最短距离
   int? distLandmarkToExit(int landmark) {
     if (exitLandmarks.isEmpty) return 0;
     int? best;
     for (final e in exitLandmarks) {
-      final d = distLandmarkToLandmark(landmark, e);
+      final d = landmarkDist[landmark][e];
       if (d != null && (best == null || d < best)) best = d;
     }
     return best;
   }
 
-  // 4. A* 启发式：在地标图上使用 MST 作为下界
+  // 4. A* 启发式：剩余地标的 MST 作为下界
 
   /// 计算 剩余资源点 + 当前地标 + 出口 的最小生成树
   /// 时间复杂度 O(k^2)
@@ -292,7 +290,10 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     // 构造距离矩阵：节点 0 为当前地标，1..remaining 为剩余资源点，最后为出口点
     final hasExit = exitLandmarks.isNotEmpty;
     final size = 1 + remainingResources.length + (hasExit ? 1 : 0);
-    final distMst = List<List<int?>>.generate(size, (_) => List<int?>.filled(size, null));
+    final distMst = List<List<int?>>.generate(
+      size,
+      (_) => List<int?>.filled(size, null),
+    );
     int maxDist = 0;
     // 当前地标 -> 资源点
     for (int i = 0; i < remainingResources.length; i++) {
@@ -315,7 +316,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         } else if (dji == null) {
           d = dij;
         } else {
-          d = dij < dji ? dij : dji; // 取较小值，保证对称
+          d = dij < dji ? dij : dji;
         }
         distMst[i + 1][j + 1] = d;
         distMst[j + 1][i + 1] = d;
@@ -325,7 +326,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     if (hasExit) {
       final exitPos = size - 1;
       // 当前地标 -> 最近出口
-      int? de = distLandmarkToExit(currentLandmark);
+      final de = distLandmarkToExit(currentLandmark);
       distMst[0][exitPos] = de;
       distMst[exitPos][0] = de;
       maxDist = max(maxDist, de ?? 0);
@@ -333,7 +334,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       for (int i = 0; i < remainingResources.length; i++) {
         final r = remainingResources[i];
         final rLandmark = getResourceLandmark(r);
-        int? re = distLandmarkToExit(rLandmark);
+        final re = distLandmarkToExit(rLandmark);
         distMst[i + 1][exitPos] = re;
         distMst[exitPos][i + 1] = re;
         maxDist = max(maxDist, re ?? 0);
@@ -369,7 +370,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     return total;
   }
-  // 缓存 mst，本地测试大约减少 1/3 的重复调用
+  // 缓存 mst
   final mstCache = <_MstCacheKey, int?>{};
   int? mstWithCache(int currentLandmark, Set<int> collectedResources) {
     final key = _MstCacheKey(currentLandmark: currentLandmark, collectedResources: collectedResources);
@@ -397,13 +398,94 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     // 取 传送/不传送 最小作为下界
     return min(noTransport, doTransport);
   }
-  // A* / 分支限界搜索
+
+  // 5. 贪心初始可行解，作为分支定界的初始上界
+
+  /// 计算从当前点开始，最近邻收集剩余所有资源
+  int? greedy(int currentLandmark, Set<int> collectedResources) {
+    int cost = 0;
+    final collected = <int>{
+      ...collectedResources,
+      ?getLandmarkResource(currentLandmark),
+    };
+    while (collected.length < k) {
+      int? bestResourceIndex;
+      int? bestDist;
+      for (int r = 0; r < k; r++) {
+        if (collected.contains(r)) continue;
+        final d = distLandmarkToLandmark(
+          currentLandmark,
+          getResourceLandmark(r),
+        );
+        if (d != null && (bestDist == null || d < bestDist)) {
+          bestDist = d;
+          bestResourceIndex = r;
+        }
+      }
+      if (bestResourceIndex == null) {
+        return null;
+      }
+      cost += bestDist!;
+      currentLandmark = getResourceLandmark(bestResourceIndex);
+      collected.add(bestResourceIndex);
+    }
+    final de = distLandmarkToExit(currentLandmark);
+    if (de == null) {
+      return null;
+    }
+    return cost + de;
+  }
+
+  // 计算上界
+  double bestCost = double.infinity;
+  {
+    final startResources = getLandmarkResource(startLandmark);
+    // 先走到关键资源点、传送，再收集剩余资源，走出口
+    if (keyResourceIndex != null) {
+      final dToKey = distLandmarkToLandmark(
+        startLandmark,
+        keyPositionLandmark!,
+      );
+      if (dToKey != null) {
+        final weight = defaultWeight + keyResourceWeight;
+        final beforeCost = dToKey * weight;
+        final collected = <int>{
+          ?startResources,
+          ?getLandmarkResource(keyPositionLandmark),
+          ?getLandmarkResource(keyTransportLandmark!),
+        };
+        final dRemaining = greedy(keyTransportLandmark, collected);
+        if (dRemaining != null) {
+          final afterCost = dRemaining * defaultWeight;
+          final total = beforeCost + afterCost;
+          if (total < bestCost) bestCost = total;
+        }
+      }
+    }
+    // 不传送，收集所有资源后，走出口
+    {
+      final collected = <int>{?startResources};
+      final dRemaining = greedy(startLandmark, collected);
+      if (dRemaining != null) {
+        final weight = keyResourceIndex == null
+            ? defaultWeight
+            : defaultWeight + keyResourceWeight;
+        final total = dRemaining * weight;
+        if (total < bestCost) bestCost = total;
+      }
+    }
+  }
+
+  // 6. A* / 分支定界搜索
+
   final cost = <_AStarState, double>{};
   final prev = <_AStarState, _AStarState>{};
-  final pq = HeapPriorityQueue<(double, double, _AStarState)>(compareSequentially([
-    compare<(double, double, _AStarState)>((item) => item.$1),
-    compare<(double, double, _AStarState)>((item) => item.$2),
-  ])); // 优先队列，元素为 (f, g, state)，先按 f 排序，再按 g 排序
+  final pq = HeapPriorityQueue<(double, double, _AStarState)>(
+    compareSequentially([
+      compare<(double, double, _AStarState)>((item) => item.$1),
+      compare<(double, double, _AStarState)>((item) => item.$2),
+    ]),
+  ); // 优先队列，元素为 (f, g, state)，先按 f 排序，再按 g 排序
   final startResources = <int>{?getLandmarkResource(startLandmark)};
   final startKey = _AStarState(
     collectedResourceIndexes: startResources,
@@ -412,24 +494,37 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   );
   cost[startKey] = 0.0;
   final startH = heuristic(startLandmark, startResources, false);
-  pq.add((startH, 0.0, startKey));
-  double bestCost = double.infinity;
+  if (startH < bestCost) {
+    pq.add((startH, 0.0, startKey));
+  } else {
+    // 贪心解法已是最优，回溯
+    throw UnimplementedError();
+  }
   _AStarState? bestFinalState;
   while (pq.isNotEmpty) {
     final (f, g, state) = pq.removeFirst();
     if (g > (cost[state] ?? double.infinity)) continue; // 如果该状态已经有更优代价，跳过
-    if (f >= bestCost) break; // 如果 f 已经不小于当前最优完成代价，剪枝
+    if (f >= bestCost) break; // 当前下界已不优于当前上界，结束
     final hasTransported = state.hasTransported;
     final currentLandmark = state.currentLandmarkIndex;
     final collectedResources = state.collectedResourceIndexes;
-    // 完成条件：所有资源已收集，且到达出口
-    if (collectedResources.length == k && (exitLandmarks.isEmpty || exitLandmarks.contains(currentLandmark))) {
-      bestCost = g;
-      bestFinalState = state;
-      break;
+    final weight = (keyResourceIndex != null && !hasTransported)
+        ? defaultWeight + keyResourceWeight
+        : defaultWeight;
+    // 叶子：所有资源已收集 → 走向出口（或出口集合为空时直接完成），更新上界
+    if (collectedResources.length == k) {
+      final dExit = distLandmarkToExit(currentLandmark);
+      if (dExit != null) {
+        final total = g + dExit * weight;
+        if (total < bestCost) {
+          bestCost = total;
+          bestFinalState = state;
+        }
+      }
+      continue;
     }
-    // 动作1：传送
-    if (keyResourceIndex != null && !hasTransported && currentLandmark == keyPositionLandmark) {
+    // 动作 1：传送
+    if (keyResourceIndex != null && !hasTransported && currentLandmark == keyPositionLandmark && collectedResources.contains(keyResourceIndex)) {
       final newResources = {
         ...collectedResources,
         ?getLandmarkResource(keyTransportLandmark!),
@@ -449,16 +544,13 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         }
       }
     }
-    // 动作2：在地标之间移动
-    final weight = (keyResourceIndex != null && !hasTransported) ? defaultWeight + keyResourceWeight : defaultWeight;
-    for (int nextLandmark = 0; nextLandmark < m; nextLandmark++) {
-      if (nextLandmark == currentLandmark) continue;
+    // 动作 2：移动到尚未收集的资源点
+    for (int r = 0; r < k; r++) {
+      if (collectedResources.contains(r)) continue;
+      final nextLandmark = getResourceLandmark(r);
       final d = distLandmarkToLandmark(currentLandmark, nextLandmark);
       if (d == null) continue;
-      final newResources = {
-        ...collectedResources,
-        ?getLandmarkResource(nextLandmark),
-      };
+      final newResources = {...collectedResources, r};
       final newState = _AStarState(
         collectedResourceIndexes: newResources,
         currentLandmarkIndex: nextLandmark,
@@ -477,7 +569,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   }
   if (bestFinalState == null) return []; // 未找到可行路径
 
-  // 5. 回溯路径
+  // 7. 回溯路径
 
   // 回溯地标状态序列
   final states = <_AStarState>[];
@@ -500,7 +592,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     final prevState = forwardStates[i - 1];
     final prevLandmark = prevState.currentLandmarkIndex;
-    if (prevLandmark == landmark) continue; // 原地传送（位置 == 传送目标）
+    if (prevLandmark == landmark) continue; // 原地传送
     final isTransport = prevState.hasTransported != state.hasTransported &&
         prevLandmark == keyPositionLandmark &&
         landmark == keyTransportLandmark;
@@ -520,13 +612,44 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       pathIndexes.addAll(segment.reversed);
     }
   }
+  // 末尾补上走向出口的最短路径
+  final lastState = forwardStates.last;
+  final lastLandmark = lastState.currentLandmarkIndex;
+  if (exitLandmarks.isNotEmpty && !exitLandmarks.contains(lastLandmark)) {
+    int? bestExit;
+    int? bestExitD;
+    for (final e in exitLandmarks) {
+      final d = distLandmarkToLandmark(lastLandmark, e);
+      if (d != null && (bestExitD == null || d < bestExitD)) {
+        bestExitD = d;
+        bestExit = e;
+      }
+    }
+    if (bestExit != null) {
+      final parents = bfsFromLandmark[lastLandmark].parent;
+      final exitNode = getLandmarkNode(bestExit);
+      final segment = <int>[];
+      var cur = exitNode;
+      final targetNode = getLandmarkNode(lastLandmark);
+      while (cur != targetNode) {
+        segment.add(cur);
+        cur = parents[cur]!;
+      }
+      pathIndexes.addAll(segment.reversed);
+    }
+  }
+  // 返回路径
   return pathIndexes.map((i) => nodes[i]).toList();
 }
 
 @SquadronService(baseUrl: '~/workers')
 base class NavigateSquadron {
   @SquadronMethod()
-  Future<Uint8List> doCompute(Uint8List structuresFile, Uint8List worldFile, Uint8List arguments) async {
+  Future<Uint8List> doCompute(
+    Uint8List structuresFile,
+    Uint8List worldFile,
+    Uint8List arguments,
+  ) async {
     final structures = deserializeStructures(structuresFile);
     final world = deserializeWorld(worldFile);
     final worldInstance = constructWorld(structures, world);
@@ -536,7 +659,11 @@ base class NavigateSquadron {
   }
 }
 
-Future<List<Node>> navigateAsync(Uint8List structuresFile, Uint8List worldFile, NavigateArguments navigateArguments) async {
+Future<List<Node>> navigateAsync(
+  Uint8List structuresFile,
+  Uint8List worldFile,
+  NavigateArguments navigateArguments,
+) async {
   final worker = NavigateSquadronWorker();
   try {
     final arguments = serializeNavigateArguments(navigateArguments);
