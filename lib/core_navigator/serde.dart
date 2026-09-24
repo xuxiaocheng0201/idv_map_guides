@@ -135,7 +135,7 @@ Uint8List serializePrecomputedNavigatePath(String worldHash, Map<NavigateArgumen
 extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
   static NavigateDoubleArguments unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 7) throw FormatException();
+    if (len != 6) throw FormatException();
     final start1 = NodeSerde.unpack(unpacker);
     final start2 = NodeSerde.unpack(unpacker);
     final resourcesLen = unpacker.unpackListLength();
@@ -152,8 +152,7 @@ extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
     }
     final keyResource = KeyResourceSerde.unpackNullable(unpacker);
     final transportWaitingUrgency = unpacker.unpackDouble();
-    final balanceWeight = unpacker.unpackDouble();
-    if (transportWaitingUrgency == null || balanceWeight == null) throw FormatException();
+    if (transportWaitingUrgency == null) throw FormatException();
     return NavigateDoubleArguments(
       start1: start1,
       start2: start2,
@@ -161,11 +160,10 @@ extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
       exits: exits,
       keyResource: keyResource,
       transportWaitingUrgency: transportWaitingUrgency,
-      balanceWeight: balanceWeight,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(7);
+    packer.packListLength(6);
     start1.pack(packer);
     start2.pack(packer);
     final resources = this.resources.sorted();
@@ -184,7 +182,6 @@ extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
       keyResource!.pack(packer);
     }
     packer.packDouble(transportWaitingUrgency);
-    packer.packDouble(balanceWeight);
   }
 }
 

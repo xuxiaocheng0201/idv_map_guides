@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
@@ -27,16 +28,13 @@ abstract class NavigateDoubleArguments with _$NavigateDoubleArguments {
     KeyResource? keyResource,
     /// 一人到达关键资源点后，另一人继续移动时每步额外增加的代价
     @Default(1.0) double transportWaitingUrgency,
-    /// 平衡两人路线长度的权重，最终评分 = 带权总路程 + balanceWeight * |len1 - len2|
-    @Default(0.5) double balanceWeight,
   }) = _NavigateDoubleArguments;
 
   String get identify => '${start1.identify}/${start2.identify}'
       '/${resources.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
       '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
       '${keyResource == null ? '' : '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}'
-      '/$transportWaitingUrgency'
-      '/$balanceWeight';
+      '/$transportWaitingUrgency';
 }
 
 @freezed
@@ -69,11 +67,9 @@ abstract class _DoubleAStarState with _$DoubleAStarState {
 }
 
 class _DoubleCost {
-  final double weightedCost;
-  final int len1;
-  final int len2;
-
-  const _DoubleCost(this.weightedCost, this.len1, this.len2);
+  final double cost1;
+  final double cost2;
+  const _DoubleCost(this.cost1, this.cost2);
 }
 
 ({List<Node> path1, List<Node> path2}) navigateDouble(World world, NavigateDoubleArguments arguments) {
@@ -82,7 +78,7 @@ class _DoubleCost {
     keyResource = null;
   }
 
-  // 1. 构建所有可通行节点的列表和索引映射 (与单人完全一致)
+  // 1. 构建所有可通行节点的列表和索引映射
 
   // 构建节点列表与映射
   final nodes = <Node>[];
@@ -101,6 +97,7 @@ class _DoubleCost {
   }
   final n = nodes.length;
   if (n == 0) return (path1: [], path2: []);
+  // 资源点列表与映射
   final resources = arguments.resources.toList();
   final resourceToIndex = <Node, int>{};
   for (int i = 0; i < resources.length; i++) {
@@ -109,7 +106,7 @@ class _DoubleCost {
   final k = resources.length;
   // 关键资源相关
   int? keyResourceIndex;
-  double defaultWeight = 1.0;
+  const double defaultWeight = 1.0;
   double keyResourceWeight = 0.0;
   if (keyResource != null) {
     keyResourceIndex = resourceToIndex[keyResource.position]!;
@@ -122,7 +119,7 @@ class _DoubleCost {
   final landmarkNodes = <Node>[];
   final landmarkToIndex = <Node, int>{};
   void addLandmark(Node node) {
-    assert (nodeToIndex.containsKey(node));
+    assert(nodeToIndex.containsKey(node));
     if (landmarkToIndex.containsKey(node)) return;
     landmarkToIndex[node] = landmarkNodes.length;
     landmarkNodes.add(node);
@@ -141,18 +138,11 @@ class _DoubleCost {
   }
   final m = landmarkNodes.length;
   /// 获取资源点索引对应的地标索引
-  int getResourceLandmark(int resourceIndex) {
-    return landmarkToIndex[resources[resourceIndex]]!;
-  }
+  int getResourceLandmark(int resourceIndex) => landmarkToIndex[resources[resourceIndex]]!;
   /// 获取地标索引对应的节点索引
-  int getLandmarkNode(int landmarkIndex) {
-    return nodeToIndex[landmarkNodes[landmarkIndex]]!;
-  }
+  int getLandmarkNode(int landmarkIndex) => nodeToIndex[landmarkNodes[landmarkIndex]]!;
   /// 获取地标索引对应的资源点索引
-  int? getLandmarkResource(int landmarkIndex) {
-    final node = landmarkNodes[landmarkIndex];
-    return resourceToIndex[node];
-  }
+  int? getLandmarkResource(int landmarkIndex) => resourceToIndex[landmarkNodes[landmarkIndex]];
   // 起点
   final startLandmark1 = landmarkToIndex[arguments.start1]!;
   final startLandmark2 = landmarkToIndex[arguments.start2]!;
@@ -170,7 +160,7 @@ class _DoubleCost {
     keyTransportLandmark = landmarkToIndex[keyResource.transport]!;
   }
 
-  // 3. 对每个地标做一次正向 BFS，得到它到所有节点的最短距离与父指针 (与单人完全一致)
+  // 3. 对每个地标做一次正向 BFS，得到它到所有节点的最短距离与父指针
 
   // 构建有向邻接表
   final adj = List.generate(n, (_) => <int>[]);
@@ -184,16 +174,12 @@ class _DoubleCost {
         break;
       case StairTransport.goUp:
         final upLayer = u.layer.up()!;
-        final targetCell = world.cell(upLayer, u.x, u.y)!;
-        assert(targetCell.info.isStair == StairTransport.goDown);
         final v = Node(upLayer, u.x, u.y);
         final vi = nodeToIndex[v];
         if (vi != null) adj[i].add(vi);
         break;
       case StairTransport.goDown:
         final downLayer = u.layer.down()!;
-        final targetCell = world.cell(downLayer, u.x, u.y)!;
-        assert(targetCell.info.isStair == StairTransport.goUp);
         final v = Node(downLayer, u.x, u.y);
         final vi = nodeToIndex[v];
         if (vi != null) adj[i].add(vi);
@@ -252,16 +238,25 @@ class _DoubleCost {
     return _BfsResult(dist: dist, parent: parent);
   }
   // 地标到任意节点的最短步数
-  final bfsFromLandmark = List<_BfsResult>.generate(m, (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)));
+  final bfsFromLandmark = List<_BfsResult>.generate(
+    m,
+    (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)),
+  );
   /// 地标 i 地标 j 的最短距离（有向）
-  int? distLandmarkToLandmark(int landmarkI, int landmarkJ) {
-    return bfsFromLandmark[landmarkI].dist[getLandmarkNode(landmarkJ)];
-  }
+  final landmarkDist = List<List<int?>>.generate(
+    m,
+      (i) => List<int?>.generate(
+       m,
+        (j) => bfsFromLandmark[i].dist[getLandmarkNode(j)],
+    ),
+  );
+  int? distLandmarkToLandmark(int i, int j) => landmarkDist[i][j];
+  /// 地标到最近出口的最短距离
   int? distLandmarkToExit(int landmark) {
     if (exitLandmarks.isEmpty) return 0;
     int? best;
     for (final e in exitLandmarks) {
-      final d = distLandmarkToLandmark(landmark, e);
+      final d = landmarkDist[landmark][e];
       if (d != null && (best == null || d < best)) best = d;
     }
     return best;
@@ -270,62 +265,49 @@ class _DoubleCost {
   // 4. 双人 A* 搜索
 
   double stepWeight(_DoubleAStarState s, int movingAgent) {
-    double w = 1.0;
-
+    double w = defaultWeight;
     if (keyResource != null && s.transportPhase != 2) {
-      w += keyResource.urgency;
-
-      // 已有一人在关键资源点等待，另一人继续走时增加等待代价
+      w += keyResourceWeight;
       if (s.transportPhase == 1 && s.waitingAgent != movingAgent) {
         w += arguments.transportWaitingUrgency;
       }
     }
-
     return w;
   }
-
   bool isComplete(_DoubleAStarState s) {
     if (s.collectedResources.length != k) return false;
     if (arguments.exits.isEmpty) return true;
-    return exitLandmarks.contains(s.landmark1) &&
-        exitLandmarks.contains(s.landmark2);
+    return exitLandmarks.contains(s.landmark1) && exitLandmarks.contains(s.landmark2);
   }
-
-  double heuristicDouble(
-      int pos1,
-      int pos2,
-      Set<int> collected,
-      int transportPhase,
-      ) {
-    // 简化下界：全部收集后，只需两人都到出口
+  ({double h1, double h2}) heuristicDouble(int pos1, int pos2, Set<int> collected) {
+    // 所有资源点已收集，仅需走到出口
     if (collected.length == k) {
-      if (arguments.exits.isEmpty) return 0.0;
+      if (arguments.exits.isEmpty) return (h1: 0.0, h2: 0.0);
       final d1 = distLandmarkToExit(pos1);
       final d2 = distLandmarkToExit(pos2);
-      if (d1 == null || d2 == null) return double.infinity;
-      return (d1 + d2).toDouble();
+      if (d1 == null || d2 == null) {
+        return (h1: double.infinity, h2: double.infinity);
+      }
+      return (h1: d1.toDouble(), h2: d2.toDouble());
     }
-    return 0.0;
+    // TODO: 优化下界
+    return (h1: 0.0, h2: 0.0);
   }
 
-  // 初始状态：处理起点就在关键资源点的情况
   var startPos1 = startLandmark1;
   var startPos2 = startLandmark2;
-
   final startCollected = <int>{
     ?getLandmarkResource(startPos1),
     ?getLandmarkResource(startPos2),
   };
-
+  // 处理起点就在关键资源点的情况
   int startPhase = 0;
   int startWaiting = 0;
-
   if (keyResource == null) {
     startPhase = 2;
   } else {
     final p1AtKey = startPos1 == keyPositionLandmark;
     final p2AtKey = startPos2 == keyPositionLandmark;
-
     if (p1AtKey && p2AtKey) {
       // 两人都在关键资源点：直接视为已可传送，但保留 phase=1，由传送动作统一处理
       startPhase = 1;
@@ -338,7 +320,6 @@ class _DoubleCost {
       startWaiting = 2;
     }
   }
-
   final startState = _DoubleAStarState(
     landmark1: startPos1,
     landmark2: startPos2,
@@ -346,33 +327,25 @@ class _DoubleCost {
     transportPhase: startPhase,
     waitingAgent: startWaiting,
   );
-
   final cost = <_DoubleAStarState, _DoubleCost>{};
   final prev = <_DoubleAStarState, _DoubleAStarState>{};
-
-  final pq = HeapPriorityQueue<(double, double, _DoubleAStarState)>(
+  final pq = HeapPriorityQueue<(double, double, double, double, _DoubleAStarState)>(
     compareSequentially([
-      compare<(double, double, _DoubleAStarState)>((item) => item.$1),
-      compare<(double, double, _DoubleAStarState)>((item) => item.$2),
+      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$1),
+      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$2),
+      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$3),
+      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$4),
     ]),
-  );
-
-  cost[startState] = const _DoubleCost(0.0, 0, 0);
-  pq.add((0.0, 0.0, startState));
-
+  ); // 优先队列，元素为 (f, max(g1, g2), g1, g2, state)
+  cost[startState] = const _DoubleCost(0.0, 0.0);
+  pq.add((0.0, 0.0, 0.0, 0.0, startState));
   double bestScore = double.infinity;
   _DoubleAStarState? bestFinalState;
-
   while (pq.isNotEmpty) {
-    final (f, g, state) = pq.removeFirst();
+    final (f, maxCost, cost1, cost2, state) = pq.removeFirst();
     final cur = cost[state];
-    if (cur == null || g > cur.weightedCost) continue;
-
-    final len1 = cur.len1;
-    final len2 = cur.len2;
-    final balancePenalty = arguments.balanceWeight * (len1 - len2).abs();
-    final score = cur.weightedCost + balancePenalty;
-
+    if (cur == null || cur.cost1 != cost1 || cur.cost2 != cost2) continue; // 如果该状态已经有更优代价，跳过
+    final score = max(cur.cost1, cur.cost2);
     if (isComplete(state)) {
       if (score < bestScore) {
         bestScore = score;
@@ -380,46 +353,32 @@ class _DoubleCost {
       }
       continue;
     }
+    if (f >= bestScore) break; // 当前下界已不优于当前上界，结束
 
-    if (f >= bestScore) break;
-
-    // 尝试移动某个人到某个地标
     void tryMove(int movingAgent, int nextLandmark) {
       final pos1 = state.landmark1;
       final pos2 = state.landmark2;
-
       if (movingAgent == 1) {
-        // 等待者不能移动
         if (state.transportPhase == 1 && state.waitingAgent == 1) return;
         if (nextLandmark == pos1) return;
-
         final d = distLandmarkToLandmark(pos1, nextLandmark);
         if (d == null) return;
-
         final weight = stepWeight(state, 1);
         final addWeighted = d * weight;
-
-        var newPos1 = nextLandmark;
-        var newPos2 = pos2;
+        final newPos1 = nextLandmark;
+        final newPos2 = pos2;
         var newPhase = state.transportPhase;
         var newWaiting = state.waitingAgent;
-
         final newResources = <int>{
           ...state.collectedResources,
           ?getLandmarkResource(nextLandmark),
         };
-
-        // 到达关键资源点：只要第一个人到达，就进入等待状态（若尚未触发）
-        if (keyResource != null &&
-            newPhase == 0 &&
-            nextLandmark == keyPositionLandmark) {
+        if (keyResource != null && newPhase == 0 && nextLandmark == keyPositionLandmark) {
           newPhase = 1;
           newWaiting = 1;
         }
-
-        final newLen1 = len1 + d;
-        final newLen2 = len2;
-
+        final newCost1 = cur.cost1 + addWeighted;
+        final newCost2 = cur.cost2;
         final newState = _DoubleAStarState(
           landmark1: newPos1,
           landmark2: newPos2,
@@ -427,52 +386,45 @@ class _DoubleCost {
           transportPhase: newPhase,
           waitingAgent: newWaiting,
         );
-
         final old = cost[newState];
-        final newWeighted = cur.weightedCost + addWeighted;
-        if (old != null && newWeighted >= old.weightedCost) return;
-
-        final h = heuristicDouble(newPos1, newPos2, newResources, newPhase);
-        final newF = newWeighted +
-            h +
-            arguments.balanceWeight * (newLen1 - newLen2).abs();
-
+        if (old != null && old.cost1 <= newCost1 && old.cost2 <= newCost2) {
+          return;
+        }
+        final h = heuristicDouble(newPos1, newPos2, newResources);
+        final f1 = newCost1 + h.h1;
+        final f2 = newCost2 + h.h2;
+        final newF = f1 > f2 ? f1 : f2;
         if (newF >= bestScore) return;
-
-        cost[newState] = _DoubleCost(newWeighted, newLen1, newLen2);
+        cost[newState] = _DoubleCost(newCost1, newCost2);
         prev[newState] = state;
-        pq.add((newF, newWeighted, newState));
+        pq.add((
+          newF,
+          newCost1 > newCost2 ? newCost1 : newCost2,
+          newCost1,
+          newCost2,
+          newState,
+        ));
       } else {
-        // 第二个人移动
         if (state.transportPhase == 1 && state.waitingAgent == 2) return;
         if (nextLandmark == pos2) return;
-
         final d = distLandmarkToLandmark(pos2, nextLandmark);
         if (d == null) return;
-
         final weight = stepWeight(state, 2);
         final addWeighted = d * weight;
-
-        var newPos1 = pos1;
-        var newPos2 = nextLandmark;
+        final newPos1 = pos1;
+        final newPos2 = nextLandmark;
         var newPhase = state.transportPhase;
         var newWaiting = state.waitingAgent;
-
         final newResources = <int>{
           ...state.collectedResources,
           ?getLandmarkResource(nextLandmark),
         };
-
-        if (keyResource != null &&
-            newPhase == 0 &&
-            nextLandmark == keyPositionLandmark) {
+        if (keyResource != null && newPhase == 0 && nextLandmark == keyPositionLandmark) {
           newPhase = 1;
           newWaiting = 2;
         }
-
-        final newLen1 = len1;
-        final newLen2 = len2 + d;
-
+        final newCost1 = cur.cost1;
+        final newCost2 = cur.cost2 + addWeighted;
         final newState = _DoubleAStarState(
           landmark1: newPos1,
           landmark2: newPos2,
@@ -480,39 +432,36 @@ class _DoubleCost {
           transportPhase: newPhase,
           waitingAgent: newWaiting,
         );
-
         final old = cost[newState];
-        final newWeighted = cur.weightedCost + addWeighted;
-        if (old != null && newWeighted >= old.weightedCost) return;
-
-        final h = heuristicDouble(newPos1, newPos2, newResources, newPhase);
-        final newF = newWeighted +
-            h +
-            arguments.balanceWeight * (newLen1 - newLen2).abs();
-
+        if (old != null && old.cost1 <= newCost1 && old.cost2 <= newCost2) {
+          return;
+        }
+        final h = heuristicDouble(newPos1, newPos2, newResources);
+        final f1 = newCost1 + h.h1;
+        final f2 = newCost2 + h.h2;
+        final newF = f1 > f2 ? f1 : f2;
         if (newF >= bestScore) return;
-
-        cost[newState] = _DoubleCost(newWeighted, newLen1, newLen2);
+        cost[newState] = _DoubleCost(newCost1, newCost2);
         prev[newState] = state;
-        pq.add((newF, newWeighted, newState));
+        pq.add((
+          newF,
+          newCost1 > newCost2 ? newCost1 : newCost2,
+          newCost1,
+          newCost2,
+          newState,
+        ));
       }
     }
-
-    // 尝试传送动作：只要 phase == 1，即可传送（一人到达关键资源点即可发起）
     void tryTransport() {
       if (keyResource == null) return;
       if (state.transportPhase != 1) return;
-
-      // 传送后两人都到 keyTransport
       final newPos1 = keyTransportLandmark!;
       final newPos2 = keyTransportLandmark;
       final newResources = <int>{
         ...state.collectedResources,
         ?getLandmarkResource(keyTransportLandmark),
-        // keyPosition 的资源在到达时已经收集，但保险起见再合并一次
         ?getLandmarkResource(keyPositionLandmark!),
       };
-
       final newState = _DoubleAStarState(
         landmark1: newPos1,
         landmark2: newPos2,
@@ -520,37 +469,39 @@ class _DoubleCost {
         transportPhase: 2,
         waitingAgent: 0,
       );
-
       final old = cost[newState];
-      final newWeighted = cur.weightedCost; // 传送不消耗步数
-      if (old != null && newWeighted >= old.weightedCost) return;
-
-      final h = heuristicDouble(newPos1, newPos2, newResources, 2);
-      final newF = newWeighted +
-          h +
-          arguments.balanceWeight * (len1 - len2).abs(); // 长度不变
-
+      if (old != null && old.cost1 <= cur.cost1 && old.cost2 <= cur.cost2) {
+        return;
+      }
+      final h = heuristicDouble(newPos1, newPos2, newResources);
+      final f1 = cur.cost1 + h.h1;
+      final f2 = cur.cost2 + h.h2;
+      final newF = f1 > f2 ? f1 : f2;
       if (newF >= bestScore) return;
-
-      cost[newState] = _DoubleCost(newWeighted, len1, len2);
+      cost[newState] = _DoubleCost(cur.cost1, cur.cost2);
       prev[newState] = state;
-      pq.add((newF, newWeighted, newState));
+      pq.add((
+        newF,
+        cur.cost1 > cur.cost2 ? cur.cost1 : cur.cost2,
+        cur.cost1,
+        cur.cost2,
+        newState,
+      ));
     }
 
-    // 生成所有动作
     tryTransport();
-
     for (int next = 0; next < m; next++) {
       tryMove(1, next);
       tryMove(2, next);
     }
   }
-
   if (bestFinalState == null) {
     return (path1: [], path2: []);
   }
 
-  // 5. 回溯状态序列
+  // 5. 回溯路径
+
+  // 回溯状态序列
   final states = <_DoubleAStarState>[];
   var curState = bestFinalState;
   while (true) {
@@ -558,52 +509,38 @@ class _DoubleCost {
     if (curState == startState) break;
     curState = prev[curState]!;
   }
-
   final forwardStates = states.reversed.toList();
-
   final path1Indexes = <int>[];
   final path2Indexes = <int>[];
-
   void appendSegment(List<int> path, int fromLandmark, int toLandmark) {
     if (fromLandmark == toLandmark) return;
-
     final parents = bfsFromLandmark[fromLandmark].parent;
     final fromNode = getLandmarkNode(fromLandmark);
     final toNode = getLandmarkNode(toLandmark);
-
     final segment = <int>[];
     var cur = toNode;
-
     while (cur != fromNode) {
       segment.add(cur);
       final p = parents[cur];
       if (p == null) return;
       cur = p;
     }
-
     path.addAll(segment.reversed);
   }
-
   for (int i = 0; i < forwardStates.length; i++) {
     final state = forwardStates[i];
-
     if (i == 0) {
       path1Indexes.add(getLandmarkNode(state.landmark1));
       path2Indexes.add(getLandmarkNode(state.landmark2));
       continue;
     }
-
     final prevState = forwardStates[i - 1];
-
     // 检测传送动作：phase 从 1 变为 2
-    final isTransport =
-        prevState.transportPhase == 1 && state.transportPhase == 2;
-
+    final isTransport = prevState.transportPhase == 1 && state.transportPhase == 2;
     if (isTransport) {
       // 传送：两人都到 keyTransport
       // 等待者原本就在 keyPosition，移动者可能在任意位置
       final waitingAgent = prevState.waitingAgent;
-
       // 等待者：从 keyPosition 到 keyTransport（如果不同）
       if (keyPositionLandmark != keyTransportLandmark) {
         if (waitingAgent == 1) {
@@ -612,7 +549,6 @@ class _DoubleCost {
           path2Indexes.add(getLandmarkNode(keyTransportLandmark!));
         }
       }
-
       // 移动者：从原位置直接传送到 keyTransport
       final mover = waitingAgent == 1 ? 2 : 1;
       if (mover == 1) {
@@ -624,11 +560,8 @@ class _DoubleCost {
           path2Indexes.add(getLandmarkNode(keyTransportLandmark!));
         }
       }
-
-      // 如果等待者就是移动者？实际上不可能，因为等待者不能移动。
       continue;
     }
-
     // 普通移动
     if (state.landmark1 != prevState.landmark1) {
       appendSegment(
@@ -637,7 +570,6 @@ class _DoubleCost {
         state.landmark1,
       );
     }
-
     if (state.landmark2 != prevState.landmark2) {
       appendSegment(
         path2Indexes,
@@ -646,7 +578,7 @@ class _DoubleCost {
       );
     }
   }
-
+  // 返回路径
   return (
     path1: path1Indexes.map((i) => nodes[i]).toList(),
     path2: path2Indexes.map((i) => nodes[i]).toList(),
@@ -656,7 +588,11 @@ class _DoubleCost {
 @SquadronService(baseUrl: '~/workers')
 base class NavigateDoubleSquadron {
   @SquadronMethod()
-  Future<(Uint8List, Uint8List)> doCompute(Uint8List structuresFile, Uint8List worldFile, Uint8List arguments) async {
+  Future<(Uint8List, Uint8List)> doCompute(
+    Uint8List structuresFile,
+    Uint8List worldFile,
+    Uint8List arguments,
+  ) async {
     final structures = deserializeStructures(structuresFile);
     final world = deserializeWorld(worldFile);
     final worldInstance = constructWorld(structures, world);
@@ -666,7 +602,11 @@ base class NavigateDoubleSquadron {
   }
 }
 
-Future<({List<Node> path1, List<Node> path2})> navigateDoubleAsync(Uint8List structuresFile, Uint8List worldFile, NavigateDoubleArguments navigateArguments) async {
+Future<({List<Node> path1, List<Node> path2})> navigateDoubleAsync(
+  Uint8List structuresFile,
+  Uint8List worldFile,
+  NavigateDoubleArguments navigateArguments,
+) async {
   final worker = NavigateDoubleSquadronWorker();
   try {
     final arguments = serializeNavigateDoubleArguments(navigateArguments);

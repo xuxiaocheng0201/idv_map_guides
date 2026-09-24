@@ -153,6 +153,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   int getLandmarkNode(int landmarkIndex) => nodeToIndex[landmarkNodes[landmarkIndex]]!;
   /// 获取地标索引对应的资源点索引
   int? getLandmarkResource(int landmarkIndex) => resourceToIndex[landmarkNodes[landmarkIndex]];
+  // 起点
   final startLandmark = landmarkToIndex[arguments.start]!;
   // 出口
   final exitLandmarks = <int>[];
@@ -435,7 +436,6 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     return cost + de;
   }
-
   // 计算上界
   double bestCost = double.infinity;
   {
