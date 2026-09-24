@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -83,7 +84,7 @@ abstract class _AStarState with _$AStarState {
   }) = __AStarState;
 }
 
-List<Node> navigate(World world, NavigateArguments arguments) {
+List<Node> navigate(World world, NavigateArguments arguments, {bool debugPrint = false}) {
   var keyResource = arguments.keyResource;
   if (keyResource != null && !arguments.resources.contains(keyResource.position)) {
     keyResource = null;
@@ -269,6 +270,49 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     return best;
   }
+  if (debugPrint) {
+    String landmarkType(int i) {
+      final node = landmarkNodes[i];
+      if (i == startLandmark) return 'start';
+      if (keyResource != null && i == keyPositionLandmark) return 'keyPosition';
+      if (keyResource != null && i == keyTransportLandmark) return 'keyTransport';
+      if (resourceToIndex.containsKey(node)) return 'resource';
+      if (arguments.exits.contains(node)) return 'exit';
+      return 'unknown';
+    }
+    final landmarkJson = <String, dynamic>{
+      'startLandmark': startLandmark,
+      'exitLandmarks': exitLandmarks,
+      'keyPositionLandmark': keyPositionLandmark,
+      'keyTransportLandmark': keyTransportLandmark,
+      'keyResourceIndex': keyResourceIndex,
+      'defaultWeight': defaultWeight,
+      'keyResourceWeight': keyResourceWeight,
+      'nodes': [
+        for (int i = 0; i < m; i++)
+          <String, dynamic>{
+            'index': i,
+            'id': landmarkNodes[i].identify,
+            'layer': landmarkNodes[i].layer.index,
+            'x': landmarkNodes[i].x,
+            'y': landmarkNodes[i].y,
+            'type': landmarkType(i),
+            'resourceIndex': getLandmarkResource(i),
+          },
+      ],
+      'edges': [
+        for (int i = 0; i < m; i++)
+          for (int j = 0; j < m; j++)
+            if (i != j && landmarkDist[i][j] != null)
+              <String, dynamic>{
+                'from': i,
+                'to': j,
+                'dist': landmarkDist[i][j],
+              },
+      ],
+    };
+    print(jsonEncode(landmarkJson));
+  }
 
   // 4. A* 启发式：剩余地标的 MST 作为下界
 
@@ -435,7 +479,6 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     }
     return cost + de;
   }
-
   // 计算上界
   double bestCost = double.infinity;
   {
@@ -478,6 +521,18 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   // 6. A* / 分支定界搜索
 
+  int searchStep = 0;
+  Map<String, dynamic> stateToJson(_AStarState s) => <String, dynamic>{
+    'collected': (s.collectedResourceIndexes.toList()..sort()),
+    'landmark': s.currentLandmarkIndex,
+    'hasTransported': s.hasTransported,
+  };
+  void emitEvent(Map<String, dynamic> e) {
+    e['step'] = searchStep++;
+    e['bestCost'] = bestCost.isFinite ? bestCost : null;
+    assert(debugPrint);
+    print(jsonEncode(e));
+  }
   final cost = <_AStarState, double>{};
   final prev = <_AStarState, _AStarState>{};
   final pq = HeapPriorityQueue<(double, double, _AStarState)>(
@@ -501,10 +556,50 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     throw UnimplementedError();
   }
   _AStarState? bestFinalState;
+  if (debugPrint) {
+    emitEvent(<String, dynamic>{
+      'action': 'start',
+      'to': stateToJson(startKey),
+      'g': 0.0,
+      'h': startH,
+      'f': startH,
+    });
+  }
   while (pq.isNotEmpty) {
     final (f, g, state) = pq.removeFirst();
-    if (g > (cost[state] ?? double.infinity)) continue; // 如果该状态已经有更优代价，跳过
-    if (f >= bestCost) break; // 当前下界已不优于当前上界，结束
+    if (debugPrint) {
+      emitEvent(<String, dynamic>{
+        'action': 'pop',
+        'from': stateToJson(state),
+        'g': g,
+        'h': f - g,
+        'f': f,
+      });
+    }
+    if (g > (cost[state] ?? double.infinity)) { // 如果该状态已经有更优代价，跳过
+      if (debugPrint) {
+        emitEvent(<String, dynamic>{
+          'action': 'stale',
+          'from': stateToJson(state),
+          'g': g,
+          'h': f - g,
+          'f': f,
+        });
+      }
+      continue;
+    }
+    if (f >= bestCost) { // 当前下界已不优于当前上界，结束
+      if (debugPrint) {
+        emitEvent(<String, dynamic>{
+          'action': 'break',
+          'from': stateToJson(state),
+          'g': g,
+          'h': f - g,
+          'f': f,
+        });
+      }
+      break;
+    }
     final hasTransported = state.hasTransported;
     final currentLandmark = state.currentLandmarkIndex;
     final collectedResources = state.collectedResourceIndexes;
@@ -517,8 +612,18 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       if (dExit != null) {
         final total = g + dExit * weight;
         if (total < bestCost) {
+          final oldBest = bestCost;
           bestCost = total;
           bestFinalState = state;
+          if (debugPrint) {
+            emitEvent(<String, dynamic>{
+              'action': 'updateBest',
+              'from': stateToJson(state),
+              'prevBestCost': oldBest.isFinite ? oldBest : null,
+              'newBestCost': bestCost,
+              'label': 'exit',
+            });
+          }
         }
       }
       continue;
@@ -537,10 +642,34 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       final newG = g; // 传送本身不消耗步数
       if (newG < (cost[newState] ?? double.infinity)) {
         final newH = heuristic(keyTransportLandmark, newResources, true);
-        if (newG + newH < bestCost) {
+        final newF = newG + newH;
+        if (newF < bestCost) {
           cost[newState] = newG;
           prev[newState] = state;
-          pq.add((newG + newH, newG, newState));
+          pq.add((newF, newG, newState));
+          if (debugPrint) {
+            emitEvent(<String, dynamic>{
+              'action': 'expand',
+              'from': stateToJson(state),
+              'to': stateToJson(newState),
+              'g': newG,
+              'h': newH,
+              'f': newF,
+              'label': 'transport',
+            });
+          }
+        } else {
+          if (debugPrint) {
+            emitEvent(<String, dynamic>{
+              'action': 'prune',
+              'from': stateToJson(state),
+              'to': stateToJson(newState),
+              'g': newG,
+              'h': newH,
+              'f': newF,
+              'label': 'transport',
+            });
+          }
         }
       }
     }
@@ -559,13 +688,43 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       final newG = g + d * weight;
       if (newG < (cost[newState] ?? double.infinity)) {
         final newH = heuristic(nextLandmark, newResources, hasTransported);
-        if (newG + newH < bestCost) {
+        final newF = newG + newH;
+        if (newF < bestCost) {
           cost[newState] = newG;
           prev[newState] = state;
-          pq.add((newG + newH, newG, newState));
+          pq.add((newF, newG, newState));
+          if (debugPrint) {
+            emitEvent(<String, dynamic>{
+              'action': 'expand',
+              'from': stateToJson(state),
+              'to': stateToJson(newState),
+              'g': newG,
+              'h': newH,
+              'f': newF,
+              'label': 'move:$r',
+            });
+          }
+        } else {
+          if (debugPrint) {
+            emitEvent(<String, dynamic>{
+              'action': 'prune',
+              'from': stateToJson(state),
+              'to': stateToJson(newState),
+              'g': newG,
+              'h': newH,
+              'f': newF,
+              'label': 'move:$r',
+            });
+          }
         }
       }
     }
+  }
+  if (debugPrint) {
+    emitEvent(<String, dynamic>{
+      'action': 'done',
+      'label': bestFinalState == null ? 'no-solution' : 'solution-found',
+    });
   }
   if (bestFinalState == null) return []; // 未找到可行路径
 
