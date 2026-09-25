@@ -66,10 +66,12 @@ abstract class _DoubleAStarState with _$DoubleAStarState {
   }) = __DoubleAStarState;
 }
 
-class _DoubleCost {
+class _CostNode {
   final double cost1;
   final double cost2;
-  const _DoubleCost(this.cost1, this.cost2);
+  final _DoubleAStarState? prevState;
+  final _CostNode? prevNode;
+  _CostNode(this.cost1, this.cost2, {this.prevState, this.prevNode});
 }
 
 ({List<Node> path1, List<Node> path2}) navigateDouble(World world, NavigateDoubleArguments arguments) {
@@ -79,8 +81,6 @@ class _DoubleCost {
   }
 
   // 1. 构建所有可通行节点的列表和索引映射
-
-  // 构建节点列表与映射
   final nodes = <Node>[];
   final nodeToIndex = <Node, int>{};
   for (final layer in world.map.keys) {
@@ -97,6 +97,7 @@ class _DoubleCost {
   }
   final n = nodes.length;
   if (n == 0) return (path1: [], path2: []);
+
   // 资源点列表与映射
   final resources = arguments.resources.toList();
   final resourceToIndex = <Node, int>{};
@@ -104,18 +105,16 @@ class _DoubleCost {
     resourceToIndex[resources[i]] = i;
   }
   final k = resources.length;
+
   // 关键资源相关
-  int? keyResourceIndex;
   const double defaultWeight = 1.0;
   double keyResourceWeight = 0.0;
   if (keyResource != null) {
-    keyResourceIndex = resourceToIndex[keyResource.position]!;
     keyResourceWeight = keyResource.urgency;
   }
 
-  // 2. 构建地标集合：两个起点 + 所有资源点 + 所有出口 + 关键资源点位置 + 关键资源点传送目标 (与单人基本一致，仅修改起点处理)
-
-  // 构建地标列表与映射
+  // 2. 构建地标集合：两个起点 + 所有资源点 + 关键资源点位置 + 关键资源点传送目标
+  //    *** 出口不再加入地标 ***
   final landmarkNodes = <Node>[];
   final landmarkToIndex = <Node, int>{};
   void addLandmark(Node node) {
@@ -124,34 +123,35 @@ class _DoubleCost {
     landmarkToIndex[node] = landmarkNodes.length;
     landmarkNodes.add(node);
   }
+
   addLandmark(arguments.start1);
   addLandmark(arguments.start2);
   for (final r in resources) {
     addLandmark(r);
-  }
-  for (final e in arguments.exits) {
-    addLandmark(e);
   }
   if (keyResource != null) {
     addLandmark(keyResource.position);
     addLandmark(keyResource.transport);
   }
   final m = landmarkNodes.length;
-  /// 获取资源点索引对应的地标索引
-  int getResourceLandmark(int resourceIndex) => landmarkToIndex[resources[resourceIndex]]!;
-  /// 获取地标索引对应的节点索引
-  int getLandmarkNode(int landmarkIndex) => nodeToIndex[landmarkNodes[landmarkIndex]]!;
-  /// 获取地标索引对应的资源点索引
-  int? getLandmarkResource(int landmarkIndex) => resourceToIndex[landmarkNodes[landmarkIndex]];
-  // 起点
+
+  int getResourceLandmark(int resourceIndex) =>
+      landmarkToIndex[resources[resourceIndex]]!;
+  int getLandmarkNode(int landmarkIndex) =>
+      nodeToIndex[landmarkNodes[landmarkIndex]]!;
+  int? getLandmarkResource(int landmarkIndex) =>
+      resourceToIndex[landmarkNodes[landmarkIndex]];
+
   final startLandmark1 = landmarkToIndex[arguments.start1]!;
   final startLandmark2 = landmarkToIndex[arguments.start2]!;
-  // 出口
-  final exitLandmarks = <int>[];
+
+  // 出口节点索引（不是地标）
+  final exitNodeIndexes = <int>[];
   for (final e in arguments.exits) {
-    final li = landmarkToIndex[e];
-    if (li != null) exitLandmarks.add(li);
+    final ni = nodeToIndex[e];
+    if (ni != null) exitNodeIndexes.add(ni);
   }
+
   // 关键资源点相关
   int? keyPositionLandmark;
   int? keyTransportLandmark;
@@ -160,9 +160,7 @@ class _DoubleCost {
     keyTransportLandmark = landmarkToIndex[keyResource.transport]!;
   }
 
-  // 3. 对每个地标做一次正向 BFS，得到它到所有节点的最短距离与父指针
-
-  // 构建有向邻接表
+  // 3. 邻接表与 BFS 预计算
   final adj = List.generate(n, (_) => <int>[]);
   for (int i = 0; i < n; i++) {
     final u = nodes[i];
@@ -216,9 +214,10 @@ class _DoubleCost {
       }
     }
   }
+
   // TODO: 各出入口间的移动
+
   /// 正向 BFS，从 [sourceNodeIndex] 出发，返回到任意节点的最短距离与父指针
-  /// 时间复杂度 O(n)
   _BfsResult bfs(int sourceNodeIndex) {
     final dist = List<int?>.filled(n, null);
     final parent = List<int?>.filled(n, null);
@@ -237,32 +236,24 @@ class _DoubleCost {
     }
     return _BfsResult(dist: dist, parent: parent);
   }
+
   // 地标到任意节点的最短步数
   final bfsFromLandmark = List<_BfsResult>.generate(
     m,
-    (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)),
+        (landmarkIndex) => bfs(getLandmarkNode(landmarkIndex)),
   );
+
   /// 地标 i 地标 j 的最短距离（有向）
   final landmarkDist = List<List<int?>>.generate(
     m,
-      (i) => List<int?>.generate(
-       m,
-        (j) => bfsFromLandmark[i].dist[getLandmarkNode(j)],
+        (i) => List<int?>.generate(
+      m,
+          (j) => bfsFromLandmark[i].dist[getLandmarkNode(j)],
     ),
   );
   int? distLandmarkToLandmark(int i, int j) => landmarkDist[i][j];
-  /// 地标到最近出口的最短距离
-  int? distLandmarkToExit(int landmark) {
-    if (exitLandmarks.isEmpty) return 0;
-    int? best;
-    for (final e in exitLandmarks) {
-      final d = landmarkDist[landmark][e];
-      if (d != null && (best == null || d < best)) best = d;
-    }
-    return best;
-  }
 
-  // 4. 双人 A* 搜索
+  // 4. 双人 A* 搜索 —— 收集阶段
 
   double stepWeight(_DoubleAStarState s, int movingAgent) {
     double w = defaultWeight;
@@ -274,32 +265,87 @@ class _DoubleCost {
     }
     return w;
   }
-  bool isComplete(_DoubleAStarState s) {
+
+  /// 收集阶段完成条件：资源全收齐，且关键资源已处理（或有关键资源时已传送）
+  bool isCollectionComplete(_DoubleAStarState s) {
     if (s.collectedResources.length != k) return false;
-    if (arguments.exits.isEmpty) return true;
-    return exitLandmarks.contains(s.landmark1) && exitLandmarks.contains(s.landmark2);
-  }
-  ({double h1, double h2}) heuristicDouble(int pos1, int pos2, Set<int> collected) {
-    // 所有资源点已收集，仅需走到出口
-    if (collected.length == k) {
-      if (arguments.exits.isEmpty) return (h1: 0.0, h2: 0.0);
-      final d1 = distLandmarkToExit(pos1);
-      final d2 = distLandmarkToExit(pos2);
-      if (d1 == null || d2 == null) {
-        return (h1: double.infinity, h2: double.infinity);
-      }
-      return (h1: d1.toDouble(), h2: d2.toDouble());
-    }
-    // TODO: 优化下界
-    return (h1: 0.0, h2: 0.0);
+    if (keyResource != null && s.transportPhase != 2) return false;
+    return true;
   }
 
-  var startPos1 = startLandmark1;
-  var startPos2 = startLandmark2;
+  /// 收集阶段的可采纳启发式：每个未收集资源 + 关键资源至少需要一人去访问
+  ({double h1, double h2}) heuristicCollection(
+      int pos1,
+      int pos2,
+      Set<int> collected,
+      int transportPhase,
+      ) {
+    double common = 0.0;
+
+    for (int r = 0; r < k; r++) {
+      if (collected.contains(r)) continue;
+      final rl = getResourceLandmark(r);
+      final d1 = distLandmarkToLandmark(pos1, rl);
+      final d2 = distLandmarkToLandmark(pos2, rl);
+      final dd = min(d1 ?? (1 << 30), d2 ?? (1 << 30));
+      if (dd > common) common = dd.toDouble();
+    }
+
+    if (keyResource != null && transportPhase != 2) {
+      final d1 = distLandmarkToLandmark(pos1, keyPositionLandmark!);
+      final d2 = distLandmarkToLandmark(pos2, keyPositionLandmark!);
+      final dd = min(d1 ?? (1 << 30), d2 ?? (1 << 30));
+      if (dd > common) common = dd.toDouble();
+    }
+
+    return (h1: common * defaultWeight, h2: common * defaultWeight);
+  }
+
+  /// 收集完成后，枚举出口组合，返回最优完成时间
+  ({double score, int? exit1, int? exit2}) exitsCost(
+      int pos1,
+      int pos2,
+      double cost1,
+      double cost2,
+      ) {
+    if (exitNodeIndexes.isEmpty) {
+      return (score: max(cost1, cost2), exit1: null, exit2: null);
+    }
+
+    double bestScore = double.infinity;
+    int? bestExit1;
+    int? bestExit2;
+
+    for (final e1 in exitNodeIndexes) {
+      final d1 = bfsFromLandmark[pos1].dist[e1];
+      if (d1 == null) continue;
+      final c1 = cost1 + d1 * defaultWeight;
+      if (c1 >= bestScore) continue;
+
+      for (final e2 in exitNodeIndexes) {
+        final d2 = bfsFromLandmark[pos2].dist[e2];
+        if (d2 == null) continue;
+        final c2 = cost2 + d2 * defaultWeight;
+        final score = max(c1, c2);
+        if (score < bestScore) {
+          bestScore = score;
+          bestExit1 = e1;
+          bestExit2 = e2;
+        }
+      }
+    }
+
+    return (score: bestScore, exit1: bestExit1, exit2: bestExit2);
+  }
+
+  final startPos1 = startLandmark1;
+  final startPos2 = startLandmark2;
+
   final startCollected = <int>{
     ?getLandmarkResource(startPos1),
     ?getLandmarkResource(startPos2),
   };
+
   // 处理起点就在关键资源点的情况
   int startPhase = 0;
   int startWaiting = 0;
@@ -309,9 +355,8 @@ class _DoubleCost {
     final p1AtKey = startPos1 == keyPositionLandmark;
     final p2AtKey = startPos2 == keyPositionLandmark;
     if (p1AtKey && p2AtKey) {
-      // 两人都在关键资源点：直接视为已可传送，但保留 phase=1，由传送动作统一处理
       startPhase = 1;
-      startWaiting = 1; // 任意指定一人为等待者
+      startWaiting = 1;
     } else if (p1AtKey) {
       startPhase = 1;
       startWaiting = 1;
@@ -320,6 +365,7 @@ class _DoubleCost {
       startWaiting = 2;
     }
   }
+
   final startState = _DoubleAStarState(
     landmark1: startPos1,
     landmark2: startPos2,
@@ -327,198 +373,250 @@ class _DoubleCost {
     transportPhase: startPhase,
     waitingAgent: startWaiting,
   );
-  final cost = <_DoubleAStarState, _DoubleCost>{};
-  final prev = <_DoubleAStarState, _DoubleAStarState>{};
-  final pq = HeapPriorityQueue<(double, double, double, double, _DoubleAStarState)>(
+
+  final pareto = <_DoubleAStarState, List<_CostNode>>{};
+  final startNode = _CostNode(0.0, 0.0);
+  pareto[startState] = [startNode];
+
+  final pq = HeapPriorityQueue<(double, double, _CostNode, _DoubleAStarState)>(
     compareSequentially([
-      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$1),
-      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$2),
-      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$3),
-      compare<(double, double, double, double, _DoubleAStarState)>((item) => item.$4),
+      compare<(double, double, _CostNode, _DoubleAStarState)>((item) => item.$1),
+      compare<(double, double, _CostNode, _DoubleAStarState)>((item) => item.$2),
     ]),
-  ); // 优先队列，元素为 (f, max(g1, g2), g1, g2, state)
-  cost[startState] = const _DoubleCost(0.0, 0.0);
-  pq.add((0.0, 0.0, 0.0, 0.0, startState));
+  );
+
   double bestScore = double.infinity;
+  _CostNode? bestNode;
   _DoubleAStarState? bestFinalState;
+  int? bestFinalExit1;
+  int? bestFinalExit2;
+
+  const double eps = 1e-9;
+
+  final startH = heuristicCollection(
+    startPos1,
+    startPos2,
+    startCollected,
+    startPhase,
+  );
+  final startF = max(0.0 + startH.h1, 0.0 + startH.h2);
+  if (startF < bestScore) {
+    pq.add((startF, 0.0, startNode, startState));
+  }
+
+  void addNode(
+      _DoubleAStarState newState,
+      double newCost1,
+      double newCost2,
+      _DoubleAStarState prevState,
+      _CostNode prevNode,
+      ) {
+    final list = pareto.putIfAbsent(newState, () => []);
+
+    // 检查是否被支配（加入 eps 容差，避免 double 噪声导致 Pareto 膨胀）
+    for (final old in list) {
+      if (old.cost1 <= newCost1 + eps && old.cost2 <= newCost2 + eps) {
+        return;
+      }
+    }
+
+    // 移除被新节点支配的旧节点
+    list.removeWhere(
+          (old) => newCost1 <= old.cost1 + eps && newCost2 <= old.cost2 + eps,
+    );
+
+    final newNode = _CostNode(
+      newCost1,
+      newCost2,
+      prevState: prevState,
+      prevNode: prevNode,
+    );
+    list.add(newNode);
+
+    final h = heuristicCollection(
+      newState.landmark1,
+      newState.landmark2,
+      newState.collectedResources,
+      newState.transportPhase,
+    );
+    final f1 = newCost1 + h.h1;
+    final f2 = newCost2 + h.h2;
+    final newF = max(f1, f2);
+
+    if (newF < bestScore) {
+      pq.add((newF, max(newCost1, newCost2), newNode, newState));
+    }
+  }
+
+  /// 收集阶段只允许移动到：未收集资源、关键资源点位置
+  List<int> candidateTargets(_DoubleAStarState state) {
+    final targets = <int>{};
+
+    for (int r = 0; r < k; r++) {
+      if (!state.collectedResources.contains(r)) {
+        targets.add(getResourceLandmark(r));
+      }
+    }
+
+    if (keyResource != null && state.transportPhase == 0) {
+      targets.add(keyPositionLandmark!);
+    }
+
+    return targets.toList();
+  }
+
   while (pq.isNotEmpty) {
-    final (f, maxCost, cost1, cost2, state) = pq.removeFirst();
-    final cur = cost[state];
-    if (cur == null || cur.cost1 != cost1 || cur.cost2 != cost2) continue; // 如果该状态已经有更优代价，跳过
-    final score = max(cur.cost1, cur.cost2);
-    if (isComplete(state)) {
-      if (score < bestScore) {
-        bestScore = score;
+    final (f, maxCost, node, state) = pq.removeFirst();
+
+    // 用 continue 而不是 break，因为启发式可能不一致
+    if (f >= bestScore - eps) continue;
+
+    final list = pareto[state];
+    if (list == null || !list.contains(node)) continue;
+
+    if (isCollectionComplete(state)) {
+      final result = exitsCost(
+        state.landmark1,
+        state.landmark2,
+        node.cost1,
+        node.cost2,
+      );
+      if (result.score < bestScore) {
+        bestScore = result.score;
+        bestNode = node;
         bestFinalState = state;
+        bestFinalExit1 = result.exit1;
+        bestFinalExit2 = result.exit2;
       }
       continue;
     }
-    if (f >= bestScore) break; // 当前下界已不优于当前上界，结束
 
-    void tryMove(int movingAgent, int nextLandmark) {
-      final pos1 = state.landmark1;
-      final pos2 = state.landmark2;
-      if (movingAgent == 1) {
-        if (state.transportPhase == 1 && state.waitingAgent == 1) return;
-        if (nextLandmark == pos1) return;
-        final d = distLandmarkToLandmark(pos1, nextLandmark);
-        if (d == null) return;
-        final weight = stepWeight(state, 1);
-        final addWeighted = d * weight;
-        final newPos1 = nextLandmark;
-        final newPos2 = pos2;
-        var newPhase = state.transportPhase;
-        var newWaiting = state.waitingAgent;
-        final newResources = <int>{
-          ...state.collectedResources,
-          ?getLandmarkResource(nextLandmark),
-        };
-        if (keyResource != null && newPhase == 0 && nextLandmark == keyPositionLandmark) {
-          newPhase = 1;
-          newWaiting = 1;
-        }
-        final newCost1 = cur.cost1 + addWeighted;
-        final newCost2 = cur.cost2;
-        final newState = _DoubleAStarState(
-          landmark1: newPos1,
-          landmark2: newPos2,
-          collectedResources: newResources,
-          transportPhase: newPhase,
-          waitingAgent: newWaiting,
-        );
-        final old = cost[newState];
-        if (old != null && old.cost1 <= newCost1 && old.cost2 <= newCost2) {
-          return;
-        }
-        final h = heuristicDouble(newPos1, newPos2, newResources);
-        final f1 = newCost1 + h.h1;
-        final f2 = newCost2 + h.h2;
-        final newF = f1 > f2 ? f1 : f2;
-        if (newF >= bestScore) return;
-        cost[newState] = _DoubleCost(newCost1, newCost2);
-        prev[newState] = state;
-        pq.add((
-          newF,
-          newCost1 > newCost2 ? newCost1 : newCost2,
-          newCost1,
-          newCost2,
-          newState,
-        ));
-      } else {
-        if (state.transportPhase == 1 && state.waitingAgent == 2) return;
-        if (nextLandmark == pos2) return;
-        final d = distLandmarkToLandmark(pos2, nextLandmark);
-        if (d == null) return;
-        final weight = stepWeight(state, 2);
-        final addWeighted = d * weight;
-        final newPos1 = pos1;
-        final newPos2 = nextLandmark;
-        var newPhase = state.transportPhase;
-        var newWaiting = state.waitingAgent;
-        final newResources = <int>{
-          ...state.collectedResources,
-          ?getLandmarkResource(nextLandmark),
-        };
-        if (keyResource != null && newPhase == 0 && nextLandmark == keyPositionLandmark) {
-          newPhase = 1;
-          newWaiting = 2;
-        }
-        final newCost1 = cur.cost1;
-        final newCost2 = cur.cost2 + addWeighted;
-        final newState = _DoubleAStarState(
-          landmark1: newPos1,
-          landmark2: newPos2,
-          collectedResources: newResources,
-          transportPhase: newPhase,
-          waitingAgent: newWaiting,
-        );
-        final old = cost[newState];
-        if (old != null && old.cost1 <= newCost1 && old.cost2 <= newCost2) {
-          return;
-        }
-        final h = heuristicDouble(newPos1, newPos2, newResources);
-        final f1 = newCost1 + h.h1;
-        final f2 = newCost2 + h.h2;
-        final newF = f1 > f2 ? f1 : f2;
-        if (newF >= bestScore) return;
-        cost[newState] = _DoubleCost(newCost1, newCost2);
-        prev[newState] = state;
-        pq.add((
-          newF,
-          newCost1 > newCost2 ? newCost1 : newCost2,
-          newCost1,
-          newCost2,
-          newState,
-        ));
-      }
-    }
-    void tryTransport() {
-      if (keyResource == null) return;
-      if (state.transportPhase != 1) return;
-      final newPos1 = keyTransportLandmark!;
-      final newPos2 = keyTransportLandmark;
+    final curCost1 = node.cost1;
+    final curCost2 = node.cost2;
+
+    // 动作 1：传送
+    if (keyResource != null && state.transportPhase == 1) {
       final newResources = <int>{
         ...state.collectedResources,
-        ?getLandmarkResource(keyTransportLandmark),
+        ?getLandmarkResource(keyTransportLandmark!),
         ?getLandmarkResource(keyPositionLandmark!),
       };
       final newState = _DoubleAStarState(
-        landmark1: newPos1,
-        landmark2: newPos2,
+        landmark1: keyTransportLandmark!,
+        landmark2: keyTransportLandmark,
         collectedResources: newResources,
         transportPhase: 2,
         waitingAgent: 0,
       );
-      final old = cost[newState];
-      if (old != null && old.cost1 <= cur.cost1 && old.cost2 <= cur.cost2) {
-        return;
-      }
-      final h = heuristicDouble(newPos1, newPos2, newResources);
-      final f1 = cur.cost1 + h.h1;
-      final f2 = cur.cost2 + h.h2;
-      final newF = f1 > f2 ? f1 : f2;
-      if (newF >= bestScore) return;
-      cost[newState] = _DoubleCost(cur.cost1, cur.cost2);
-      prev[newState] = state;
-      pq.add((
-        newF,
-        cur.cost1 > cur.cost2 ? cur.cost1 : cur.cost2,
-        cur.cost1,
-        cur.cost2,
-        newState,
-      ));
+      addNode(newState, curCost1, curCost2, state, node);
     }
 
-    tryTransport();
-    for (int next = 0; next < m; next++) {
-      tryMove(1, next);
-      tryMove(2, next);
+    final targets = candidateTargets(state);
+
+    // 动作 2：移动 agent1
+    if (!(state.transportPhase == 1 && state.waitingAgent == 1)) {
+      for (final next in targets) {
+        if (next == state.landmark1) continue;
+        final d = distLandmarkToLandmark(state.landmark1, next);
+        if (d == null) continue;
+        final weight = stepWeight(state, 1);
+        final newCost1 = curCost1 + d * weight;
+        final newCost2 = curCost2;
+
+        var newPhase = state.transportPhase;
+        var newWaiting = state.waitingAgent;
+
+        final newResources = <int>{
+          ...state.collectedResources,
+          ?getLandmarkResource(next),
+        };
+
+        if (keyResource != null &&
+            newPhase == 0 &&
+            next == keyPositionLandmark) {
+          newPhase = 1;
+          newWaiting = 1;
+        }
+
+        final newState = _DoubleAStarState(
+          landmark1: next,
+          landmark2: state.landmark2,
+          collectedResources: newResources,
+          transportPhase: newPhase,
+          waitingAgent: newWaiting,
+        );
+        addNode(newState, newCost1, newCost2, state, node);
+      }
+    }
+
+    // 动作 3：移动 agent2
+    if (!(state.transportPhase == 1 && state.waitingAgent == 2)) {
+      for (final next in targets) {
+        if (next == state.landmark2) continue;
+        final d = distLandmarkToLandmark(state.landmark2, next);
+        if (d == null) continue;
+        final weight = stepWeight(state, 2);
+        final newCost1 = curCost1;
+        final newCost2 = curCost2 + d * weight;
+
+        var newPhase = state.transportPhase;
+        var newWaiting = state.waitingAgent;
+
+        final newResources = <int>{
+          ...state.collectedResources,
+          ?getLandmarkResource(next),
+        };
+
+        if (keyResource != null &&
+            newPhase == 0 &&
+            next == keyPositionLandmark) {
+          newPhase = 1;
+          newWaiting = 2;
+        }
+
+        final newState = _DoubleAStarState(
+          landmark1: state.landmark1,
+          landmark2: next,
+          collectedResources: newResources,
+          transportPhase: newPhase,
+          waitingAgent: newWaiting,
+        );
+        addNode(newState, newCost1, newCost2, state, node);
+      }
     }
   }
-  if (bestFinalState == null) {
+
+  if (bestNode == null || bestFinalState == null) {
     return (path1: [], path2: []);
   }
 
   // 5. 回溯路径
-
-  // 回溯状态序列
-  final states = <_DoubleAStarState>[];
+  final nodeSequence = <_CostNode>[];
+  final stateSequence = <_DoubleAStarState>[];
+  var curNode = bestNode;
   var curState = bestFinalState;
   while (true) {
-    states.add(curState);
-    if (curState == startState) break;
-    curState = prev[curState]!;
+    nodeSequence.add(curNode);
+    stateSequence.add(curState);
+    if (curNode == startNode) break;
+    final prevState = curNode.prevState!;
+    final prevNode = curNode.prevNode!;
+    curNode = prevNode;
+    curState = prevState;
   }
-  final forwardStates = states.reversed.toList();
+  final forwardStates = stateSequence.reversed.toList();
+
   final path1Indexes = <int>[];
   final path2Indexes = <int>[];
-  void appendSegment(List<int> path, int fromLandmark, int toLandmark) {
-    if (fromLandmark == toLandmark) return;
-    final parents = bfsFromLandmark[fromLandmark].parent;
+
+  /// 从地标 [fromLandmark] 到任意节点 [toNodeIndex] 追加路径段
+  void appendSegmentToNode(List<int> path, int fromLandmark, int toNodeIndex) {
     final fromNode = getLandmarkNode(fromLandmark);
-    final toNode = getLandmarkNode(toLandmark);
+    if (fromNode == toNodeIndex) return;
+
+    final parents = bfsFromLandmark[fromLandmark].parent;
     final segment = <int>[];
-    var cur = toNode;
+    var cur = toNodeIndex;
     while (cur != fromNode) {
       segment.add(cur);
       final p = parents[cur];
@@ -527,6 +625,7 @@ class _DoubleCost {
     }
     path.addAll(segment.reversed);
   }
+
   for (int i = 0; i < forwardStates.length; i++) {
     final state = forwardStates[i];
     if (i == 0) {
@@ -534,14 +633,13 @@ class _DoubleCost {
       path2Indexes.add(getLandmarkNode(state.landmark2));
       continue;
     }
+
     final prevState = forwardStates[i - 1];
-    // 检测传送动作：phase 从 1 变为 2
-    final isTransport = prevState.transportPhase == 1 && state.transportPhase == 2;
+    final isTransport =
+        prevState.transportPhase == 1 && state.transportPhase == 2;
+
     if (isTransport) {
-      // 传送：两人都到 keyTransport
-      // 等待者原本就在 keyPosition，移动者可能在任意位置
       final waitingAgent = prevState.waitingAgent;
-      // 等待者：从 keyPosition 到 keyTransport（如果不同）
       if (keyPositionLandmark != keyTransportLandmark) {
         if (waitingAgent == 1) {
           path1Indexes.add(getLandmarkNode(keyTransportLandmark!));
@@ -549,7 +647,6 @@ class _DoubleCost {
           path2Indexes.add(getLandmarkNode(keyTransportLandmark!));
         }
       }
-      // 移动者：从原位置直接传送到 keyTransport
       final mover = waitingAgent == 1 ? 2 : 1;
       if (mover == 1) {
         if (prevState.landmark1 != keyTransportLandmark) {
@@ -562,23 +659,32 @@ class _DoubleCost {
       }
       continue;
     }
-    // 普通移动
+
     if (state.landmark1 != prevState.landmark1) {
-      appendSegment(
+      appendSegmentToNode(
         path1Indexes,
         prevState.landmark1,
-        state.landmark1,
+        getLandmarkNode(state.landmark1),
       );
     }
     if (state.landmark2 != prevState.landmark2) {
-      appendSegment(
+      appendSegmentToNode(
         path2Indexes,
         prevState.landmark2,
-        state.landmark2,
+        getLandmarkNode(state.landmark2),
       );
     }
   }
-  // 返回路径
+
+  // 补上到出口的路径（使用阶段 B 枚举得到的最优出口）
+  final lastState = forwardStates.last;
+  if (bestFinalExit1 != null) {
+    appendSegmentToNode(path1Indexes, lastState.landmark1, bestFinalExit1!);
+  }
+  if (bestFinalExit2 != null) {
+    appendSegmentToNode(path2Indexes, lastState.landmark2, bestFinalExit2!);
+  }
+
   return (
     path1: path1Indexes.map((i) => nodes[i]).toList(),
     path2: path2Indexes.map((i) => nodes[i]).toList(),
