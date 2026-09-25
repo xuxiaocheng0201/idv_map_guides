@@ -52,6 +52,7 @@ jobs:
       - name: Precompute assets
         run: |
           dart compile exe tool/precompute_navigator.dart -o precompute_navigator && ./precompute_navigator
+          dart compile exe tool/precompute_navigator_double.dart -o precompute_navigator_double && ./precompute_navigator_double
 
       - name: Build Web
         run: |

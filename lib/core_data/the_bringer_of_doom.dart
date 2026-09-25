@@ -3,6 +3,7 @@ import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
+import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 
 MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
   final position = world.entrances[entrance]!.position;
@@ -240,14 +241,10 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
   }
   @override
   List<NavigateArguments> preloadNavigateArguments(World world) {
-    return validEntrances.expand((e) {
-      final origin = navigateArguments(world, e);
-      return <NavigateArguments>[
-        origin,
-        origin.copyWith(exits: <Node>{}),
-        origin.copyWith(keyResource: null),
-        origin.copyWith(keyResource: null, exits: <Node>{}),
-      ];
-    }).toList();
+    return super.preloadNavigateArguments(world).expand((arg) => [arg, arg.copyWith(keyResource: null)]).toList();
+  }
+  @override
+  List<NavigateDoubleArguments> preloadNavigateDoubleArguments(World world) {
+    return super.preloadNavigateDoubleArguments(world).expand((arg) => [arg, arg.copyWith(keyResource: null)]).toList();
   }
 }

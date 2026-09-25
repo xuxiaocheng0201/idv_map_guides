@@ -76,10 +76,28 @@ class WorldsManager<W extends BaseWorldsEnums> {
     );
   }
 
+  Future<void> _getPrecomputedNavigatorDouble(W world) async {
+    await _fetchWithCache(
+      key: 'precomputed/navigate_double/${world.index}',
+      fetch: () async {
+        final data = await _loadAssets('${provider.precomputedNavigateDoubleAssets(world)}.precomputed');
+        final (_, paths) = deserializePrecomputedNavigateDoublePath(data);
+        for (final entry in paths.entries) {
+          _fetchWithCache(
+            key: 'navigate_double/${world.index}/${entry.key.identify}',
+            fetch: () async => entry.value,
+          );
+        }
+        return ();
+      },
+    );
+  }
+
   void preload() {
     for (final world in provider.allWorlds) {
       unawaited(_getWorld(world));
       unawaited(_getPrecomputedNavigator(world));
+      unawaited(_getPrecomputedNavigatorDouble(world));
     }
   }
 
@@ -120,7 +138,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
   Future<({List<Node> path1, List<Node> path2})> getNavigateDoubleResult(W world, NavigateDoubleArguments arguments) async {
     final structuresFile = (await _getStructures()).$1;
     final worldFile = (await _getWorld(world)).$1;
-    await _getPrecomputedNavigator(world);
+    await _getPrecomputedNavigatorDouble(world);
     return await _fetchWithCache(
       key: 'navigate_double/${world.index}/${arguments.identify}',
       fetch: () async => await navigateDoubleAsync(structuresFile, worldFile, arguments),

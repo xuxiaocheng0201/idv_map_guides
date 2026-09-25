@@ -32,4 +32,11 @@ abstract class WorldsProvider<W extends BaseWorldsEnums> {
     final origin = navigateArguments(world, e);
     return [origin, origin.copyWith(exits: <Node>{})];
   }).toList();
+  String precomputedNavigateDoubleAssets(W world) => '${worldAssets(world)}.navigator.double';
+  List<NavigateDoubleArguments> preloadNavigateDoubleArguments(World world) => validEntrances.expand((a) {
+    return validEntrances.expand((b) {
+      final origin = navigateDoubleArguments(world, a, b);
+      return [origin, origin.copyWith(exits: <Node>{})];
+    });
+  }).toList();
 }
