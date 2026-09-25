@@ -38,7 +38,7 @@ Future<void> writeAsset(Directory root, WorldType type, WorldDifficulty difficul
 String computeWorldHash(Uint8List structuresBytes, Uint8List worldBytes) {
   final structuresHash = sha256.convert(structuresBytes).toString();
   final worldHash = sha256.convert(worldBytes).toString();
-  return 'v1/$structuresHash/$worldHash';
+  return 'v2/$structuresHash/$worldHash';
 }
 
 Future<bool> isWorldUpToDate(

@@ -14,15 +14,15 @@ extension KeyResourceSerde on KeyResource {
     if (len != 3) throw FormatException();
     final position = NodeSerde.unpack(unpacker);
     final transport = NodeSerde.unpack(unpacker);
-    final urgency = unpacker.unpackDouble();
-    if (urgency == null) throw FormatException();
-    return KeyResource(position: position, transport: transport, urgency: urgency);
+    final keyResourceWeight = unpacker.unpackInt();
+    if (keyResourceWeight == null) throw FormatException();
+    return KeyResource(position: position, transport: transport, keyResourceWeight: keyResourceWeight);
   }
   void pack(Packer packer) {
     packer.packListLength(3);
     position.pack(packer);
     transport.pack(packer);
-    packer.packDouble(urgency);
+    packer.packInt(keyResourceWeight);
   }
 }
 

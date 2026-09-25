@@ -33,7 +33,7 @@ abstract class NavigateDoubleArguments with _$NavigateDoubleArguments {
   String get identify => '${start1.identify}/${start2.identify}'
       '/${resources.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
       '/${exits.sorted(Comparable.compare).map((node) => node.identify).join(',')}'
-      '${keyResource == null ? '' : '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.urgency}'}'
+      '${keyResource == null ? '' : '/${keyResource!.position.identify},${keyResource!.transport.identify},${keyResource!.keyResourceWeight}'}'
       '/$transportWaitingUrgency';
 }
 
@@ -110,7 +110,7 @@ class _CostNode {
   const double defaultWeight = 1.0;
   double keyResourceWeight = 0.0;
   if (keyResource != null) {
-    keyResourceWeight = keyResource.urgency;
+    keyResourceWeight = keyResource.keyResourceWeight.toDouble();
   }
 
   // 2. 构建地标集合：两个起点 + 所有资源点 + 关键资源点位置 + 关键资源点传送目标

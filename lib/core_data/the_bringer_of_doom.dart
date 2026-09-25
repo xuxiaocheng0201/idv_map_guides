@@ -72,6 +72,7 @@ NavigateArguments _navigateArguments(World world, EntranceType entrance) {
     final node = Node(entry.key.layer, entry.value.x, entry.value.y);
     exitNodes.add(node);
   }
+  // TODO: set entrancesLength
   return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
 }
 
@@ -236,8 +237,8 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
       }
     }
     final alterNode = world.entranceNode(EntranceType.alterBasement)!;
-    final keyResource = KeyResource(position: museRoomNode!, transport: alterNode);
-    return origin.copyWith(keyResource: keyResource);
+    final keyResource = KeyResource(position: museRoomNode!, transport: alterNode, keyResourceWeight: 3);
+    return origin.copyWith(keyResource: keyResource, defaultWeight: 2);
   }
   @override
   List<NavigateArguments> preloadNavigateArguments(World world) {
