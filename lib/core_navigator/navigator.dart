@@ -279,18 +279,24 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   // 5. 计算下界: 剩余地标的 MST
 
+  // 缓存剩余地标图的最小生成树 + 出口
+  final mstCache = EqualityMap<List<int>, int>(ListEquality<int>());
   /// 计算 当前点 + 所有剩余地标 的最小生成树 + 出口
   int mst(int current, Set<int> arrived) {
-    // 剩余地标
-    final remaining = <int>[current];
+    // 剩余地标（按地标索引升序）
+    final remaining = <int>[];
     for (int r = 0; r < k; r++) {
-      if (arrived.contains(r)) continue;
-      remaining.add(r);
+      if (r == current || !arrived.contains(r)) {
+        remaining.add(r);
+      }
     }
     if (remaining.isEmpty) {
       return distLandmarkExit[current];
     }
     final size = remaining.length;
+    // 缓存
+    final cached = mstCache[remaining];
+    if (cached != null) return cached;
     // Prim 求 MST
     final visited = BoolList(size, fill: false);
     final pq = PriorityQueue<(int, int)>(compare<(int, int)>((p) => p.$2)); // 元素为 (v, cost)
@@ -325,25 +331,10 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         }
       }
     }
-    return total + minExit!;
+    final result = total + minExit!;
+    mstCache[remaining] = result;
+    return result;
   }
-  // // 缓存 mst
-  // @freezed
-  // abstract class _MstCacheKey with _$MstCacheKey {
-  //   _MstCacheKey._();
-  //   factory _MstCacheKey({
-  //     required int currentLandmark,
-  //     required Set<int> collectedResources,
-  //   }) = __MstCacheKey;
-  // }
-  // final mstCache = <_MstCacheKey, int?>{};
-  // int? mstWithCache(int currentLandmark, Set<int> collectedResources) {
-  //   final key = _MstCacheKey(currentLandmark: currentLandmark, collectedResources: collectedResources);
-  //   if (mstCache.containsKey(key)) return mstCache[key];
-  //   final cost = mst(currentLandmark, collectedResources);
-  //   mstCache[key] = cost;
-  //   return cost;
-  // }
   /// 启发式函数
   int heuristic(_AStarState state) {
     final current = state.current;
