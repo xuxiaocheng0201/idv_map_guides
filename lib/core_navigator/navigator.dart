@@ -53,12 +53,84 @@ abstract class NavigateArguments with _$NavigateArguments {
       '/$defaultWeight';
 }
 
+/// 不可变的有序 [int] 集合，预计算 hashCode
+/// 作为 A* 状态字段被反复哈希/比较时，比 [Set<int>] 快得多
+class ResourceSet {
+  final List<int> _items; // 严格升序、长度固定、外部不可改
+  final int _hash;
+  ResourceSet._(this._items, this._hash);
+
+  static final ResourceSet empty = ResourceSet._(const <int>[], 0);
+  factory ResourceSet.singleton(int x) {
+    final items = <int>[x];
+    return ResourceSet._(items, Object.hashAll(items));
+  }
+
+  /// 返回包含 [x] 的新集合；若已包含则返回 this
+  ResourceSet add(int x) {
+    final i = _lowerBound(x);
+    if (i < _items.length && _items[i] == x) return this;
+    final len = _items.length;
+    final next = List<int>.filled(len + 1, 0, growable: false);
+    for (int j = 0; j < i; j++) {
+      next[j] = _items[j];
+    }
+    next[i] = x;
+    for (int j = i; j < len; j++) {
+      next[j + 1] = _items[j];
+    }
+    return ResourceSet._(next, Object.hashAll(next));
+  }
+
+  bool contains(int x) {
+    final i = _lowerBound(x);
+    return i < _items.length && _items[i] == x;
+  }
+
+  int get length => _items.length;
+
+  int _lowerBound(int x) {
+    int lo = 0;
+    int hi = _items.length;
+    while (lo < hi) {
+      final mid = (lo + hi) >> 1;
+      if (_items[mid] < x) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return lo;
+  }
+
+  @override
+  int get hashCode => _hash;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ResourceSet) return false;
+    if (_hash != other._hash) return false;
+    final a = _items;
+    final b = other._items;
+    final n = a.length;
+    if (n != b.length) return false;
+    for (int i = 0; i < n; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  String toString() => 'ResourceSet($_items)';
+}
+
 @freezed
 abstract class _AStarState with _$AStarState {
   _AStarState._();
   factory _AStarState({
     required int current,
-    required Set<int> arrived,
+    required ResourceSet arrived,
     required bool transported,
   }) = __AStarState;
 }
@@ -282,7 +354,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   // 缓存剩余地标图的最小生成树 + 出口
   final mstCache = EqualityMap<List<int>, int>(ListEquality<int>());
   /// 计算 当前点 + 所有剩余地标 的最小生成树 + 出口
-  int mst(int current, Set<int> arrived) {
+  int mst(int current, ResourceSet arrived) {
     // 剩余地标（按地标索引升序）
     final remaining = <int>[];
     for (int r = 0; r < k; r++) {
@@ -375,7 +447,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   final startState = _AStarState(
     current: startLandmark,
-    arrived: <int>{startLandmark},
+    arrived: ResourceSet.singleton(startLandmark),
     transported: keyResource != null && startLandmark == keyPositionLandmark!,
   );
   final startH = heuristic(startState);
@@ -431,7 +503,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         final dist = distLandmarks[current][r];
         final newState = _AStarState(
           current: r,
-          arrived: <int>{...arrived, r},
+          arrived: arrived.add(r),
           transported: transported || (keyResource != null && r == keyPositionLandmark!),
         );
         final newG = g + dist * weight;
