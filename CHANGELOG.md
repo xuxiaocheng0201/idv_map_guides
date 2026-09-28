@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1 - 2026/09/28
+
+- revert/navigator 暂时移除双人导航
+
 ## 2.2.0 - 2026/09/26 - dd6a89883c4fc4e4f494fed7e536088ab48d266a
 
 - refactor/navigator 秒解单人导航
