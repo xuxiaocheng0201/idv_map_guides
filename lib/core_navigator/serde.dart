@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:comparators/comparators.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
@@ -29,7 +30,7 @@ extension KeyResourceSerde on KeyResource {
 extension NavigateArgumentsSerde on NavigateArguments {
   static NavigateArguments unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 4) throw FormatException();
+    if (len != 6) throw FormatException();
     final start = NodeSerde.unpack(unpacker);
     final resourcesLen = unpacker.unpackListLength();
     final resources = <Node>{};
@@ -44,10 +45,30 @@ extension NavigateArgumentsSerde on NavigateArguments {
       exits.add(exit);
     }
     final keyResource = KeyResourceSerde.unpackNullable(unpacker);
-    return NavigateArguments(start: start, resources: resources, exits: exits, keyResource: keyResource);
+    final entrancesLength = unpacker.unpackMapLength();
+    final entrances = <(Node, Node), int>{};
+    for (int i = 0; i < entrancesLength; i++) {
+      final len = unpacker.unpackListLength();
+      if (len != 2) throw FormatException();
+      final u = NodeSerde.unpack(unpacker);
+      final v = NodeSerde.unpack(unpacker);
+      final w = unpacker.unpackInt();
+      if (w == null) throw FormatException();
+      entrances[(u, v)] = w;
+    }
+    final defaultWeight = unpacker.unpackInt();
+    if (defaultWeight == null) throw FormatException();
+    return NavigateArguments(
+      start: start,
+      resources: resources,
+      exits: exits,
+      keyResource: keyResource,
+      entrancesLength: entrances,
+      defaultWeight: defaultWeight,
+    );
   }
   void pack(Packer packer) {
-    packer.packListLength(4);
+    packer.packListLength(6);
     start.pack(packer);
     final resources = this.resources.sorted();
     packer.packListLength(resources.length);
@@ -64,6 +85,18 @@ extension NavigateArgumentsSerde on NavigateArguments {
     } else {
       keyResource!.pack(packer);
     }
+    final entrances = entrancesLength.entries.sorted(compareSequentially([
+      compare<MapEntry<(Node, Node), int>>((e) => e.key.$1),
+      compare<MapEntry<(Node, Node), int>>((e) => e.key.$2),
+    ]));
+    packer.packMapLength(entrances.length);
+    for (final entry in entrances) {
+      packer.packListLength(2);
+      entry.key.$1.pack(packer);
+      entry.key.$2.pack(packer);
+      packer.packInt(entry.value);
+    }
+    packer.packInt(defaultWeight);
   }
 }
 
@@ -135,7 +168,7 @@ Uint8List serializePrecomputedNavigatePath(String worldHash, Map<NavigateArgumen
 extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
   static NavigateDoubleArguments unpack(Unpacker unpacker) {
     final len = unpacker.unpackListLength();
-    if (len != 6) throw FormatException();
+    if (len != 8) throw FormatException();
     final start1 = NodeSerde.unpack(unpacker);
     final start2 = NodeSerde.unpack(unpacker);
     final resourcesLen = unpacker.unpackListLength();
@@ -151,19 +184,33 @@ extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
       exits.add(exit);
     }
     final keyResource = KeyResourceSerde.unpackNullable(unpacker);
-    final transportWaitingUrgency = unpacker.unpackDouble();
-    if (transportWaitingUrgency == null) throw FormatException();
+    final entrancesLength = unpacker.unpackMapLength();
+    final entrances = <(Node, Node), int>{};
+    for (int i = 0; i < entrancesLength; i++) {
+      final len = unpacker.unpackListLength();
+      if (len != 2) throw FormatException();
+      final u = NodeSerde.unpack(unpacker);
+      final v = NodeSerde.unpack(unpacker);
+      final w = unpacker.unpackInt();
+      if (w == null) throw FormatException();
+      entrances[(u, v)] = w;
+    }
+    final defaultWeight = unpacker.unpackInt();
+    final transportWaitingWeight = unpacker.unpackInt();
+    if (defaultWeight == null || transportWaitingWeight == null) throw FormatException();
     return NavigateDoubleArguments(
       start1: start1,
       start2: start2,
       resources: resources,
       exits: exits,
       keyResource: keyResource,
-      transportWaitingUrgency: transportWaitingUrgency,
+      entrancesLength: entrances,
+      defaultWeight: defaultWeight,
+      transportWaitingWeight: transportWaitingWeight,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(6);
+    packer.packListLength(8);
     start1.pack(packer);
     start2.pack(packer);
     final resources = this.resources.sorted();
@@ -181,7 +228,19 @@ extension NavigateDoubleArgumentsSerde on NavigateDoubleArguments {
     } else {
       keyResource!.pack(packer);
     }
-    packer.packDouble(transportWaitingUrgency);
+    final entrances = entrancesLength.entries.sorted(compareSequentially([
+      compare<MapEntry<(Node, Node), int>>((e) => e.key.$1),
+      compare<MapEntry<(Node, Node), int>>((e) => e.key.$2),
+    ]));
+    packer.packMapLength(entrances.length);
+    for (final entry in entrances) {
+      packer.packListLength(2);
+      entry.key.$1.pack(packer);
+      entry.key.$2.pack(packer);
+      packer.packInt(entry.value);
+    }
+    packer.packInt(defaultWeight);
+    packer.packInt(transportWaitingWeight);
   }
 }
 

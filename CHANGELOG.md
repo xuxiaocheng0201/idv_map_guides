@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.0 - 2026/09/26 - dd6a89883c4fc4e4f494fed7e536088ab48d266a
+
+- refactor/navigator 秒解单人导航
+
+## 2.1.0 - 2026/09/25 - f331894a098d4745fde1e977623ec0a23573e7a3
+
+- feat/navigator 缓存双人导航结果
+
+## 2.0.0 - 2026/09/25 - 75a9329a4c15ac4dae9b769c553cd1e68c1f6367
+
+- feat/navigator 支持困难双人导航
+
 ## 1.4.0 - 2026/09/22
 
 - feat 支持噩梦不打夜莺导航

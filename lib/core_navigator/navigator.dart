@@ -65,10 +65,6 @@ class ResourceSet {
     final items = <int>[x];
     return ResourceSet._(items, Object.hashAll(items));
   }
-  factory ResourceSet.fromSet(Set<int> resources) {
-    final items = resources.sorted(Comparable.compare);
-    return ResourceSet._(items, Object.hashAll(items));
-  }
 
   /// 返回包含 [x] 的新集合；若已包含则返回 this
   ResourceSet add(int x) {
@@ -172,6 +168,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     keyTransportNodeIndex = nodeToIndex[keyResource.transport]!;
     keyResourceWeight = keyResource.keyResourceWeight;
   }
+  assert(keyResourceWeight >= defaultWeight);
   // 出口
   final exitNodeIndexes = <int>{};
   for (final e in arguments.exits) {
@@ -315,15 +312,14 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   // 4. 计算上界: 贪心（最近邻）
 
   /// 计算从当前点开始，贪心到达所有剩余地标，再到出口，所需的路程长度，返回路径含起点[current]
-  ({int? dist, List<int> path}) greedy(int current, Set<int> arrived) {
+  ({int dist, List<int> path})? greedy(int current, ResourceSet arrived) {
     int distTotal = 0;
-    final newArrived = Set<int>.of(arrived);
     final path = <int>[current];
-    while (newArrived.length < k) {
+    while (arrived.length < k) {
       int? best;
       int? bestTarget;
       for (int r = 0; r < k; r++) {
-        if (newArrived.contains(r)) continue;
+        if (arrived.contains(r)) continue;
         final dist = distLandmarks[current][r];
         if (dist == null) continue;
         if (best == null || dist < best) {
@@ -331,10 +327,10 @@ List<Node> navigate(World world, NavigateArguments arguments) {
           bestTarget = r;
         }
       }
-      if (best == null) return (dist: null, path: []);
+      if (best == null) return null;
       distTotal += best;
       current = bestTarget!;
-      newArrived.add(current);
+      arrived = arrived.add(current);
       path.add(current);
     }
     final distExit = distLandmarkExit[current];
@@ -346,21 +342,21 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   if (keyResource != null && startLandmark != keyPositionLandmark!) {
     // 存在关键资源点，先获取并传送，再收集其他资源
     final distKey = distLandmarks[startLandmark][keyPositionLandmark];
-    final result = greedy(keyPositionLandmark, <int>{startLandmark, keyPositionLandmark});
-    if (distKey != null && result.dist != null) {
-      greedyCost = distKey * keyResourceWeight + result.dist! * defaultWeight;
+    final result = greedy(keyPositionLandmark, ResourceSet.singleton(startLandmark).add(keyPositionLandmark));
+    if (distKey != null && result != null) {
+      greedyCost = distKey * keyResourceWeight + result.dist * defaultWeight;
       greedyPath = <int>[startLandmark, ...result.path];
     }
   } else {
     // 不存在关键资源点/起点就是关键资源点(直接传送)，直接收集所有资源
-    final result = greedy(startLandmark, <int>{startLandmark});
-    if (result.dist != null) {
-      greedyCost = result.dist! * defaultWeight;
+    final result = greedy(startLandmark, ResourceSet.singleton(startLandmark));
+    if (result != null) {
+      greedyCost = result.dist * defaultWeight;
       greedyPath = result.path;
     }
   }
 
-  // 5. 计算下界: 剩余地标的 MST
+  // 5. 计算下界: 剩余地标的 MST + 出口
 
   // 缓存剩余地标图的最小生成树 + 出口
   final mstCache = EqualityMap<List<int>, int>(ListEquality<int>());
@@ -372,9 +368,6 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       if (r == current || !arrived.contains(r)) {
         remaining.add(r);
       }
-    }
-    if (remaining.isEmpty) {
-      return distLandmarkExit[current];
     }
     final size = remaining.length;
     // 缓存
