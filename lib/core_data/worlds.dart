@@ -60,37 +60,45 @@ class WorldsManager<W extends BaseWorldsEnums> {
   }
 
   Future<void> _getPrecomputedNavigator(W world) async {
-    await _fetchWithCache(
-      key: 'precomputed/navigate/${world.index}',
-      fetch: () async {
-        final data = await _loadAssets('${provider.precomputedNavigateAssets(world)}.precomputed');
-        final (_, paths) = deserializePrecomputedNavigatePath(data);
-        for (final entry in paths.entries) {
-          _fetchWithCache(
-            key: 'navigate/${world.index}/${entry.key.identify}',
-            fetch: () async => entry.value,
-          );
-        }
-        return ();
-      },
-    );
+    try {
+      await _fetchWithCache(
+        key: 'precomputed/navigate/${world.index}',
+        fetch: () async {
+          final data = await _loadAssets('${provider.precomputedNavigateAssets(world)}.precomputed');
+          final (_, paths) = deserializePrecomputedNavigatePath(data);
+          for (final entry in paths.entries) {
+            _fetchWithCache(
+              key: 'navigate/${world.index}/${entry.key.identify}',
+              fetch: () async => entry.value,
+            );
+          }
+          return ();
+        },
+      );
+    } on Exception {
+      // silently fallback to compute realtime
+    }
   }
 
   Future<void> _getPrecomputedNavigatorDouble(W world) async {
-    await _fetchWithCache(
-      key: 'precomputed/navigate_double/${world.index}',
-      fetch: () async {
-        final data = await _loadAssets('${provider.precomputedNavigateDoubleAssets(world)}.precomputed');
-        final (_, paths) = deserializePrecomputedNavigateDoublePath(data);
-        for (final entry in paths.entries) {
-          _fetchWithCache(
-            key: 'navigate_double/${world.index}/${entry.key.identify}',
-            fetch: () async => entry.value,
-          );
-        }
-        return ();
-      },
-    );
+    try {
+      await _fetchWithCache(
+        key: 'precomputed/navigate_double/${world.index}',
+        fetch: () async {
+          final data = await _loadAssets('${provider.precomputedNavigateDoubleAssets(world)}.precomputed');
+          final (_, paths) = deserializePrecomputedNavigateDoublePath(data);
+          for (final entry in paths.entries) {
+            _fetchWithCache(
+              key: 'navigate_double/${world.index}/${entry.key.identify}',
+              fetch: () async => entry.value,
+            );
+          }
+          return ();
+        },
+      );
+    } on Exception {
+      // silently fallback to compute realtime
+    }
   }
 
   void preload() {

@@ -447,46 +447,61 @@ sealed class _DoubleAction with _$DoubleAction {
     mstCache[remaining] = total;
     return total;
   }
-  int? heuristicDouble(_DoubleAStarState state) {
-    // 启发式必须可采纳：使用最小权重 defaultWeight，避免高估。
-    int weight = defaultWeight;
-    // 下界 1：已经花费的最大成本。
-    final lbAlready = max(state.cost1, state.cost2);
-    // 下界 2：两人从当前位置直接去出口，完成时间至少是二者的较大值。
-    final lbReturn = max(
-      state.cost1 + distLandmarkExit[state.current1] * weight,
-      state.cost2 + distLandmarkExit[state.current2] * weight,
+  /// 通用下界，max(直接去出口, MST / 2, 各剩余地标的最小访问)
+  int? heuristicBase(int current1, int current2, ResourceSet arrived, int cost1, int cost2) {
+    // 下界 1：两人直接去出口
+    final int lbReturn = max(
+      cost1 + distLandmarkExit[current1] * defaultWeight,
+      cost2 + distLandmarkExit[current2] * defaultWeight,
     );
-    // 下界 3：每个未访问地标都必须被某人访问，并最终到出口。
-    // 对每个未访问地标 r，计算“从某人去 r 再去出口”的最小完成时间，
-    // 然后取所有未访问地标中的最大值。这是必须完成的最重任务下界。
+    // 下界 2：剩余地标 + 出口的 MST，两人并行 → 最大路线 ≥ 总距离 / 2
+    final int? mstCost = mst(current1, current2, arrived);
+    if (mstCost == null) return null;
+    final int lbAvg = (cost1 + cost2 + mstCost * defaultWeight + 1) ~/ 2; // ceil
+    // 下界 3：每个剩余地标必须由某人访问，取“访问它的最小可能最终 max”
     int lbCity = 0;
     for (int r = 0; r < k; r++) {
-      if (state.arrived.contains(r)) continue;
-      final dR = distLandmarkExit[r] * weight;
-      final d1 = distLandmarks[state.current1][r];
-      final d2 = distLandmarks[state.current2][r];
-      int? c1;
-      int? c2;
-      if (d1 != null) c1 = state.cost1 + d1 * weight + dR;
-      if (d2 != null) c2 = state.cost2 + d2 * weight + dR;
-      if (c1 == null && c2 == null) return null;
-      final c = c1 == null ? c2! : (c2 == null ? c1 : min(c1, c2));
+      if (arrived.contains(r)) continue;
+      final int drExit = distLandmarkExit[r] * defaultWeight;
+      final int? dr1 = distLandmarks[current1][r];
+      final int? dr2 = distLandmarks[current2][r];
+      int? c1Val;
+      int? c2Val;
+      if (dr1 != null) c1Val = cost1 + dr1 * defaultWeight + drExit;
+      if (dr2 != null) c2Val = cost2 + dr2 * defaultWeight + drExit;
+      if (c1Val == null && c2Val == null) return null;
+      final int c = c1Val == null ? c2Val! : (c2Val == null ? c1Val : min(c1Val, c2Val));
       if (c > lbCity) lbCity = c;
     }
-    // 下界 4：总工作量平均分摊到两个人。
-    // MST 给出剩余需要移动的总距离下界；加上两人已用成本后除以 2，
-    // 表示两人并行时，完成时间至少是总工作量的一半。
-    final mstRaw = mst(state.current1, state.current2, state.arrived);
-    int lbAvg;
-    if (mstRaw == null) {
-      lbAvg = 0;
-    } else {
-      lbAvg = ((state.cost1 + state.cost2 + mstRaw * weight) / 2).ceil();
+    return max(lbReturn, max(lbAvg, lbCity));
+  }
+  /// 最终启发式分派
+  int? heuristicDouble(_DoubleAStarState state) {
+    // 通用下界，总是安全
+    final int? base = heuristicBase(
+      state.current1,
+      state.current2,
+      state.arrived,
+      state.cost1,
+      state.cost2,
+    );
+    if (base == null) return null;
+    if (keyResource == null || state.phase == _TransportPhase.after || state.phase == _TransportPhase.waiting) {
+      return base;
     }
-    // 最终启发式取所有下界的最大值。
-    return max(lbAlready, max(lbReturn, max(lbCity, lbAvg)));
-  } // TODO: 优化启发式
+    // before 阶段：加入“至少有一人必须先到达关键资源点”的下界
+    final int keyLandmark = keyPositionLandmark!;
+    final int? d1 = state.current1 == keyLandmark ? 0 : distLandmarks[state.current1][keyLandmark];
+    final int? d2 = state.current2 == keyLandmark ? 0 : distLandmarks[state.current2][keyLandmark];
+    int? tReachKey;
+    if (d1 != null) tReachKey = state.cost1 + d1 * keyResourceWeight;
+    if (d2 != null) {
+      final int t2 = state.cost2 + d2 * keyResourceWeight;
+      tReachKey = tReachKey == null ? t2 : min(tReachKey, t2);
+    }
+    if (tReachKey == null) return null;
+    return max(base, tReachKey);
+  }
 
   // 6. A* / 分支定界搜索
 
@@ -520,8 +535,7 @@ sealed class _DoubleAction with _$DoubleAction {
     ]),
   ); // 元素为(f, max(cost1,cost2), state)
   final seen = <_DoubleAStarKey, List<(int, int)>>{}; // 支配剪枝 seen[key] = [(cost1, cost2), ..]
-  final prev = <_DoubleAStarState, _DoubleAStarState>{};
-  final actions = <_DoubleAStarState, _DoubleAction>{};
+  final prev = <_DoubleAStarState, (_DoubleAStarState, _DoubleAction)>{};
   bool isDominated(_DoubleAStarState s) {
     final list = seen[s.key];
     if (list == null) return false;
@@ -548,8 +562,7 @@ sealed class _DoubleAction with _$DoubleAction {
       if (bestCost != null && h >= bestCost) return;
       // 记录 Pareto 前沿、父状态和动作，然后入队。
       markSeen(newState);
-      prev[newState] = parent;
-      actions[newState] = action;
+      prev[newState] = (parent, action);
       pq.add((h, max(newState.cost1, newState.cost2), newState));
     }
     final current1 = state.current1;
@@ -612,6 +625,8 @@ sealed class _DoubleAction with _$DoubleAction {
       case _TransportPhase.waiting:
         // waiting：已经有人到达关键资源点，正在等待同意传送
         final bool firstIsKey = current1 == keyPositionLandmark;
+        final int keyCost = firstIsKey ? cost1 : cost2;
+        final int otherCost = firstIsKey ? cost2 : cost1;
         final int otherCurrent = firstIsKey ? current2 : current1;
         // 同意传送：两人都从 keyResource.transport 出发，成本同步为 max(cost1,cost2)
         final base = max(cost1, cost2);
@@ -625,12 +640,22 @@ sealed class _DoubleAction with _$DoubleAction {
         );
         addState(afterState, state, const _DoubleAction.teleport());
         // 等待者（未在关键点的人）继续移动
-        // TODO: 只有超过的部分才是 transportWaitingWeight，同步部分为 keyResourceWeight
         if (otherCurrent != keyPositionLandmark) {
           for (int r = 0; r < k; r++) {
             if (arrived.contains(r)) continue;
             final d = distLandmarks[otherCurrent][r];
             if (d == null) continue;
+            // 等待者从 otherCurrent 走到目标 d 步的实际增加时间
+            // 若等待者当前时间已经 >= 关键点到达时间，则整段都按 waitingWeight
+            // 否则，同步时刻之前能走的完整步数按 keyResourceWeight，剩余按 waitingWeight
+            int otherMoveCost(int d) {
+              if (otherCost >= keyCost) return d * waitingWeight;
+              final syncTime = keyCost - otherCost;
+              final beforeSteps = min(d, syncTime ~/ keyResourceWeight);
+              final afterSteps = d - beforeSteps;
+              return beforeSteps * keyResourceWeight + afterSteps * waitingWeight;
+            }
+            final add = otherMoveCost(d);
             final newArrived = arrived.add(r);
             final _DoubleAStarState newState;
             final _DoubleAction action;
@@ -642,7 +667,7 @@ sealed class _DoubleAction with _$DoubleAction {
                 arrived: newArrived,
                 phase: _TransportPhase.waiting,
                 cost1: cost1,
-                cost2: cost2 + d * waitingWeight,
+                cost2: cost2 + add,
               );
               action = _MoveAction(2, r);
             } else {
@@ -652,7 +677,7 @@ sealed class _DoubleAction with _$DoubleAction {
                 current2: current2,
                 arrived: newArrived,
                 phase: _TransportPhase.waiting,
-                cost1: cost1 + d * waitingWeight,
+                cost1: cost1 + add,
                 cost2: cost2,
               );
               action = _MoveAction(1, r);
@@ -708,8 +733,9 @@ sealed class _DoubleAction with _$DoubleAction {
     final rActions = <_DoubleAction>[];
     var curState = bestFinalState;
     while (curState != startState) {
-      rActions.add(actions[curState]!);
-      curState = prev[curState]!;
+      final (prevState, action) = prev[curState]!;
+      rActions.add(action);
+      curState = prevState;
     }
     final orderedActions = rActions.reversed.toList();
     // 展开地标路径
