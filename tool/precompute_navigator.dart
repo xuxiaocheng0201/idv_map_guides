@@ -89,7 +89,7 @@ Future<void> main(List<String> args) async {
         final paths = <NavigateArguments, List<Node>>{};
         for (int i = 0; i < navigateArgs.length; i++) {
           final arg = navigateArgs[i];
-          stdout.writeln('[precompute] (${i + 1}/${navigateArgs.length}) 计算中...');
+          stdout.writeln('[precompute] (${i + 1}/${navigateArgs.length}) ${arg.resources.length} 个资源点，计算中...');
           paths[arg] = navigate(worldInstance, arg);
         }
         final data = serializePrecomputedNavigatePath(worldHash, paths);

@@ -57,7 +57,7 @@ Future<void> main(List<String> args) async {
         final paths = <NavigateDoubleArguments, ({List<Node> path1, List<Node> path2})>{};
         for (int i = 0; i < navigateArgs.length; i++) {
           final arg = navigateArgs[i];
-          stdout.writeln('[precompute/double] (${i + 1}/${navigateArgs.length}) 计算中...');
+          stdout.writeln('[precompute/double] (${i + 1}/${navigateArgs.length}) ${arg.resources.length} 个资源点，计算中...');
           paths[arg] = navigateDouble(worldInstance, arg);
         }
         final data = serializePrecomputedNavigateDoublePath(worldHash, paths);

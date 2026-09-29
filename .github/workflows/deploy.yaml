@@ -32,7 +32,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: assets/**/*.precomputed
-          key: precomputed-${{ hashFiles('assets/**/*.precomputed') }}
+          key: precomputed-${{ hashFiles('assets/**/*.data') }}
           restore-keys: |
             precomputed-
 
@@ -57,6 +57,7 @@ jobs:
       - name: Build Web
         run: |
           dart compile wasm "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.wasm"
+          dart compile wasm "./lib/core_navigator/navigator_double.web.g.dart" -o "./web/workers/navigator_double.web.g.dart.wasm"
           flutter build web --release --wasm --base-href /${{ github.event.repository.name }}/
 
       - name: Upload Debug Symbols to Sentry
