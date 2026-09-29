@@ -358,7 +358,6 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   // 5. 计算下界: 剩余地标的 MST + 出口
 
-  // 缓存剩余地标图的最小生成树 + 出口
   final mstCache = EqualityMap<List<int>, int>(ListEquality<int>());
   /// 计算 当前点 + 所有剩余地标 的最小生成树 + 出口
   int? mst(int current, ResourceSet arrived) {
@@ -390,7 +389,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         if (visited[v]) continue;
         final a = distLandmarks[remaining[u]][remaining[v]];
         final b = distLandmarks[remaining[v]][remaining[u]];
-        int? w = a == null ? b : (b == null ? a : min(a, b));
+        final w = a == null ? b : (b == null ? a : min(a, b));
         if (w == null) return null; // 图不连通，这种情况极为罕见，所以不缓存
         pq.add((v, w));
       }
@@ -473,85 +472,81 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   );
   final startH = heuristic(startState);
   if (startH == null) return []; // 起点状态无解
-  final List<int> path;
-  if (greedyCost != null && startH >= greedyCost) {
-    // 贪心解法已是最优
-    path = greedyPath!;
-  } else {
-    int? bestCost = greedyCost;
-    final cost = <_AStarState, int>{};
-    final prev = <_AStarState, _AStarState>{};
-    final pq = HeapPriorityQueue<(int, int, _AStarState)>(
-      compareSequentially([
-        compare<(int, int, _AStarState)>((item) => item.$1),
-        compare<(int, int, _AStarState)>((item) => item.$2),
-      ]),
-    ); // 元素为 (f, g, state)
-    cost[startState] = 0;
-    pq.add((startH, 0, startState));
-    _AStarState? bestFinalState;
-    while (pq.isNotEmpty) {
-      final (f, g, state) = pq.removeFirst();
-      if (cost[state] != null && g > cost[state]!) continue; // 如果该状态已经有更优代价，跳过
-      if (bestCost != null && f >= bestCost) break; // 当前下界已不优于当前上界，结束
-      void addState(_AStarState newState, int newG) {
-        if (cost[newState] == null || newG < cost[newState]!) {
-          final newH = heuristic(newState);
-          if (newH == null) return;
-          final newF = newG + newH;
-          if (bestCost == null || newF < bestCost) {
-            cost[newState] = newG;
-            prev[newState] = state;
-            pq.add((newF, newG, newState));
-          }
+  final cost = <_AStarState, int>{};
+  final prev = <_AStarState, _AStarState>{};
+  final pq = HeapPriorityQueue<(int, int, _AStarState)>(
+    compareSequentially([
+      compare<(int, int, _AStarState)>((item) => item.$1),
+      compare<(int, int, _AStarState)>((item) => item.$2),
+    ]),
+  ); // 元素为 (f, g, state)
+  cost[startState] = 0;
+  pq.add((startH, 0, startState));
+  int? bestCost = greedyCost;
+  _AStarState? bestFinalState;
+  while (pq.isNotEmpty) {
+    final (f, g, state) = pq.removeFirst();
+    if (cost[state] != null && g > cost[state]!) continue; // 如果该状态已经有更优代价，跳过
+    if (bestCost != null && f >= bestCost) break; // 当前下界已不优于当前上界，结束
+    void addState(_AStarState newState, int newG) {
+      if (cost[newState] == null || newG < cost[newState]!) {
+        final newH = heuristic(newState);
+        if (newH == null) return;
+        final newF = newG + newH;
+        if (bestCost == null || newF < bestCost) {
+          cost[newState] = newG;
+          prev[newState] = state;
+          pq.add((newF, newG, newState));
         }
-      }
-      final current = state.current;
-      final arrived = state.arrived;
-      final transported = state.transported;
-      final weight = (keyResource == null || transported) ? defaultWeight : keyResourceWeight;
-      // 资源全收集，到出口，更新上界
-      if (arrived.length == k) {
-        final dist = distLandmarkExit[current];
-        final total = g + dist * weight;
-        if (bestCost == null || total < bestCost) {
-          bestCost = total;
-          bestFinalState = state;
-        }
-        continue;
-      }
-      // 移动到尚未收集的资源点/传送
-      for (int r = 0; r < k; r++) {
-        if (arrived.contains(r)) continue;
-        final dist = distLandmarks[current][r];
-        if (dist == null) continue;
-        final newState = _AStarState(
-          current: r,
-          arrived: arrived.add(r),
-          transported: transported || (keyResource != null && r == keyPositionLandmark!),
-        );
-        final newG = g + dist * weight;
-        addState(newState, newG);
       }
     }
-    if (bestFinalState == null) {
-      // 未找到更优解
-      path = greedyPath ?? <int>[];
-    } else {
-      // 回溯地标路径
-      final rPath = <int>[];
-      var curState = bestFinalState;
-      while (true) {
-        rPath.add(curState.current);
-        if (curState == startState) break;
-        curState = prev[curState]!;
+    final current = state.current;
+    final arrived = state.arrived;
+    final transported = state.transported;
+    final weight = (keyResource == null || transported) ? defaultWeight : keyResourceWeight;
+    // 资源全收集，到出口，更新上界
+    if (arrived.length == k) {
+      final dist = distLandmarkExit[current];
+      final total = g + dist * weight;
+      if (bestCost == null || total < bestCost) {
+        bestCost = total;
+        bestFinalState = state;
       }
-      path = rPath.reversed.toList();
+      continue;
+    }
+    // 移动到尚未收集的资源点/传送
+    for (int r = 0; r < k; r++) {
+      if (arrived.contains(r)) continue;
+      final dist = distLandmarks[current][r];
+      if (dist == null) continue;
+      final newState = _AStarState(
+        current: r,
+        arrived: arrived.add(r),
+        transported: transported || (keyResource != null && r == keyPositionLandmark!),
+      );
+      final newG = g + dist * weight;
+      addState(newState, newG);
     }
   }
 
-  // 7. 回溯路径，将地标路径展开为原始节点路径
+  // 7. 回溯路径
 
+  // 回溯地标路径
+  final List<int> path;
+  if (bestFinalState == null) {
+    // 贪心解法已是最优，未找到更优解
+    path = greedyPath ?? <int>[];
+  } else {
+    // 回溯地标路径
+    final rPath = <int>[];
+    var curState = bestFinalState;
+    while (true) {
+      rPath.add(curState.current);
+      if (curState == startState) break;
+      curState = prev[curState]!;
+    }
+    path = rPath.reversed.toList();
+  }
   if (path.isEmpty) return [];
   // 展开到节点路径
   final pathIndexes = <int>[];
@@ -585,7 +580,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       addSegment(parents, currentNode, prevNode);
     }
   }
-  // 末尾补上到出口的路线
+  // 末尾，从最后一个地标走到最近的出口
   if (exitNodeIndexes.isNotEmpty) {
     final lastLandmark = path.last;
     final exit = distParentLandmarkExits[lastLandmark].exit!;

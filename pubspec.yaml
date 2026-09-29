@@ -2,7 +2,7 @@ name: idv_map_guides
 description: "IdentityV CrypticNotes maps guide."
 publish_to: 'none'
 
-version: 2.4.0+20260924
+version: 2.4.1+20260924
 
 environment:
   sdk: ^3.13.4
