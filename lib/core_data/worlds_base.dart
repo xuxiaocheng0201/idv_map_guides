@@ -25,6 +25,7 @@ abstract class WorldsProvider<W extends BaseWorldsEnums> {
       resources: origin1.resources,
       exits: origin1.exits,
       keyResource: origin1.keyResource,
+      defaultWeight: origin1.defaultWeight,
     );
   }
   String precomputedNavigateAssets(W world) => '${worldAssets(world)}.navigator';

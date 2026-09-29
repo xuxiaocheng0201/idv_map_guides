@@ -251,6 +251,20 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
     return super.preloadNavigateArguments(world).expand((arg) => [arg, arg.copyWith(keyResource: null)]).toList();
   }
   @override
+  NavigateDoubleArguments navigateDoubleArguments(World world, EntranceType entrance1, EntranceType entrance2) {
+    final origin1 = navigateArguments(world, entrance1);
+    final origin2 = navigateArguments(world, entrance2);
+    return NavigateDoubleArguments(
+      start1: origin1.start,
+      start2: origin2.start,
+      resources: origin1.resources,
+      exits: origin1.exits,
+      keyResource: origin1.keyResource,
+      defaultWeight: 2,
+      transportWaitingWeight: 3,
+    );
+  }
+  @override
   List<NavigateDoubleArguments> preloadNavigateDoubleArguments(World world) {
     return super.preloadNavigateDoubleArguments(world).expand((arg) => [arg, arg.copyWith(keyResource: null)]).toList();
   }

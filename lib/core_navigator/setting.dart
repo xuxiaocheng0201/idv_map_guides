@@ -30,6 +30,12 @@ abstract class UnionNavigateArguments with _$UnionNavigateArguments {
     required Set<Node> exits,
     KeyResource? keyResource,
     required Node start2,
+    // 内部权重
+    @Default(1) int oneDefaultWeight,
+    @Default(2) int? oneKeyResourceWeight,
+    @Default(1) int doubleDefaultWeight,
+    @Default(2) int? doubleKeyResourceWeight,
+    @Default(3) int doubleTransportWaitingWeight,
   }) = _UnionNavigateArguments;
 
   static UnionNavigateArguments fromProvider({
@@ -60,6 +66,11 @@ abstract class UnionNavigateArguments with _$UnionNavigateArguments {
       exits: exits,
       keyResource: keyResource,
       start2: originDouble.start2,
+      oneDefaultWeight: originOne.defaultWeight,
+      oneKeyResourceWeight: originOne.keyResource?.keyResourceWeight,
+      doubleDefaultWeight: originDouble.defaultWeight,
+      doubleKeyResourceWeight: originDouble.keyResource?.keyResourceWeight,
+      doubleTransportWaitingWeight: originDouble.transportWaitingWeight,
     );
   }
 
@@ -67,7 +78,8 @@ abstract class UnionNavigateArguments with _$UnionNavigateArguments {
     start: start,
     resources: resources,
     exits: exits,
-    keyResource: keyResource,
+    keyResource: oneKeyResourceWeight != null ? keyResource?.copyWith(keyResourceWeight: oneKeyResourceWeight!) : keyResource,
+    defaultWeight: oneDefaultWeight,
   );
 
   NavigateDoubleArguments get twoArgument => NavigateDoubleArguments(
@@ -75,6 +87,8 @@ abstract class UnionNavigateArguments with _$UnionNavigateArguments {
     start2: start2,
     resources: resources,
     exits: exits,
-    keyResource: keyResource,
+    keyResource: doubleKeyResourceWeight != null ? keyResource?.copyWith(keyResourceWeight: doubleKeyResourceWeight!) : keyResource,
+    defaultWeight: doubleDefaultWeight,
+    transportWaitingWeight: doubleTransportWaitingWeight,
   );
 }
