@@ -551,20 +551,20 @@ sealed class _DoubleAction with _$DoubleAction {
   }
   pq.add((startH, 0, startState));
   seen[startState.key] = <(int, int)>[(0, 0)];
+  void addState(_DoubleAStarState newState, _DoubleAStarState parent, _DoubleAction action) {
+    if (isDominated(newState)) return; // 被已有状态支配，剪枝
+    // 启发式不可达或下界已经不低于当前最优解，剪枝。
+    final h = heuristicDouble(newState);
+    if (h == null) return;
+    if (bestCost != null && h >= bestCost) return;
+    // 记录 Pareto 前沿、父状态和动作，然后入队。
+    markSeen(newState);
+    prev[newState] = (parent, action);
+    pq.add((h, max(newState.cost1, newState.cost2), newState));
+  }
   while (pq.isNotEmpty) {
     final (f, _, state) = pq.removeFirst();
     if (bestCost != null && f >= bestCost) break; // 当前下界已不优于当前上界，结束
-    void addState(_DoubleAStarState newState, _DoubleAStarState parent, _DoubleAction action) {
-      if (isDominated(newState)) return; // 被已有状态支配，剪枝
-      // 启发式不可达或下界已经不低于当前最优解，剪枝。
-      final h = heuristicDouble(newState);
-      if (h == null) return;
-      if (bestCost != null && h >= bestCost) return;
-      // 记录 Pareto 前沿、父状态和动作，然后入队。
-      markSeen(newState);
-      prev[newState] = (parent, action);
-      pq.add((h, max(newState.cost1, newState.cost2), newState));
-    }
     final current1 = state.current1;
     final current2 = state.current2;
     final arrived = state.arrived;

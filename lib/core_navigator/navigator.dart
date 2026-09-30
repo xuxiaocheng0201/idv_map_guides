@@ -484,22 +484,22 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   pq.add((startH, 0, startState));
   int? bestCost = greedyCost;
   _AStarState? bestFinalState;
+  void addState(_AStarState newState, _AStarState state, int newG) {
+    if (cost[newState] == null || newG < cost[newState]!) {
+      final newH = heuristic(newState);
+      if (newH == null) return;
+      final newF = newG + newH;
+      if (bestCost == null || newF < bestCost) {
+        cost[newState] = newG;
+        prev[newState] = state;
+        pq.add((newF, newG, newState));
+      }
+    }
+  }
   while (pq.isNotEmpty) {
     final (f, g, state) = pq.removeFirst();
     if (cost[state] != null && g > cost[state]!) continue; // 如果该状态已经有更优代价，跳过
     if (bestCost != null && f >= bestCost) break; // 当前下界已不优于当前上界，结束
-    void addState(_AStarState newState, int newG) {
-      if (cost[newState] == null || newG < cost[newState]!) {
-        final newH = heuristic(newState);
-        if (newH == null) return;
-        final newF = newG + newH;
-        if (bestCost == null || newF < bestCost) {
-          cost[newState] = newG;
-          prev[newState] = state;
-          pq.add((newF, newG, newState));
-        }
-      }
-    }
     final current = state.current;
     final arrived = state.arrived;
     final transported = state.transported;
@@ -525,7 +525,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         transported: transported || (keyResource != null && r == keyPositionLandmark!),
       );
       final newG = g + dist * weight;
-      addState(newState, newG);
+      addState(newState, state, newG);
     }
   }
 
