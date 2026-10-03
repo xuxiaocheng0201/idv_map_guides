@@ -453,49 +453,65 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     mstCache[remaining] = result;
     return result;
   }
-  /// 启发式函数
-  int? heuristic(_AStarState state) {
+  /// 启发式函数，`g + lbCheap >= bestCost` 时短路
+  /// 启发式函数。
+  ///
+  /// [bestCost] 传入当前最优可行解（贪心上界或已找到的更优解），
+  /// [g] 为到达 [state] 的实际代价。
+  /// 当 `g + lbCheap >= bestCost` 时，不再计算 MST，直接返回 lbCheap 以短路。
+  /// 返回 null 表示状态不可达。
+  int? heuristic(_AStarState state, int? bestCost, int g) {
     final current = state.current;
     final arrived = state.arrived;
     final transported = state.transported;
-    // 没有关键资源点或已经传送过，直接使用普通 MST 作为下界
+    int lbCity;
     if (keyResource == null || transported) {
-      final distMst = mst(current, arrived);
-      return distMst == null ? null : distMst * defaultWeight;
+      // 无关键资源或已传送
+      lbCity = distLandmarkExit[current] * defaultWeight;
+      for (int r = 0; r < k; r++) {
+        if (arrived.contains(r)) continue;
+        final distCurrentR = distLandmarks[current][r];
+        if (distCurrentR == null) return null;
+        final cost = (distCurrentR + distLandmarkExit[r]) * defaultWeight;
+        if (cost > lbCity) lbCity = cost;
+      }
+    } else {
+      // 有关键资源，且尚未传送
+      final keyLandmark = keyPositionLandmark!;
+      final distCurrentKey = distLandmarks[current][keyLandmark];
+      if (distCurrentKey == null) return null;
+      final distKeyExit = distLandmarkExit[keyLandmark];
+      lbCity = distCurrentKey * keyResourceWeight + distKeyExit * defaultWeight;
+      for (int r = 0; r < k; r++) {
+        if (r == keyLandmark || arrived.contains(r)) continue;
+        final distCurrentR = distLandmarks[current][r];
+        final distRKey = distLandmarks[r][keyLandmark];
+        final distKeyR = distLandmarks[keyLandmark][r];
+        final distRExit = distLandmarkExit[r];
+        final collectBefore = (distCurrentR == null || distRKey == null) ? null : (distCurrentR + distRKey) * keyResourceWeight + distKeyExit * defaultWeight;
+        final collectAfter = distKeyR == null ? null : distCurrentKey * keyResourceWeight + (distKeyR + distRExit) * defaultWeight;
+        final cost = minOfTwo(collectBefore, collectAfter);
+        if (cost == null) return null;
+        if (cost > lbCity) lbCity = cost;
+      }
     }
-    final keyLandmark = keyPositionLandmark!;
-    assert(!arrived.contains(keyLandmark));
-    assert(current != keyLandmark);
-    // 直接走到关键资源点，再直接到出口
-    final distCurrentKey = distLandmarks[current][keyLandmark];
-    if (distCurrentKey == null) return null;
-    final distKeyExit = distLandmarkExit[keyLandmark];
-    int lb = distCurrentKey * keyResourceWeight + distKeyExit * defaultWeight;
-    // 对每个尚未访问的普通资源点，比较"传送前收集"与"传送后收集"的较大下界
-    // 即 i in k max(min(起点+资源点i+关键资源点(传送)+出口, 起点+关键资源点(传送)+资源点i+出口))
-    for (int r = 0; r < k; r++) {
-      if (r == keyLandmark || arrived.contains(r)) continue;
-      final distCurrentR = distLandmarks[current][r];
-      final distRKey = distLandmarks[r][keyLandmark];
-      final distKeyR = distLandmarks[keyLandmark][r];
-      final distRExit = distLandmarkExit[r];
-      final collectBefore = (distCurrentR == null || distRKey == null) ? null : (distCurrentR + distRKey) * keyResourceWeight + distKeyExit * defaultWeight;
-      final collectAfter = distKeyR == null ? null : distCurrentKey * keyResourceWeight + (distKeyR + distRExit) * defaultWeight;
-      final v = minOfTwo(collectBefore, collectAfter);
-      if (v == null) return null; // 图不连通
-      if (v > lb) lb = v;
-    }
-    return lb;
+    if (bestCost != null && g + lbCity >= bestCost) return lbCity;
+    final distMst = mst(current, arrived);
+    if (distMst == null) return null;
+    final lbMst = distMst * defaultWeight;
+    return max(lbCity, lbMst);
   }
 
   // 6. A* / 分支定界搜索
 
+  int? bestCost = greedyCost;
+  _AStarState? bestFinalState;
   final startState = _AStarState(
     current: startLandmark,
     arrived: ResourceSet.singleton(startLandmark),
     transported: keyResource != null && startLandmark == keyPositionLandmark!,
   );
-  final startH = heuristic(startState);
+  final startH = heuristic(startState, bestCost, 0);
   if (startH == null) return []; // 起点状态无解
   final cost = <_AStarState, int>{};
   final prev = <_AStarState, _AStarState>{};
@@ -507,11 +523,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
   ); // 元素为 (f, g, state)
   cost[startState] = 0;
   pq.add((startH, 0, startState));
-  int? bestCost = greedyCost;
-  _AStarState? bestFinalState;
   void addState(_AStarState newState, _AStarState state, int newG) {
     if (cost[newState] == null || newG < cost[newState]!) {
-      final newH = heuristic(newState);
+      final newH = heuristic(newState, bestCost, newG);
       if (newH == null) return;
       final newF = newG + newH;
       if (bestCost == null || newF < bestCost) {
