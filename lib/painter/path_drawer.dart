@@ -223,10 +223,10 @@ void paintPath(
     }
   }
   // 绘制起点/终点标记
-  if (path.first.layer == layer) {
-    _drawPathStart(canvas, shiftedPolylines.first.first, cellSize);
-  }
   if (path.last.layer == layer) {
     _drawPathEnd(canvas, shiftedPolylines.last.last, cellSize);
+  }
+  if (path.first.layer == layer) {
+    _drawPathStart(canvas, shiftedPolylines.first.first, cellSize);
   }
 }
