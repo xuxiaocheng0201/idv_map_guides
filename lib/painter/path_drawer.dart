@@ -65,19 +65,18 @@ void paintPath(
   Offset Function(int, int, double) cellCenter,
   Color color,
 ) {
-  if (path.isEmpty) return;
+  if (path.isEmpty || cellSize <= 0) return;
 
   // 将完整的跨层路线，切成只连续出现在本层的若干路线段
   final polylines = <List<Node>>[];
   List<Node>? current;
   Node? prevNode;
   for (final node in path) {
-    final bool nodeOnThisLayer = node.layer == layer;
-    final bool isCrossLayerEntry = prevNode != null &&
-        prevNode.layer == layer && !nodeOnThisLayer &&
-        (node.x - prevNode.x).abs() + (node.y - prevNode.y).abs() == 1;
-    if (!nodeOnThisLayer && !isCrossLayerEntry) {
-      if (current != null && current.length > 1) {
+    final nodeOnThisLayer = node.layer == layer;
+    final isPlainMove = prevNode == null || (node.x - prevNode.x).abs() + (node.y - prevNode.y).abs() == 1;
+    final isCrossLayerEntry = prevNode != null && prevNode.layer == layer && !nodeOnThisLayer && isPlainMove;
+    if (!isPlainMove || (!nodeOnThisLayer && !isCrossLayerEntry)) {
+      if (current != null && current.isNotEmpty) {
         polylines.add(current);
       }
       current = null;
@@ -87,7 +86,7 @@ void paintPath(
     (current ??= <Node>[]).add(node);
     prevNode = node;
   }
-  if (current != null && current.length > 1) polylines.add(current);
+  if (current != null && current.isNotEmpty) polylines.add(current);
   if (polylines.isEmpty) return;
 
   // 统计每个单元格的路径节点信息
@@ -114,7 +113,7 @@ void paintPath(
       if (nodeIndex == 0) { // 起点
         virtualIncomingSide = outgoingSide * -1;
         virtualOutgoingSide = outgoingSide;
-      } else if (nodeIndex < nodes.length - 1) { // 终点
+      } else if (nodeIndex == nodes.length - 1) { // 终点
         virtualIncomingSide = incomingSide;
         virtualOutgoingSide = incomingSide * -1;
       } else { // 中间节点
@@ -133,16 +132,26 @@ void paintPath(
   final laneOffsets = <(int, int), Offset>{}; // key: (polylineIndex, nodeIndex)
   for (final entry in cellNodes.entries) {
     final infos = entry.value;
+    // 单节点折线：方向未知，偏移置零，不参与车道排序
+    final multiInfos = <_PathNodeInfo>[];
+    for (final info in infos) {
+      if (polylines[info.polylineIndex].length == 1) {
+        laneOffsets[(info.polylineIndex, info.nodeIndex)] = Offset.zero;
+      } else {
+        multiInfos.add(info);
+      }
+    }
+    if (multiInfos.isEmpty) continue;
     // 计算分布轴方向（多数路径东西走向 → 垂直轴(y)；多数南北走向 → 水平轴(x)）
     double sumAbsDx = 0, sumAbsDy = 0;
-    for (final info in infos) {
+    for (final info in multiInfos) {
       sumAbsDx += info.outgoingSide.dx.abs();
       sumAbsDy += info.outgoingSide.dy.abs();
     }
     final verticalAxis = sumAbsDx >= sumAbsDy; // 如果 x 分量总和更大，说明路径偏东西走向，分布轴应垂直（y轴）
     final Offset axis = verticalAxis ? const Offset(0, 1) : const Offset(1, 0); // 垂直轴为 (0,1)，水平轴为 (1,0)
     // 将车道从左到右/从下到上排序
-    infos.sort(compareSequentially([
+    multiInfos.sort(compareSequentially([
       compare<_PathNodeInfo>((info) => info.incomingSide.dy), // 来向 y 升序，北侧进入的排前
       compare<_PathNodeInfo>((info) => info.incomingSide.dx), // 来向 x 升序，西侧进入的排前
       compare<_PathNodeInfo>((info) => info.outgoingSide.dy), // 去向 y 升序
@@ -151,9 +160,9 @@ void paintPath(
       compare<_PathNodeInfo>((info) => info.nodeIndex), // 节点索引
     ]));
     // 分配车道偏移
-    final int n = infos.length;
+    final int n = multiInfos.length;
     for (int k = 0; k < n; k++) {
-      final info = infos[k];
+      final info = multiInfos[k];
       final double t = (k + 1) / (n + 1) - 0.5; // 均匀分配偏移，范围 (-0.5, 0.5)
       laneOffsets[(info.polylineIndex, info.nodeIndex)] = axis * (t * cellSize);
     }
@@ -182,6 +191,7 @@ void paintPath(
     ..strokeCap = StrokeCap.round
     ..strokeJoin = StrokeJoin.round;
   for (final points in shiftedPolylines) {
+    if (points.length < 2) continue;
     final route = Path()..moveTo(points.first.dx, points.first.dy);
     for (int i = 1; i < points.length; i++) {
       route.lineTo(points[i].dx, points[i].dy);
