@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.7.0 - 2026/10/03
+
+- feat/data 更新地图数据到 20260930
+- fix/navigator 预计算文件不存在时静默回退到实时计算
+
 ## 2.6.0 - 2026/10/03 - 2bd79eaae31e05b31657ea43c707a9f5d698d83c
 
 - refactor/navigator 秒解双人导航
