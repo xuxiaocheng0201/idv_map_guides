@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cachemesh/cachemesh.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
@@ -17,7 +18,11 @@ class WorldsManager<W extends BaseWorldsEnums> {
   WorldsManager({required this.provider});
 
   Future<Uint8List> _loadAssets(String file) async {
-    return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
+    try {
+      return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
+    } on FlutterError {
+      return Uint8List(0); // load failed
+    }
   }
 
   final Cache cache = Cache();
@@ -25,15 +30,20 @@ class WorldsManager<W extends BaseWorldsEnums> {
     final result = await cache.get(
       key: key,
       fetch: () async {
-        final data = await fetch();
-        return Result.success(data);
+        try {
+          final data = await fetch();
+          return Result.success(data);
+        } catch (e, st) {
+          return Result<T>.failure(e, st);
+        }
       },
     );
     switch (result) {
       case Success():
         return result.value;
       case Failure():
-        throw result.error;
+        if (result.stackTrace == null) throw result.error;
+        Error.throwWithStackTrace(result.error, result.stackTrace!);
     }
   }
 
@@ -75,7 +85,9 @@ class WorldsManager<W extends BaseWorldsEnums> {
           return ();
         },
       );
-    } on Exception {
+    } on FormatException {
+      // silently fallback to compute realtime
+    } on RangeError {
       // silently fallback to compute realtime
     }
   }
@@ -96,7 +108,9 @@ class WorldsManager<W extends BaseWorldsEnums> {
           return ();
         },
       );
-    } on Exception {
+    } on FormatException {
+      // silently fallback to compute realtime
+    } on RangeError {
       // silently fallback to compute realtime
     }
   }
