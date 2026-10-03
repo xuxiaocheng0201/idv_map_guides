@@ -65,6 +65,10 @@ class ResourceSet {
     final items = <int>[x];
     return ResourceSet._(items, Object.hashAll(items));
   }
+  factory ResourceSet.unsafeSorted(List<int> sorted) {
+    assert(sorted.isSorted(Comparable.compare));
+    return ResourceSet._(sorted, Object.hashAll(sorted));
+  }
 
   /// 返回包含 [x] 的新集合；若已包含则返回 this
   ResourceSet add(int x) {
@@ -79,6 +83,39 @@ class ResourceSet {
     for (int j = i; j < len; j++) {
       next[j + 1] = _items[j];
     }
+    return ResourceSet._(next, Object.hashAll(next));
+  }
+  /// 返回包含原集合与 [elements] 中所有元素的新集合；
+  /// 若没有新增任何元素，则返回 this。
+  ResourceSet addAll(Iterable<int> elements) {
+    final toAdd = elements.toSet().sorted(Comparable.compare);
+    if (toAdd.isEmpty) return this;
+    final n = _items.length;
+    final m = toAdd.length;
+    final next = <int>[];
+    int i = 0, j = 0;
+    while (i < n && j < m) {
+      final a = _items[i];
+      final b = toAdd[j];
+      if (a < b) {
+        next.add(a);
+        i++;
+      } else if (a > b) {
+        next.add(b);
+        j++;
+      } else {
+        next.add(a);
+        i++;
+        j++;
+      }
+    }
+    while (i < n) {
+      next.add(_items[i++]);
+    }
+    while (j < m) {
+      next.add(toAdd[j++]);
+    }
+    if (next.length == n) return this;
     return ResourceSet._(next, Object.hashAll(next));
   }
 
@@ -364,16 +401,17 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 
   // 5. 计算下界: 剩余地标的 MST + 出口
 
-  final mstCache = EqualityMap<List<int>, int>(ListEquality<int>());
+  final mstCache = <ResourceSet, int>{};
   /// 计算 当前点 + 所有剩余地标 的最小生成树 + 出口
   int? mst(int current, ResourceSet arrived) {
     // 剩余地标（按地标索引升序）
-    final remaining = <int>[];
+    final remainingList = <int>[];
     for (int r = 0; r < k; r++) {
       if (r == current || !arrived.contains(r)) {
-        remaining.add(r);
+        remainingList.add(r);
       }
     }
+    final remaining = ResourceSet.unsafeSorted(remainingList);
     final size = remaining.length;
     // 缓存
     final cached = mstCache[remaining];
@@ -393,8 +431,8 @@ List<Node> navigate(World world, NavigateArguments arguments) {
       total += cost;
       for (int v = 0; v < size; v++) {
         if (visited[v]) continue;
-        final a = distLandmarks[remaining[u]][remaining[v]];
-        final b = distLandmarks[remaining[v]][remaining[u]];
+        final a = distLandmarks[remainingList[u]][remainingList[v]];
+        final b = distLandmarks[remainingList[v]][remainingList[u]];
         final w = minOfTwo(a, b);
         if (w == null) return null; // 图不连通，这种情况极为罕见，所以不缓存
         pq.add((v, w));
@@ -406,7 +444,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     if (exitNodeIndexes.isEmpty) {
       minExit = 0;
     } else {
-      for (final u in remaining) {
+      for (final u in remainingList) {
         final dist = distLandmarkExit[u];
         minExit = minOfTwo(minExit, dist);
       }
