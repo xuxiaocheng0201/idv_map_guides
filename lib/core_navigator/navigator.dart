@@ -135,6 +135,12 @@ abstract class _AStarState with _$AStarState {
   }) = __AStarState;
 }
 
+int? minOfTwo(int? a, int? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return min(a, b);
+}
+
 List<Node> navigate(World world, NavigateArguments arguments) {
   var keyResource = arguments.keyResource;
   if (keyResource != null && !arguments.resources.contains(keyResource.position)) {
@@ -389,7 +395,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
         if (visited[v]) continue;
         final a = distLandmarks[remaining[u]][remaining[v]];
         final b = distLandmarks[remaining[v]][remaining[u]];
-        final w = a == null ? b : (b == null ? a : min(a, b));
+        final w = minOfTwo(a, b);
         if (w == null) return null; // 图不连通，这种情况极为罕见，所以不缓存
         pq.add((v, w));
       }
@@ -402,9 +408,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     } else {
       for (final u in remaining) {
         final dist = distLandmarkExit[u];
-        if (minExit == null || dist < minExit) {
-          minExit = dist;
-        }
+        minExit = minOfTwo(minExit, dist);
       }
     }
     final result = total + minExit!;
@@ -460,7 +464,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     } else {
       collectAfter = distCurrentKey * keyResourceWeight + (distKeyRandom + distRandomExit) * defaultWeight;
     }
-    return collectBefore == null ? collectAfter : (collectAfter == null ? collectBefore : min(collectAfter, collectBefore));
+    return minOfTwo(collectBefore, collectAfter);
   }
 
   // 6. A* / 分支定界搜索
