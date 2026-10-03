@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.6.0 - 2026/10/03
+## 2.6.0 - 2026/10/03 - 2bd79eaae31e05b31657ea43c707a9f5d698d83c
 
 - refactor/navigator 秒解双人导航
 

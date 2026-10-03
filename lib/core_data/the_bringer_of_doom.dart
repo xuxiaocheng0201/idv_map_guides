@@ -184,12 +184,15 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   eastLongZ,
   west1VerticalBookGallery,
   west11,
+  westZ,
   westFlipT,
+  westCross,
   westVertical1BookGallery,
   westVertical1Corner,
   westVertical5Bed,
   westVerticalL,
   westVerticalCornerStair,
+  westStair1,
   westStair;
 
   String get _assets => switch (this) {
@@ -210,12 +213,15 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
     eastLongZ => 'east_long_z',
     west1VerticalBookGallery => 'west_1_vertical_book_gallery',
     west11 => 'west_11',
+    westZ => 'west_z',
     westFlipT => 'west_flip_t',
+    westCross => 'west_cross',
     westVertical1BookGallery => 'west_vertical_1_book_gallery',
     westVertical1Corner => 'west_vertical_1_corner',
     westVertical5Bed => 'west_vertical_5_bed',
     westVerticalL => 'west_vertical_l',
     westVerticalCornerStair => 'west_vertical_corner_stair',
+    westStair1 => 'west_stair_1',
     westStair => 'west_stair',
   };
 }

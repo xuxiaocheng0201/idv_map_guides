@@ -122,12 +122,15 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
       TheBringerOfDoomInsaneWorlds.eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
       TheBringerOfDoomInsaneWorlds.west1VerticalBookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1VerticalBookGallery,
       TheBringerOfDoomInsaneWorlds.west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
+      TheBringerOfDoomInsaneWorlds.westZ => S.of(context).worldTheBringerOfDoomInsaneWestZ,
       TheBringerOfDoomInsaneWorlds.westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
+      TheBringerOfDoomInsaneWorlds.westCross => S.of(context).worldTheBringerOfDoomInsaneWestCross,
       TheBringerOfDoomInsaneWorlds.westVertical1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWestVertical1BookGallery,
       TheBringerOfDoomInsaneWorlds.westVertical1Corner => S.of(context).worldTheBringerOfDoomInsaneWestVertical1Corner,
       TheBringerOfDoomInsaneWorlds.westVertical5Bed => S.of(context).worldTheBringerOfDoomInsaneWestVertical5Bed,
       TheBringerOfDoomInsaneWorlds.westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
-      TheBringerOfDoomInsaneWorlds.westVerticalCornerStair => S.of(context).worldTheBringerOfDoomInsaneWestVerticalCornorStair,
+      TheBringerOfDoomInsaneWorlds.westVerticalCornerStair => S.of(context).worldTheBringerOfDoomInsaneWestVerticalCornerStair,
+      TheBringerOfDoomInsaneWorlds.westStair1 => S.of(context).worldTheBringerOfDoomInsaneWestStair1,
       TheBringerOfDoomInsaneWorlds.westStair => S.of(context).worldTheBringerOfDoomInsaneWestStair,
     };
   }
