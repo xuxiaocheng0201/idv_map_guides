@@ -466,43 +466,26 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     final keyLandmark = keyPositionLandmark!;
     assert(!arrived.contains(keyLandmark));
     assert(current != keyLandmark);
-    // 需要考虑传送
-    if (arrived.length >= k - 1) { // 只剩关键资源点未到达
-      // 直接走到关键资源点，再直接到出口
-      final distCurrentKey = distLandmarks[current][keyLandmark];
-      if (distCurrentKey == null) return null;
-      final distKeyExit = distLandmarkExit[keyLandmark];
-      return distCurrentKey * keyResourceWeight + distKeyExit * defaultWeight;
-    }
-    // 选择一个剩余资源，取在传送前收集和在传送后收集得最小代价
-    // 即 min(起点+随机资源点+关键资源点(传送)+出口, 起点+关键资源点(传送)+随机资源点+出口)
-    int? random;
-    for (int r = 0; r < k; r++) {
-      if (arrived.contains(r)) continue;
-      if (r == keyLandmark) continue;
-      random = r;
-      break;
-    }
-    final landmark = random!;
-    final distCurrentRandom = distLandmarks[current][landmark];
-    final distRandomKey = distLandmarks[landmark][keyLandmark];
-    final distKeyExit = distLandmarkExit[keyLandmark];
-    final int? collectBefore;
-    if (distCurrentRandom == null || distRandomKey == null) {
-      collectBefore = null;
-    } else {
-      collectBefore = (distCurrentRandom + distRandomKey) * keyResourceWeight + distKeyExit * defaultWeight;
-    }
+    // 直接走到关键资源点，再直接到出口
     final distCurrentKey = distLandmarks[current][keyLandmark];
-    final distKeyRandom = distLandmarks[keyLandmark][landmark];
-    final distRandomExit = distLandmarkExit[landmark];
-    final int? collectAfter;
-    if (distCurrentKey == null || distKeyRandom == null) {
-      collectAfter = null;
-    } else {
-      collectAfter = distCurrentKey * keyResourceWeight + (distKeyRandom + distRandomExit) * defaultWeight;
+    if (distCurrentKey == null) return null;
+    final distKeyExit = distLandmarkExit[keyLandmark];
+    int lb = distCurrentKey * keyResourceWeight + distKeyExit * defaultWeight;
+    // 对每个尚未访问的普通资源点，比较"传送前收集"与"传送后收集"的较大下界
+    // 即 i in k max(min(起点+资源点i+关键资源点(传送)+出口, 起点+关键资源点(传送)+资源点i+出口))
+    for (int r = 0; r < k; r++) {
+      if (r == keyLandmark || arrived.contains(r)) continue;
+      final distCurrentR = distLandmarks[current][r];
+      final distRKey = distLandmarks[r][keyLandmark];
+      final distKeyR = distLandmarks[keyLandmark][r];
+      final distRExit = distLandmarkExit[r];
+      final collectBefore = (distCurrentR == null || distRKey == null) ? null : (distCurrentR + distRKey) * keyResourceWeight + distKeyExit * defaultWeight;
+      final collectAfter = distKeyR == null ? null : distCurrentKey * keyResourceWeight + (distKeyR + distRExit) * defaultWeight;
+      final v = minOfTwo(collectBefore, collectAfter);
+      if (v == null) return null; // 图不连通
+      if (v > lb) lb = v;
     }
-    return minOfTwo(collectBefore, collectAfter);
+    return lb;
   }
 
   // 6. A* / 分支定界搜索
