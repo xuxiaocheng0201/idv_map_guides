@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.5.1 - 2026/09/30
+## 2.6.0 - 2026/10/03
+
+- refactor/navigator 秒解双人导航
+
+## 2.5.1 - 2026/09/30 - 7ee70c37bf1a9f7daf851612cb73c7c51bb0a84b
 
 - fix 地下室corner改为必刷点
 
