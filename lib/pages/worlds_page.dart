@@ -29,6 +29,12 @@ enum _NavigateEditMode {
   start2,
 }
 
+enum _NavigatePathView {
+  both,
+  path1,
+  path2,
+}
+
 class WorldListPage extends StatefulWidget {
   const WorldListPage({super.key});
 
@@ -51,8 +57,9 @@ class _WorldListPageState extends State<WorldListPage> {
 
   bool _navigateMode = true;
   bool _showNavigateProperties = true;
-  _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
   bool _navigateDouble = false;
+  _NavigateEditMode _navigateEditMode = _NavigateEditMode.none;
+  _NavigatePathView _navigatePathView = _NavigatePathView.both;
   final Map<BaseWorldsEnums, UnionNavigateArguments> _navigateArguments = <BaseWorldsEnums, UnionNavigateArguments>{};
 
   @override
@@ -183,13 +190,15 @@ class _WorldListPageState extends State<WorldListPage> {
                 }
                 final loading = asyncSnapshot.connectionState != ConnectionState.done;
                 Widget buildLayerPaint(GroundLayer layer, bool auto) {
+                  final hidePath1 = _navigateDouble && _navigatePathView == _NavigatePathView.path2;
+                  final hidePath2 = _navigateDouble && _navigatePathView == _NavigatePathView.path1;
                   return _WorldLayerPaint(
                     world: world,
                     layer: layer,
                     auto: auto,
                     resources: navigateArguments?.resources ?? <Node>{},
-                    path: path1,
-                    path2: path2,
+                    path: hidePath1 ? null : path1,
+                    path2: hidePath2 ? null : path2,
                     onCellTap: _navigateMode ? (tapLayer, x, y) => _handleNavigateCellTap(world, tapLayer, x, y) : null,
                   );
                 }
@@ -265,7 +274,6 @@ class _WorldListPageState extends State<WorldListPage> {
                             child: _buildNavigateProperties(
                               context,
                               world,
-                              navigateArguments,
                               path1,
                               path2,
                               loading,
@@ -348,215 +356,262 @@ class _WorldListPageState extends State<WorldListPage> {
     }
   }
 
-  Widget _buildNavigateProperties(BuildContext context, World world, UnionNavigateArguments? currentArguments, List<Node>? path1, List<Node>? path2, bool loading) {
+  Widget _buildNavigateProperties(BuildContext context, World world, List<Node>? path1, List<Node>? path2, bool loading) {
     final origin = UnionNavigateArguments.fromProvider(provider: manager.provider, world: world, setting: _defaultNavigateSettings, defaultEntrance: entrance);
     final current = _navigateArguments[_currentWorld]!;
+    final editingStart = _navigateEditMode == _NavigateEditMode.start;
+    final editingStart2 = _navigateEditMode == _NavigateEditMode.start2;
+    final editingResource = _navigateEditMode == _NavigateEditMode.resource;
+    void update(UnionNavigateArguments arguments) => setState(() => _navigateArguments[_currentWorld] = arguments);
+    void toggleEdit(_NavigateEditMode mode) => setState(() => _navigateEditMode = _navigateEditMode == mode ? _NavigateEditMode.none : mode);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(S.of(context).worldsNavigateSetting),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         _buildNavigateCard(
           context,
-          selected: false,
           icon: Icons.people_alt,
           title: S.of(context).worldsNavigateDoubleMode,
-          headerAction: Switch(
+          trailing: Switch(
             value: _navigateDouble,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onChanged: (value) => setState(() => _navigateDouble = value),
           ),
         ),
-        const SizedBox(height: 8),
-        Builder(
-          builder: (context) {
-            final isStartEditing = _navigateEditMode == _NavigateEditMode.start;
-            final start = current.start;
-            return _buildNavigateCard(
-              context,
-              selected: isStartEditing,
-              icon: Icons.flag,
-              title: S.of(context).worldsNavigateStartNode,
-              body: Text(S.of(context).worldsNavigateStartNodeValue(start.layer.label(context), start.x, start.y)),
-              headerAction: (isStartEditing ? FilledButton.icon : OutlinedButton.icon)(
-                onPressed: () => setState(() {
-                  _navigateEditMode = isStartEditing ? _NavigateEditMode.none : _NavigateEditMode.start;
-                }),
-                icon: const Icon(Icons.touch_app),
-                label: Text(isStartEditing
-                    ? S.of(context).worldsNavigateStartNodeEditExit
-                    : S.of(context).worldsNavigateStartNodeEdit),
-              ),
-              action: Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _navigateArguments[_currentWorld] = current.copyWith(start: origin.start);
-                      });
-                    },
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(S.of(context).worldsNavigateReset),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        if (_navigateDouble) ...[
-          const SizedBox(height: 8),
-          Builder(
-            builder: (context) {
-              final isStart2Editing = _navigateEditMode == _NavigateEditMode.start2;
-              final start2 = current.start2;
-              return _buildNavigateCard(
-                context,
-                selected: isStart2Editing,
-                icon: Icons.flag,
-                title: S.of(context).worldsNavigateDoubleStartNode,
-                body: Text(S.of(context).worldsNavigateStartNodeValue(start2.layer.label(context), start2.x, start2.y)),
-                headerAction: (isStart2Editing ? FilledButton.icon : OutlinedButton.icon)(
-                  onPressed: () => setState(() {
-                    _navigateEditMode = isStart2Editing ? _NavigateEditMode.none : _NavigateEditMode.start2;
-                  }),
-                  icon: const Icon(Icons.touch_app),
-                  label: Text(isStart2Editing
-                      ? S.of(context).worldsNavigateStartNodeEditExit
-                      : S.of(context).worldsNavigateStartNodeEdit),
-                ),
-                action: Row(
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _navigateArguments[_currentWorld] = current.copyWith(start2: origin.start2);
-                        });
-                      },
-                      icon: const Icon(Icons.restart_alt),
-                      label: Text(S.of(context).worldsNavigateReset),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-        const SizedBox(height: 8),
-        Builder(
-          builder: (context) {
-            final isResourceEditing = _navigateEditMode == _NavigateEditMode.resource;
-            final resources = current.resources;
-            return _buildNavigateCard(
-              context,
-              selected: isResourceEditing,
-              icon: Icons.inventory,
-              title: S.of(context).worldsNavigateResource,
-              body: Text(S.of(context).worldsNavigateResourceValue(resources.length)),
-              headerAction: (isResourceEditing ? FilledButton.icon : OutlinedButton.icon)(
-                onPressed: () => setState(() {
-                  _navigateEditMode = isResourceEditing ? _NavigateEditMode.none : _NavigateEditMode.resource;
-                }),
-                icon: const Icon(Icons.touch_app),
-                label: Text(isResourceEditing
-                    ? S.of(context).worldsNavigateResourceEditExit
-                    : S.of(context).worldsNavigateResourceEdit),
-              ),
-              action: Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      _navigateArguments[_currentWorld] = current.copyWith(resources: origin.resources);
-                    }),
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(S.of(context).worldsNavigateReset),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      _navigateArguments[_currentWorld] = current.copyWith(resources: <Node>{});
-                    }),
-                    icon: const Icon(Icons.clear_all),
-                    label: Text(S.of(context).worldsNavigateResourceClear),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        if (origin.keyResource != null) ...[
-          const SizedBox(height: 8),
+        if (_navigateDouble)
           _buildNavigateCard(
             context,
-            selected: false,
-            icon: Icons.key,
-            title: S.of(context).worldsNavigateKeyResource,
-            headerAction: Switch(
-              value: current.keyResource != null,
-              onChanged: (value) => setState(() {
-                _navigateArguments[_currentWorld] = current.copyWith(keyResource: value ? origin.keyResource : null);
-              }),
+            icon: Icons.visibility_outlined,
+            title: S.of(context).worldsNavigatePathView,
+            trailing: SegmentedButton<_NavigatePathView>(
+              selected: {_navigatePathView},
+              showSelectedIcon: false,
+              emptySelectionAllowed: false,
+              multiSelectionEnabled: false,
+              segments: const [
+                ButtonSegment(
+                  value: _NavigatePathView.path1,
+                  label: Text('1'),
+                ),
+                ButtonSegment(
+                  value: _NavigatePathView.both,
+                  label: Text('1+2'),
+                ),
+                ButtonSegment(
+                  value: _NavigatePathView.path2,
+                  label: Text('2'),
+                ),
+              ],
+              onSelectionChanged: (s) => setState(() => _navigatePathView = s.first),
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                minimumSize: WidgetStatePropertyAll(Size(28, 28)),
+                padding: WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                ),
+              ),
             ),
           ),
-        ],
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
-          selected: false,
+          icon: Icons.flag,
+          title: S.of(context).worldsNavigateStartNode,
+          value: S.of(context).worldsNavigateStartNodeValue(
+            current.start.layer.label(context),
+            current.start.x,
+            current.start.y,
+          ),
+          selected: editingStart,
+          actions: [
+            _buildIconAction(
+              context,
+              icon: editingStart ? Icons.check : Icons.touch_app,
+              tooltip: editingStart
+                ? S.of(context).worldsNavigateStartNodeEditExit
+                : S.of(context).worldsNavigateStartNodeEdit,
+              onPressed: () => toggleEdit(_NavigateEditMode.start),
+              selected: editingStart,
+            ),
+            _buildIconAction(
+              context,
+              icon: Icons.restart_alt,
+              tooltip: S.of(context).worldsNavigateReset,
+              onPressed: () => update(current.copyWith(start: origin.start)),
+            ),
+          ],
+        ),
+        if (_navigateDouble)
+          _buildNavigateCard(
+            context,
+            icon: Icons.flag_outlined,
+            title: S.of(context).worldsNavigateDoubleStartNode,
+            value: S.of(context).worldsNavigateStartNodeValue(
+              current.start2.layer.label(context),
+              current.start2.x,
+              current.start2.y,
+            ),
+            selected: editingStart2,
+            actions: [
+              _buildIconAction(
+                context,
+                icon: editingStart2 ? Icons.check : Icons.touch_app,
+                tooltip: editingStart2
+                  ? S.of(context).worldsNavigateStartNodeEditExit
+                  : S.of(context).worldsNavigateStartNodeEdit,
+                onPressed: () => toggleEdit(_NavigateEditMode.start2),
+                selected: editingStart2,
+              ),
+              _buildIconAction(
+                context,
+                icon: Icons.restart_alt,
+                tooltip: S.of(context).worldsNavigateReset,
+                onPressed: () => update(current.copyWith(start2: origin.start2)),
+              ),
+            ],
+          ),
+        _buildNavigateCard(
+          context,
+          icon: Icons.inventory,
+          title: S.of(context).worldsNavigateResource,
+          value: S.of(context).worldsNavigateResourceValue(current.resources.length),
+          selected: editingResource,
+          actions: [
+            _buildIconAction(
+              context,
+              icon: editingResource ? Icons.check : Icons.touch_app,
+              tooltip: editingResource
+                ? S.of(context).worldsNavigateResourceEditExit
+                : S.of(context).worldsNavigateResourceEdit,
+              onPressed: () => toggleEdit(_NavigateEditMode.resource),
+              selected: editingResource,
+            ),
+            _buildIconAction(
+              context,
+              icon: Icons.restart_alt,
+              tooltip: S.of(context).worldsNavigateReset,
+              onPressed: () => update(current.copyWith(resources: origin.resources)),
+            ),
+            _buildIconAction(
+              context,
+              icon: Icons.clear_all,
+              tooltip: S.of(context).worldsNavigateResourceClear,
+              onPressed: () => update(current.copyWith(resources: <Node>{})),
+            ),
+          ],
+        ),
+        if (origin.keyResource != null)
+          _buildNavigateCard(
+            context,
+            icon: Icons.key,
+            title: S.of(context).worldsNavigateKeyResource,
+            trailing: Switch(
+              value: current.keyResource != null,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (value) => update(
+                current.copyWith(keyResource: value ? origin.keyResource : null),
+              ),
+            ),
+          ),
+        _buildNavigateCard(
+          context,
           icon: Icons.exit_to_app,
           title: S.of(context).worldsNavigateExit,
-          headerAction: Switch(
+          trailing: Switch(
             value: current.exits.isNotEmpty,
-            onChanged: (value) => setState(() {
-              _navigateArguments[_currentWorld] = current.copyWith(exits: value ? origin.exits : <Node>{});
-            }),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: (value) => update(
+              current.copyWith(exits: value ? origin.exits : <Node>{}),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
-          selected: false,
           icon: Icons.route_outlined,
           title: S.of(context).worldsNavigatePathLength,
-          headerAction: SizedBox(
-            height: 36,
-            child: loading
-                ? const CircularProgressIndicator(strokeWidth: 2)
-                : _navigateDouble
-                ? Text('${path1?.length ?? 0} ${path2?.length ?? 0}')
-                : Text('${path1?.length ?? 0}'),
-          ),
+          value: loading ? null : _navigateDouble
+            ? '${path1?.length ?? 0} / ${path2?.length ?? 0}'
+            : '${path1?.length ?? 0}',
+          trailing: loading ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ) : null,
         ),
       ],
     );
   }
 
+  Widget _buildIconAction(BuildContext context, {
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    bool selected = false,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18),
+      style: IconButton.styleFrom(
+        fixedSize: const Size(30, 30),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        foregroundColor: selected ? scheme.primary : scheme.onSurfaceVariant,
+        backgroundColor: selected ? scheme.primaryContainer : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+    );
+  }
+
   Widget _buildNavigateCard(BuildContext context, {
-    required bool selected,
     required IconData icon,
     required String title,
-    Widget? body,
-    Widget? headerAction,
-    Widget? action,
+    String? value,
+    bool selected = false,
+    Widget? trailing,
+    List<Widget> actions = const <Widget>[],
   }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(icon, color: selected ? Theme.of(context).colorScheme.primary : null),
-              const SizedBox(width: 8),
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              ?headerAction,
-            ],
+          Icon(icon, size: 18, color: selected ? scheme.primary : scheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : null,
+                    ),
+                  ),
+                  if (value != null)
+                    TextSpan(
+                      text: '  $value',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          if (body != null) ...[
-            const SizedBox(height: 8),
-            body,
+          if (actions.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            for (final action in actions) action,
           ],
-          if (action != null) ...[
-            const SizedBox(height: 8),
-            action,
+          if (trailing != null) ...[
+            const SizedBox(width: 4),
+            trailing,
           ],
         ],
       ),

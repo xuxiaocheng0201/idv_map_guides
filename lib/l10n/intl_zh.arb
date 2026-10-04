@@ -111,6 +111,7 @@
   "worldsNavigateSetting": "导航设置",
   "worldsNavigateEditing": "编辑中",
   "worldsNavigateReset": "重置",
+  "worldsNavigatePathView": "查看路线",
   "worldsNavigateStartNode": "起点",
   "worldsNavigateStartNodeValue": "当前：{layer} ({x}, {y})",
   "worldsNavigateStartNodeEdit": "选择起点",
