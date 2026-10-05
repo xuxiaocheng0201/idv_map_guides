@@ -12,20 +12,17 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:toastification/toastification.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   if (kDebugMode) {
     runApp(const MyApp());
   } else {
     const dsn = String.fromEnvironment('SENTRY_DSN');
     await SentryFlutter.init((options) {
-        options.dsn = dsn;
-        options.sendDefaultPii = false;
-        options.sampleRate = 1.0;
-        options.replay.sessionSampleRate = 0.1;
-        options.replay.onErrorSampleRate = 1.0;
-      },
-      appRunner: () => runApp(SentryWidget(child: const MyApp())),
-    );
+      options.dsn = dsn;
+      options.sendDefaultPii = false;
+      options.sampleRate = 1.0;
+      options.replay.sessionSampleRate = 0.1;
+      options.replay.onErrorSampleRate = 1.0;
+    }, appRunner: () => runApp(const MyApp()));
   }
 }
 
@@ -55,6 +52,9 @@ class MyApp extends StatelessWidget {
             if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
             if (kDebugMode) Routes.editorWorld: (context) => WorldEditorPage(),
           },
+          navigatorObservers: [
+            SentryNavigatorObserver(),
+          ],
         ),
       ),
     );
