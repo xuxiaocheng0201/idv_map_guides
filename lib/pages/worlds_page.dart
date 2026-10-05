@@ -13,6 +13,7 @@ import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class WorldListPageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
@@ -84,6 +85,11 @@ class _WorldListPageState extends State<WorldListPage> {
     _defaultNavigateSettings = argument.settings;
     _navigateDouble = _defaultNavigateSettings.useDouble;
     _currentWorld = worlds.first;
+    Sentry.metrics.count('worlds', 1, attributes: {
+      'type': SentryAttribute.string(manager.provider.type.label(context)),
+      'difficulty': SentryAttribute.string(manager.provider.difficulty.label(context)),
+      'map': SentryAttribute.string(worldLabel(_currentWorld, context)),
+    });
   }
 
   @override

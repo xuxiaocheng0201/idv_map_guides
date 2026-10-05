@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.9.0 - 2026/10/05
+
+- feat 添加 sentry
+- feat 支持进入编辑页
+
 ## 2.8.0 - 2026/10/04 - d26babef17eed1a4ab778500c9e4ae1489a25f3b
 
 - feat 支持只显示双人路线中的某一条
