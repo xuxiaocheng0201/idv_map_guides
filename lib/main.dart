@@ -18,11 +18,12 @@ void main() async {
     const dsn = String.fromEnvironment('SENTRY_DSN');
     await SentryFlutter.init((options) {
       options.dsn = dsn;
-      options.sendDefaultPii = false;
+      options.sendDefaultPii = true;
       options.sampleRate = 1.0;
+      options.attachScreenshot = true;
       options.replay.sessionSampleRate = 0.1;
       options.replay.onErrorSampleRate = 1.0;
-    }, appRunner: () => runApp(const MyApp()));
+    }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
   }
 }
 
