@@ -115,23 +115,32 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
 
   Widget _buildNavigateProperties(BuildContext context) {
     final settings = _defaultNavigateSettings;
+    const ButtonStyle compactSegmentStyle = ButtonStyle(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      minimumSize: WidgetStatePropertyAll(Size.zero),
+      padding: WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      ),
+      textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+    );
     return Column(
       children: [
         Text(
           S.of(context).entrancesNavigateSetting,
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
         _buildNavigateCard(
           context,
           icon: Icons.people_alt,
           title: S.of(context).worldsNavigateDoubleMode,
-          body: Switch(
+          trailing: Switch(
             value: settings.useDouble,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useDouble: value)),
           ),
         ),
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
           icon: Icons.flag,
@@ -147,13 +156,13 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             emptySelectionAllowed: false,
             multiSelectionEnabled: false,
             onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(startEntrance: value.first)),
+            style: compactSegmentStyle,
           ),
         ),
-        if (settings.useDouble) ...[
-          const SizedBox(height: 8),
+        if (settings.useDouble)
           _buildNavigateCard(
             context,
-            icon: Icons.flag,
+            icon: Icons.flag_outlined,
             title: S.of(context).worldsNavigateDoubleStartNode,
             body: SegmentedButton<EntranceType?>(
               segments: [
@@ -166,10 +175,9 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
               emptySelectionAllowed: false,
               multiSelectionEnabled: false,
               onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(startEntrance2: value.first)),
+              style: compactSegmentStyle,
             ),
           ),
-        ],
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
           icon: Icons.inventory,
@@ -181,26 +189,29 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             ],
             selected: {settings.useResources},
             showSelectedIcon: false,
+            emptySelectionAllowed: false,
+            multiSelectionEnabled: false,
             onSelectionChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useResources: value.first)),
+            style: compactSegmentStyle,
           ),
         ),
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
           icon: Icons.key,
           title: S.of(context).worldsNavigateKeyResource,
-          body: Switch(
+          trailing: Switch(
             value: settings.useKeyResource,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useKeyResource: value)),
           ),
         ),
-        const SizedBox(height: 8),
         _buildNavigateCard(
           context,
           icon: Icons.exit_to_app,
           title: S.of(context).worldsNavigateExit,
-          body: Switch(
+          trailing: Switch(
             value: settings.useExits,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onChanged: (value) => setState(() => _defaultNavigateSettings = settings.copyWith(useExits: value)),
           ),
         ),
@@ -211,29 +222,56 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   Widget _buildNavigateCard(BuildContext context, {
     required IconData icon,
     required String title,
+    String? value,
+    bool selected = false,
+    Widget? trailing,
     Widget? body,
+    List<Widget> actions = const <Widget>[],
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall,
+    final header = Row(
+      children: [
+        Icon(icon, size: 18, color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.w600 : null,
+                  ),
                 ),
-              ),
-            ],
+                if (value != null)
+                  TextSpan(
+                    text: '  $value',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          if (body != null) ...[
-            const SizedBox(height: 8),
-            body,
-          ],
+        ),
+        if (actions.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          for (final action in actions) action,
+        ],
+        if (trailing != null) ...[
+          const SizedBox(width: 4),
+          trailing,
+        ],
+      ],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: body == null ? header : Column(
+        children: [
+          header,
+          const SizedBox(height: 6),
+          body,
         ],
       ),
     );

@@ -109,17 +109,25 @@ class _WorldListPageState extends State<WorldListPage> {
           title: Text(S.of(context).worldsShowMap),
           centerTitle: true,
           actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: CheckboxMenuButton(
-                value: _navigateMode,
-                onChanged: (value) => setState(() => _navigateMode = value!),
-                child: Text(S.of(context).worldsNavigateMode),
-              ),
+            IconButton(
+              onPressed: () => setState(() => _navigateMode = !_navigateMode),
+              icon: const Icon(Icons.navigation_outlined),
+              selectedIcon: const Icon(Icons.navigation),
+              isSelected: _navigateMode,
+              tooltip: S.of(context).worldsNavigateMode,
             ),
             IconButton(
               onPressed: _navigateMode ? () => setState(() => _showNavigateProperties = !_showNavigateProperties) : null,
-              icon: Icon(_showNavigateProperties ? Icons.settings : Icons.settings_outlined),
+              icon: const Icon(Icons.settings_outlined),
+              selectedIcon: const Icon(Icons.settings),
+              isSelected: _showNavigateProperties,
+              tooltip: S.of(context).worldsNavigateSetting,
+            ),
+            IconButton(
+              onPressed: () => setState(() => _isFullscreen = !_isFullscreen),
+              icon: Icon(_isFullscreen ? Icons.grid_view : Icons.fullscreen),
+              isSelected: _isFullscreen,
+              tooltip: _isFullscreen ? S.of(context).worldsFullscreenExit : S.of(context).worldsFullscreen,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -138,14 +146,6 @@ class _WorldListPageState extends State<WorldListPage> {
                 onSelectionChanged: (w) => setState(() {
                   _currentWorld = w.first;
                 }),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: IconButton(
-                onPressed: () => setState(() => _isFullscreen = !_isFullscreen),
-                icon: Icon(_isFullscreen ? Icons.grid_view : Icons.fullscreen),
-                tooltip: _isFullscreen ? S.of(context).worldsFullscreenExit : S.of(context).worldsFullscreen,
               ),
             ),
           ],
@@ -234,7 +234,9 @@ class _WorldListPageState extends State<WorldListPage> {
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: buildLayerPaint(layer, false),
+                                child: InteractiveViewer(
+                                  child: buildLayerPaint(layer, false),
+                                ),
                               ),
                             ),
                           ],
@@ -580,13 +582,11 @@ class _WorldListPageState extends State<WorldListPage> {
     Widget? trailing,
     List<Widget> actions = const <Widget>[],
   }) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: selected ? scheme.primary : scheme.onSurfaceVariant),
+          Icon(icon, size: 18, color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text.rich(
@@ -594,15 +594,15 @@ class _WorldListPageState extends State<WorldListPage> {
                 children: [
                   TextSpan(
                     text: title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: selected ? FontWeight.w600 : null,
                     ),
                   ),
                   if (value != null)
                     TextSpan(
                       text: '  $value',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                 ],
