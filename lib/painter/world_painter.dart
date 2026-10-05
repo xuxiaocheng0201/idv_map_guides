@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/main.dart';
 import 'package:idv_map_guides/painter/path_drawer.dart';
 
 const backgroundColor = Color(0xFF223344);
@@ -25,7 +26,7 @@ void drawBackground(Canvas canvas, int width, int height, double cellSize) {
 
 void drawCell(Canvas canvas, Rect rect, bool isCorridor, double cellSize, bool isSuspicious) {
   var color = isCorridor ? corridorColor : roomColor;
-  if (kDebugMode && isSuspicious) {
+  if (editorMode.value && isSuspicious) {
     color = Color.alphaBlend(suspiciousColor.withValues(alpha: 0.2), color);
   }
   canvas.drawRect(rect, Paint()..color = color);

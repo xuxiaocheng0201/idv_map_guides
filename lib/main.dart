@@ -26,6 +26,8 @@ void main() async {
   }
 }
 
+final editorMode = ValueNotifier<bool>(false);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -44,13 +46,19 @@ class MyApp extends StatelessWidget {
           supportedLocales: S.delegate.supportedLocales,
           onGenerateTitle: (context) => S.of(context).title,
           initialRoute: Routes.home,
-          routes: {
-            Routes.home: (context) => const HomePage(),
-            Routes.entrances: (context) => const EntranceFeaturePage(),
-            Routes.worlds: (context) => const WorldListPage(),
-
-            if (kDebugMode) Routes.editorStructure: (context) => StructuresEditorPage(),
-            if (kDebugMode) Routes.editorWorld: (context) => WorldEditorPage(),
+          onGenerateRoute: (settings) {
+            final routes = <String, WidgetBuilder>{
+              Routes.home: (context) => const HomePage(),
+              Routes.entrances: (context) => const EntranceFeaturePage(),
+              Routes.worlds: (context) => const WorldListPage(),
+              if (editorMode.value) Routes.editorStructure: (context) => const StructuresEditorPage(),
+              if (editorMode.value) Routes.editorWorld: (context) => const WorldEditorPage(),
+            };
+            final builder = routes[settings.name] ?? routes[Routes.home]!;
+            return MaterialPageRoute(
+              settings: settings,
+              builder: builder,
+            );
           },
           navigatorObservers: [
             SentryNavigatorObserver(),
