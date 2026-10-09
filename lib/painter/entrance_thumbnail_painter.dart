@@ -4,7 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
-import 'package:idv_map_guides/painter/world_painter.dart';
+import 'package:idv_map_guides/painter/painter_common.dart';
 
 class EntranceThumbnailPainter extends CustomPainter {
   final World world;
@@ -31,8 +31,7 @@ class EntranceThumbnailPainter extends CustomPainter {
   }) {
     assert(square.isOdd, 'square must be odd');
     final radius = square ~/ 2;
-    var minX = -radius, maxX = radius, minY = -radius, maxY = radius;
-    final adjusted = _adjustOffsets(world, entrance, minX, maxX, minY, maxY);
+    final adjusted = _adjustOffsets(world, entrance, -radius, radius, -radius, radius);
     return EntranceThumbnailPainter._(
       world: world,
       entrance: entrance,
@@ -50,54 +49,33 @@ class EntranceThumbnailPainter extends CustomPainter {
     final cellSize = min(size.width / width, size.height / height);
     drawBackground(canvas, width, height, cellSize);
 
-    final entrancePos = world.entrances[entrance]!.position;
-    final ex = entrancePos.x;
-    final ey = entrancePos.y;
+    final entranceNode = world.entrances[entrance]!;
+    final entrancePos = entranceNode.position;
+    final layer = entrance.layer;
 
-    for (int dx = offsetMinX; dx <= offsetMaxX; dx++) {
-      for (int dy = offsetMinY; dy <= offsetMaxY; dy++) {
-        final worldX = ex + dx;
-        final worldY = ey + dy;
-        final cell = world.cell(entrance.layer, worldX, worldY);
-        if (cell == null || cell.structureId == null) continue;
+    final minX = entrancePos.x + offsetMinX;
+    final minY = entrancePos.y + offsetMinY;
+    final maxX = entrancePos.x + offsetMaxX;
+    final maxY = entrancePos.y + offsetMaxY;
 
-        final rect = Rect.fromLTWH(
-          (dx - offsetMinX) * cellSize,
-          (offsetMaxY - dy) * cellSize,
-          cellSize,
-          cellSize,
-        );
+    final windowRect = Rect.fromLTWH(0, 0, width * cellSize, height * cellSize);
 
-        drawCell(canvas, rect, cell.isCorridor, cellSize, false);
-        if (cell.info.isStair != null) {
-          drawStair(canvas, rect, cell.info.isStair!, cellSize);
-        }
-        for (final direction in Direction.values) {
-          switch (cell.info.getEdgeType(direction)) {
-            case EdgeType.nothing:
-              final (dx2, dy2) = direction.dxy;
-              final neighbor = world.cell(entrance.layer, worldX + dx2, worldY + dy2);
-              if (neighbor == null || neighbor.structureId != cell.structureId) {
-                drawWall(canvas, rect, direction, cellSize);
-              }
-              break;
-            case EdgeType.door:
-              drawDoor(canvas, rect, direction, cellSize);
-              break;
-            case EdgeType.innerWall:
-              drawWall(canvas, rect, direction, cellSize);
-              break;
-            case EdgeType.hole:
-              drawHole(canvas, rect, direction, cellSize);
-              break;
-          }
-        }
+    Offset pointOffset(double x, double y) =>
+        Offset((x - minX) * cellSize, (maxY - y + 1) * cellSize);
+    Rect cellRect(int x, int y) =>
+        Rect.fromLTWH((x - minX) * cellSize, (maxY - y) * cellSize, cellSize, cellSize);
 
-        if (entrancePos == Position(x: worldX, y: worldY)) {
+    paintLayerFills(canvas, world, layer, cellSize, pointOffset, cellRect, clip: windowRect);
+    paintLayerOutlines(canvas, world, layer, cellSize, pointOffset, clip: windowRect);
+    paintLayerCellEdges(canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY);
+    paintLayerCellDecorations(
+      canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY,
+      onCell: (x, y, rect) {
+        if (entrancePos.x == x && entrancePos.y == y) {
           drawEntrance(canvas, rect, cellSize);
         }
-      }
-    }
+      },
+    );
   }
 
   @override
@@ -134,13 +112,13 @@ class EntranceThumbnailPainter extends CustomPainter {
   }
 
   static (int, int, int, int) _adjustOffsets(
-      World world,
-      EntranceType entrance,
-      int minX,
-      int maxX,
-      int minY,
-      int maxY,
-      ) {
+    World world,
+    EntranceType entrance,
+    int minX,
+    int maxX,
+    int minY,
+    int maxY,
+  ) {
     final pos = world.entrances[entrance]!;
     final layer = entrance.layer;
 

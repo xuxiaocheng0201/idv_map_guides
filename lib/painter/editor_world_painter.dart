@@ -3,35 +3,7 @@ import 'dart:math';
 import 'package:flutter/rendering.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
-import 'package:idv_map_guides/painter/editor_structure_painter.dart';
-import 'package:idv_map_guides/painter/world_painter.dart';
-
-void drawStructureSelectedBoarder(Canvas canvas, Rect rect, Direction direction, double cellSize) {
-  final Paint paint = Paint()
-    ..color = selectedBorderColor
-    ..strokeWidth = cellSize * 0.02;
-  final Offset p1;
-  final Offset p2;
-  switch (direction) {
-    case Direction.north:
-      p1 = rect.topLeft;
-      p2 = rect.topRight;
-      break;
-    case Direction.south:
-      p1 = rect.bottomLeft;
-      p2 = rect.bottomRight;
-      break;
-    case Direction.east:
-      p1 = rect.topRight;
-      p2 = rect.bottomRight;
-      break;
-    case Direction.west:
-      p1 = rect.topLeft;
-      p2 = rect.bottomLeft;
-      break;
-  }
-  canvas.drawLine(p1, p2, paint);
-}
+import 'package:idv_map_guides/painter/painter_common.dart';
 
 class EditorWorldPainter extends CustomPainter {
   final World world;
@@ -48,66 +20,33 @@ class EditorWorldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cellSize = min(size.width / world.width, size.height / world.height);
     drawBackground(canvas, world.width, world.height, cellSize);
-    for (int x = world.minX; x <= world.maxX; x++) {
-      for (int y = world.minY; y <= world.maxY; y++) {
-        final cell = world.cell(layer, x, y);
-        if (cell == null || cell.structureId == null) continue;
-        final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
-        drawCell(canvas, rect, cell.isCorridor, cellSize, world.suspiciousStructures.contains(cell.structureId));
-        if (cell.info.isResource) {
-          drawResource(canvas, rect, cellSize);
-        }
-        if (cell.info.isStair != null) {
-          drawStair(canvas, rect, cell.info.isStair!, cellSize);
-        }
-// == Add Start ==
-      }
-    }
+
+    Offset pointOffset(double x, double y) =>
+        Offset((x - world.minX) * cellSize, (world.maxY - y + 1) * cellSize);
+    Rect cellRect(int x, int y) =>
+        Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY - y) * cellSize, cellSize, cellSize);
+
+    paintLayerFills(canvas, world, layer, cellSize, pointOffset, cellRect);
     drawGrid(canvas, world.width, world.height, cellSize);
-    for (int x = world.minX; x <= world.maxX; x++) {
-      for (int y = world.minY; y <= world.maxY; y++) {
-        final cell = world.cell(layer, x, y)!;
-        if (cell.structureId == null) continue;
-        final rect = Rect.fromLTWH((x - world.minX) * cellSize, (world.maxY  - y) * cellSize, cellSize, cellSize);
-// == Add End ==
-        for (final direction in Direction.values) {
-// == Add Start ==
-          if (selectedStructure != null && cell.structureId == selectedStructure) {
-            final (dx, dy) = direction.dxy;
-            final neighbor = world.cell(layer, x + dx, y + dy);
-            if (neighbor == null || neighbor.structureId != cell.structureId) {
-              drawStructureSelectedBoarder(canvas, rect, direction, cellSize);
-            }
-          }
-// == Add End ==
-          switch (cell.info.getEdgeType(direction)) {
-            case EdgeType.nothing:
-              final (dx, dy) = direction.dxy;
-              final neighbor = world.cell(layer, x + dx, y + dy);
-              if (neighbor != null && neighbor.structureId != cell.structureId) {
-                drawWall(canvas, rect, direction, cellSize);
-              }
-              break;
-            case EdgeType.door:
-              drawDoor(canvas, rect, direction, cellSize);
-              break;
-            case EdgeType.innerWall:
-              drawWall(canvas, rect, direction, cellSize);
-              break;
-            case EdgeType.hole:
-              drawHole(canvas, rect, direction, cellSize);
-              break;
-          }
-        }
-      }
-    }
-    for (final entry in world.entrances.entries) {
-      final layer = entry.key.layer;
-      if (layer == this.layer) {
-        final entrance = entry.value;
-        final rect = Rect.fromLTWH((entrance.x - world.minX) * cellSize, (world.maxY  - entrance.y) * cellSize, cellSize, cellSize);
-        drawEntrance(canvas, rect, cellSize);
-      }
+    paintLayerOutlines(canvas, world, layer, cellSize, pointOffset);
+    paintLayerCellEdges(
+      canvas, world, layer, cellSize, cellRect,
+      world.minX, world.maxX, world.minY, world.maxY,
+    );
+    paintLayerCellDecorations(
+      canvas, world, layer, cellSize, cellRect,
+      world.minX, world.maxX, world.minY, world.maxY,
+    );
+    paintLayerEntrances(
+      canvas, world, layer, cellSize, cellRect,
+      world.minX, world.maxX, world.minY, world.maxY,
+    );
+    if (selectedStructure != null) {
+      paintLayerSelectedBorders(
+        canvas, world, layer, cellSize, cellRect,
+        world.minX, world.maxX, world.minY, world.maxY,
+        selectedStructure: selectedStructure!,
+      );
     }
   }
 

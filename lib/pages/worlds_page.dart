@@ -11,6 +11,7 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/painter/painter_common.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
