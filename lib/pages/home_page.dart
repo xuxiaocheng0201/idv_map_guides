@@ -31,7 +31,6 @@ class _SecretSwitchState extends State<SecretSwitch> {
     if (_taps >= 7) {
       _taps = 0;
       editorMode.value = true;
-      toastification.show(title: Text('编辑器模式已开启'));
     }
   }
 

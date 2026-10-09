@@ -145,10 +145,26 @@ extension CellInfoSerde on CellInfo {
   }
 }
 
+extension ShapePointSerde on ShapePoint {
+  static ShapePoint unpack(Unpacker unpacker) {
+    final len = unpacker.unpackListLength();
+    if (len != 2) throw FormatException();
+    final x = unpacker.unpackDouble();
+    final y = unpacker.unpackDouble();
+    if (x == null || y == null) throw FormatException();
+    return ShapePoint(x: x, y: y);
+  }
+  void pack(Packer packer) {
+    packer.packListLength(2);
+    packer.packDouble(x);
+    packer.packDouble(y);
+  }
+}
+
 extension StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker, String name) {
     final len = unpacker.unpackListLength();
-    if (len != 3) throw FormatException();
+    if (len != 3 && len != 4) throw FormatException(); // FIXME: 4 only
     final isCorridor = unpacker.unpackBool();
     final isNoDirection = unpacker.unpackBool();
     if (isCorridor == null || isNoDirection == null) throw FormatException();
@@ -159,15 +175,24 @@ extension StructureSerde on Structure {
       final value = CellInfoSerde.unpack(unpacker);
       cells[key] = value;
     }
+    final outline = <ShapePoint>[];
+    if (len == 4) {
+      final outlineLen = unpacker.unpackListLength();
+      for (int i = 0; i < outlineLen; i++) {
+        final point = ShapePointSerde.unpack(unpacker);
+        outline.add(point);
+      }
+    }
     return Structure(
       name: name,
       isCorridor: isCorridor,
       isNoDirection: isNoDirection,
       cells: cells,
+      outline: outline.isEmpty ? null : outline,
     );
   }
   void pack(Packer packer) {
-    packer.packListLength(3);
+    packer.packListLength(4);
     packer.packBool(isCorridor);
     packer.packBool(isNoDirection);
     final cells = this.cells.entries.sortedBy((e) => e.key);
@@ -175,6 +200,10 @@ extension StructureSerde on Structure {
     for (final entry in cells) {
       entry.key.pack(packer);
       entry.value.pack(packer);
+    }
+    packer.packListLength(outline?.length ?? 0);
+    for (final point in outline ?? <ShapePoint>[]) {
+      point.pack(packer);
     }
   }
 }

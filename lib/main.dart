@@ -27,7 +27,7 @@ void main() async {
   }
 }
 
-final editorMode = ValueNotifier<bool>(false);
+final editorMode = ValueNotifier<bool>(kDebugMode);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -113,11 +113,13 @@ abstract class Position with _$Position implements Comparable<Position> {
 
   @useResult
   Position _rotate(Rotation rotation) {
-    var result = this;
+    var x = this.x, y = this.y;
     for (int i = 0; i < rotation.times(); i++) {
-      result = Position(x: result.y, y: -result.x);
+      final nx = y;
+      final ny = -x;
+      x = nx; y = ny;
     }
-    return result;
+    return Position(x: x, y: y);
   }
 
   static Comparator<Position> comparator = compareSequentially([
@@ -198,6 +200,29 @@ abstract class CellInfo with _$CellInfo {
   }
 }
 
+@freezed
+abstract class ShapePoint with _$ShapePoint {
+  const ShapePoint._();
+  const factory ShapePoint({required double x, required double y}) = _ShapePoint;
+
+  @useResult
+  ShapePoint toWorld(Rotation rotation, double dx, double dy) => _rotate(rotation).add(dx, dy);
+
+  @useResult
+  ShapePoint _rotate(Rotation rotation) {
+    var x = this.x, y = this.y;
+    for (int i = 0; i < rotation.times(); i++) {
+      final nx = y;
+      final ny = -x + 1;
+      x = nx; y = ny;
+    }
+    return ShapePoint(x: x, y: y);
+  }
+
+  @useResult
+  ShapePoint add(double dx, double dy) => ShapePoint(x: x + dx, y: y + dy);
+}
+
 @Freezed(addImplicitFinal: false, makeCollectionsUnmodifiable: false)
 abstract class Structure with _$Structure {
   Structure._();
@@ -206,6 +231,7 @@ abstract class Structure with _$Structure {
     required bool isCorridor,
     required bool isNoDirection,
     required Map<Position, CellInfo> cells,
+    List<ShapePoint>? outline,
   }) = _Structure;
 }
 
