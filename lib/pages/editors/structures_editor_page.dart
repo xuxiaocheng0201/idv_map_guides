@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
+import 'package:idv_map_guides/pages/editors/cell_properties_panel.dart';
 import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:path/path.dart' as p;
@@ -12,6 +12,8 @@ import 'package:toastification/toastification.dart';
 
 const int defaultCanvasWidth = 5;
 const int defaultCanvasHeight = 5;
+
+const double vertexHitRadius = 12.0;
 
 var dataStructures = serializeStructures(<String, Structure>{});
 String? saveDirectory;
@@ -57,6 +59,7 @@ class _StructuresRegistry {
       isCorridor: false,
       isNoDirection: false,
       cells: <Position, CellInfo>{},
+      outline: null,
     );
     setState(() {
       names = newNames;
@@ -112,6 +115,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   int? _selectedIndex;
   Position? _selectedCell;
 
+  bool _outlineEditMode = false;
+  int? _selectedVertexIndex;
+  int? _draggingVertexIndex;
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +155,9 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               setState(() {
                 _selectedCell = null;
                 _selectedIndex = null;
+                _outlineEditMode = false;
+                _selectedVertexIndex = null;
+                _draggingVertexIndex = null;
               });
               _registry.read(setState);
             },
@@ -201,13 +211,21 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       final name = _registry.names[index];
                       final structure = _registry.structures[name]!;
                       final (width, height) = _registry.canvas[name]!;
+                      final hasOutline = structure.outline != null && structure.outline!.isNotEmpty;
                       return ListTile(
                         selected: index == _selectedIndex,
                         title: Text(name),
-                        subtitle: Text('宽$width x 高$height | ${structure.isCorridor ? '走廊' : '房间'} | ${structure.isNoDirection ? '无向' : '有向'}'),
+                        subtitle: Text(
+                          '宽$width x 高$height'
+                              '${structure.isCorridor ? ' | 走廊' : ' | 房间'}'
+                              '${structure.isNoDirection ? ' | 无向' : ''}'
+                              '${hasOutline ? ' | 有轮廓' : ''}',
+                        ),
                         onTap: () => setState(() {
                           _selectedIndex = index;
                           _selectedCell = null;
+                          _selectedVertexIndex = null;
+                          _draggingVertexIndex = null;
                         }),
                       );
                     },
@@ -258,6 +276,8 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                   setState(() {
                     _selectedIndex = index;
                     _selectedCell = null;
+                    _selectedVertexIndex = null;
+                    _draggingVertexIndex = null;
                   });
                 }
               },
@@ -276,6 +296,8 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     setState(() {
       _selectedIndex = null;
       _selectedCell = null;
+      _selectedVertexIndex = null;
+      _draggingVertexIndex = null;
     });
   }
 
@@ -328,6 +350,23 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               value: structure.isNoDirection,
               onChanged: (value) => setState(() => structure.isNoDirection = value),
             ),
+            const SizedBox(width: 16),
+            Tooltip(
+              message: '轮廓编辑模式',
+              child: IconButton(
+                icon: const Icon(Icons.polyline),
+                isSelected: _outlineEditMode,
+                onPressed: () => setState(() {
+                  _outlineEditMode = !_outlineEditMode;
+                  if (_outlineEditMode) {
+                    _selectedCell = null;
+                  } else {
+                    _selectedVertexIndex = null;
+                    _draggingVertexIndex = null;
+                  }
+                }),
+              ),
+            ),
           ],
         ),
         Expanded(
@@ -342,14 +381,27 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       final paintSize = Size(width * cellSize, height * cellSize);
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTapUp: (details) => _handleCanvasTap(details.localPosition, paintSize, cellSize, width, height, structure),
+                        onTapUp: _outlineEditMode ? (details) => _handleOutlineTap(
+                          details.localPosition, cellSize, height, structure,
+                        ) : (details) => _handleCanvasTap(
+                          details.localPosition, paintSize, cellSize, width, height, structure,
+                        ),
+                        onPanStart: _outlineEditMode ? (details) => _handleOutlinePanStart(
+                          details.localPosition, cellSize, height, structure,
+                        ) : null,
+                        onPanUpdate: _outlineEditMode ? (details) => _handleOutlinePanUpdate(
+                          details.localPosition, cellSize, height, structure,
+                        ) : null,
+                        onPanEnd: _outlineEditMode ? (details) => _handleOutlinePanEnd() : null,
                         child: CustomPaint(
                           size: paintSize,
                           painter: EditorStructurePainter(
                             structure: structure,
                             width: width,
                             height: height,
-                            selectedCell: _selectedCell,
+                            editingOutline: _outlineEditMode,
+                            selectedCell: _outlineEditMode ? null : _selectedCell,
+                            selectedVertexIndex: _outlineEditMode ? _selectedVertexIndex : null,
                           ),
                         ),
                       );
@@ -361,7 +413,9 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
               SizedBox(
                 width: 240,
                 child: SingleChildScrollView(
-                  child: _buildCellProperties(context, structure),
+                  child: _outlineEditMode
+                    ? _buildOutlineProperties(context, structure)
+                    : _buildCellProperties(context, structure),
                 ),
               ),
             ],
@@ -388,6 +442,10 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     }
   }
 
+  // ────────────────────────────────────────────────
+  // 单元格模式
+  // ────────────────────────────────────────────────
+
   void _handleCanvasTap(Offset localPosition, Size paintSize, double cellSize, int width, int height, Structure structure) {
     if (paintSize.width == 0 || paintSize.height == 0) return;
     final x = (localPosition.dx / cellSize).floor();
@@ -407,91 +465,137 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   Widget _buildCellProperties(BuildContext context, Structure structure) {
     final position = _selectedCell;
     if (position == null) {
-      return Center(
+      return const Center(
         child: Text('点击画布空白格子添加单元格'),
       );
     }
     final cell = structure.cells[position]!;
-    return SingleChildScrollView(
+    return CellPropertiesPanel(
+      position: position,
+      cell: cell,
+      onChanged: (newCell) => setState(() => structure.cells[position] = newCell),
+      onDelete: () => setState(() {
+        structure.cells.remove(position);
+        _selectedCell = null;
+      }),
+    );
+  }
+
+  // ────────────────────────────────────────────────
+  // 轮廓模式
+  // ────────────────────────────────────────────────
+
+  double _round1(double v) => (v * 10).roundToDouble() / 10;
+  ShapePoint _canvasToLocal(Offset local, double cellSize, int height) => ShapePoint(
+    x: _round1(local.dx / cellSize),
+    y: _round1(height - local.dy / cellSize),
+  );
+  Offset _localToCanvas(ShapePoint p, double cellSize, int height) => Offset(
+      p.x * cellSize,
+      (height - p.y) * cellSize,
+  );
+
+  int? _findVertexAt(Offset local, double cellSize, int height, Structure structure) {
+    final outline = structure.outline;
+    if (outline == null || outline.isEmpty) return null;
+    for (int i = 0; i < outline.length; i++) {
+      final c = _localToCanvas(outline[i], cellSize, height);
+      final d = c - local;
+      if (d.distanceSquared <= vertexHitRadius * vertexHitRadius) return i;
+    }
+    return null;
+  }
+
+  void _handleOutlineTap(Offset local, double cellSize, int height, Structure structure) {
+    final hit = _findVertexAt(local, cellSize, height, structure);
+    if (hit != null) {
+      setState(() => _selectedVertexIndex = hit);
+      return;
+    }
+    final p = _canvasToLocal(local, cellSize, height);
+    setState(() {
+      final outline = (structure.outline ?? <ShapePoint>[]).toList();
+      outline.add(p);
+      structure.outline = outline;
+      _selectedVertexIndex = outline.length - 1;
+    });
+  }
+
+  void _handleOutlinePanStart(Offset local, double cellSize, int height, Structure structure) {
+    final hit = _findVertexAt(local, cellSize, height, structure);
+    if (hit != null) {
+      setState(() {
+        _draggingVertexIndex = hit;
+        _selectedVertexIndex = hit;
+      });
+    }
+  }
+
+  void _handleOutlinePanUpdate(Offset local, double cellSize, int height, Structure structure) {
+    final idx = _draggingVertexIndex;
+    if (idx == null) return;
+    final outline = structure.outline;
+    if (outline == null || idx >= outline.length) return;
+    final p = _canvasToLocal(local, cellSize, height);
+    setState(() {
+      outline[idx] = p;
+    });
+  }
+
+  void _handleOutlinePanEnd() {
+    setState(() => _draggingVertexIndex = null);
+  }
+
+  Widget _buildOutlineProperties(BuildContext context, Structure structure) {
+    final outline = structure.outline ?? const <ShapePoint>[];
+    return Padding(
       padding: const EdgeInsets.all(8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Text(
-                '单元格 (${position.x}, ${position.y})',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('轮廓', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Spacer(),
               IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: '删除此单元格',
-                onPressed: () => setState(() {
-                  structure.cells.remove(position);
-                  _selectedCell = null;
+                icon: const Icon(Icons.clear_all),
+                tooltip: '清空轮廓',
+                onPressed: outline.isEmpty ? null : () => setState(() {
+                  structure.outline = null;
+                  _selectedVertexIndex = null;
+                  _draggingVertexIndex = null;
                 }),
               ),
             ],
           ),
           const Divider(),
-          SwitchListTile(
-            title: const Text('楼梯', style: TextStyle(fontWeight: FontWeight.bold)),
-            value: cell.isStair != null,
-            onChanged: (value) => setState(() => structure.cells[position] = cell.copyWith(isStair: value ? StairTransport.nothing : null)),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(outline.isEmpty ? '点击画布添加顶点' : '顶点列表（点击选中，拖动可移动）'),
           ),
-          if (cell.isStair != null)
-            Row(
-              children: [
-                const Text('楼梯朝向'),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButton(
-                    value: cell.isStair,
-                    items: StairTransport.values.map((type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(type.label(context)),
-                    )).toList(),
-                    onChanged: (type) {
-                      if (type != null) setState(() => structure.cells[position] = cell.copyWith(isStair: type));
-                    },
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            title: const Text('刷箱点', style: TextStyle(fontWeight: FontWeight.bold)),
-            value: cell.isResource,
-            onChanged: (value) => setState(() => structure.cells[position] = cell.copyWith(isResource: value)),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-          const SizedBox(height: 8),
-          const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
-          for (final direction in Direction.values)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Text(direction.label(context)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButton(
-                      value: cell.getEdgeType(direction),
-                      items: EdgeType.values.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type.label(context)),
-                        );
-                      }).toList(),
-                      onChanged: (type) {
-                        if (type != null) setState(() => structure.cells[position] = cell.setEdgeType(direction, type));
-                      },
-                    ),
-                  ),
-                ],
+          for (int i = 0; i < outline.length; i++)
+            ListTile(
+              dense: true,
+              selected: i == _selectedVertexIndex,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              title: Text('顶点 $i'),
+              subtitle: Text(
+                '(${outline[i].x.toStringAsFixed(1)}, ${outline[i].y.toStringAsFixed(1)})',
               ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, size: 18),
+                tooltip: '删除顶点',
+                onPressed: () => setState(() {
+                  final next = outline.toList()..removeAt(i);
+                  structure.outline = next.isEmpty ? null : next;
+                  if (_selectedVertexIndex == i) {
+                    _selectedVertexIndex = null;
+                  } else if (_selectedVertexIndex != null && _selectedVertexIndex! > i) {
+                    _selectedVertexIndex = _selectedVertexIndex! - 1;
+                  }
+                }),
+              ),
+              onTap: () => setState(() => _selectedVertexIndex = i),
             ),
         ],
       ),

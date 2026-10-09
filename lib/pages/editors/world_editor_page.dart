@@ -8,6 +8,7 @@ import 'package:idv_map_guides/core/errors.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/pages/editors/cell_properties_panel.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
@@ -813,7 +814,9 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
                         ),
                         width: _width,
                         height: _height,
+                        editingOutline: false,
                         selectedCell: _selectedCell,
+                        selectedVertexIndex: null,
                       ),
                     ),
                   );
@@ -867,79 +870,17 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
       );
     }
     final cell = _cells[position]!;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                '单元格 (${position.x}, ${position.y})',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: '删除此单元格',
-                onPressed: () => setState(() {
-                  _cells.remove(position);
-                  _selectedCell = null;
-                }),
-              ),
-            ],
-          ),
-          const Divider(),
-          const Text('边类型', style: TextStyle(fontWeight: FontWeight.bold)),
-          for (final direction in Direction.values)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Text(direction.label(context)),
-                  const SizedBox(width: 8),
-                  Builder(
-                    builder: (context) {
-                      final edgeType = cell.getEdgeType(direction);
-                      final isDoor = edgeType == EdgeType.door;
-                      final isToggleable = isDoor || edgeType == EdgeType.nothing;
-                      return Tooltip(
-                        message: isToggleable
-                          ? (isDoor ? '门（点击设为无）' : '无（点击设为门）')
-                          : '当前为「${edgeType.label(context)}」，无法使用快捷开关',
-                        child: Switch(
-                          value: isDoor,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          onChanged: isToggleable
-                            ? (value) => setState(() {
-                              _cells[position] = cell.setEdgeType(
-                                direction,
-                                value ? EdgeType.door : EdgeType.nothing,
-                              );
-                            })
-                            : null,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButton<EdgeType>(
-                      value: cell.getEdgeType(direction),
-                      items: EdgeType.values.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type.label(context)),
-                        );
-                      }).toList(),
-                      onChanged: (type) {
-                        if (type != null) setState(() => _cells[position] = cell.setEdgeType(direction, type));
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+    return CellPropertiesPanel(
+      position: position,
+      cell: _cells[position]!,
+      showStairs: false,
+      showResource: false,
+      showDoorQuickToggle: true,
+      onChanged: (newCell) => setState(() => _cells[position] = newCell),
+      onDelete: () => setState(() {
+        _cells.remove(position);
+        _selectedCell = null;
+      }),
     );
   }
 }
