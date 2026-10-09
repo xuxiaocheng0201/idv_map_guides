@@ -41,6 +41,24 @@ enum EntranceType {
   };
 }
 
+@freezed
+abstract class PlacedStructure with _$PlacedStructure {
+  PlacedStructure._();
+  factory PlacedStructure({
+    required Structure structure,
+    required GroundLayer layer,
+    required int originX,
+    required int originY,
+    required Rotation rotation,
+    required bool isSuspicious,
+  }) = _PlacedStructure;
+
+  Iterable<ShapePoint>? get placedOutline => structure.outline
+      ?.map((local) => local.toWorld(rotation, originX.toDouble(), originY.toDouble()));
+  Iterable<Position> get placedCells => structure.cells.keys
+      .map((local) => local.toWorld(rotation, originX, originY));
+}
+
 class World {
   final int minX, maxX, minY, maxY;
   final Map<GroundLayer, List<List<Cell>>> map;
@@ -50,6 +68,8 @@ class World {
   final Set<int> suspiciousStructures = <int>{};
   final Set<Node> resources = <Node>{};
   final Map<String, Set<int>> rooms = <String, Set<int>>{};
+
+  final Map<int, PlacedStructure> structures = <int, PlacedStructure>{};
 
   World({
     required Set<GroundLayer> layers,
@@ -83,18 +103,18 @@ class World {
     return Node(entrance.layer, position.x, position.y);
   }
 
-  int placeStructure(GroundLayer layer, Structure structure, int originX, int originY, Rotation rotation, bool isSuspicious) {
+  int placeStructure(PlacedStructure structured) {
     // validate
     final errors = WorldErrors(errors: <WorldError>[]);
-    if (structure.isNoDirection && !{Rotation.cw0, Rotation.cw90}.contains(rotation)) {
+    if (structured.structure.isNoDirection && !{Rotation.cw0, Rotation.cw90}.contains(structured.rotation)) {
       errors.push(WorldError.directionNotAllowed());
     }
-    final downLayer = switch (layer.down()) { final k? => map.containsKey(k) ? k : null, _ => null };
-    final upLayer = switch (layer.up()) { final k? => map.containsKey(k) ? k : null, _ => null };
-    for (final entry in structure.cells.entries) {
+    final downLayer = switch (structured.layer.down()) { final k? => map.containsKey(k) ? k : null, _ => null };
+    final upLayer = switch (structured.layer.up()) { final k? => map.containsKey(k) ? k : null, _ => null };
+    for (final entry in structured.structure.cells.entries) {
       final (position, info) = (entry.key, entry.value);
-      final worldPosition = position.toWorld(rotation, originX, originY);
-      final existing = cell(layer, worldPosition.x, worldPosition.y);
+      final worldPosition = position.toWorld(structured.rotation, structured.originX, structured.originY);
+      final existing = cell(structured.layer, worldPosition.x, worldPosition.y);
       switch (existing) {
         case null:
           errors.push(WorldError.cellOutOfWorld(worldPosition: worldPosition));
@@ -106,17 +126,17 @@ class World {
           }
           for (final direction in Direction.values) {
             final edge = Edge(position: position, direction: direction);
-            final worldEdge = Edge(position: worldPosition, direction: direction.rotate(rotation));
+            final worldEdge = Edge(position: worldPosition, direction: direction.rotate(structured.rotation));
             switch (info.getEdgeType(direction)) {
               case EdgeType.nothing:
                 break;
               case EdgeType.door:
-                if (structure.cells.containsKey(edge.opposite().position)) {
+                if (structured.structure.cells.containsKey(edge.opposite().position)) {
                   errors.push(WorldError.doorNotAtBoundary(worldDoor: worldEdge));
                 }
                 break;
               case EdgeType.innerWall:
-                if (!structure.cells.containsKey(edge.opposite().position)) {
+                if (!structured.structure.cells.containsKey(edge.opposite().position)) {
                   errors.push(WorldError.innerWallAtBoundary(worldWall: worldEdge));
                 }
                 break;
@@ -155,18 +175,19 @@ class World {
     }
     // place
     final structureId = _nextStructureId++;
-    for (final entry in structure.cells.entries) {
+    for (final entry in structured.structure.cells.entries) {
       final (position, info) = (entry.key, entry.value);
-      final worldPosition = position.toWorld(rotation, originX, originY);
-      final existing = cell(layer, worldPosition.x, worldPosition.y)!;
+      final worldPosition = position.toWorld(structured.rotation, structured.originX, structured.originY);
+      final existing = cell(structured.layer, worldPosition.x, worldPosition.y)!;
       existing.structureId = structureId;
-      existing.structureTypeName = structure.name;
-      existing.isCorridor = structure.isCorridor;
-      existing.info = info.rotation(rotation);
-      if (info.isResource) resources.add(Node(layer, worldPosition.x, worldPosition.y));
+      existing.structureTypeName = structured.structure.name;
+      existing.isCorridor = structured.structure.isCorridor;
+      existing.info = info.rotation(structured.rotation);
+      if (info.isResource) resources.add(Node(structured.layer, worldPosition.x, worldPosition.y));
     }
-    if (!structure.isCorridor) rooms.putIfAbsent(structure.name, () => <int>{}).add(structureId);
-    if (isSuspicious) suspiciousStructures.add(structureId);
+    if (!structured.structure.isCorridor) rooms.putIfAbsent(structured.structure.name, () => <int>{}).add(structureId);
+    if (structured.isSuspicious) suspiciousStructures.add(structureId);
+    structures[structureId] = structured;
     return structureId;
   }
 
@@ -275,24 +296,34 @@ abstract class StructureInstance with _$StructureInstance {
 
 const corridorTypeName = 'corridor';
 
-Structure resolveStructure(StructureInstance instance, Map<String, Structure> structures) {
+PlacedStructure resolvePlacedStructure(StructureInstance instance, Map<String, Structure> structures) {
+  final Structure structure;
   if (instance.typeName == corridorTypeName) {
     final cells = instance.cells;
     if (cells == null || cells.isEmpty) {
       throw WorldError.corridorMissingCells();
     }
-    return Structure(
+    structure = Structure(
       name: corridorTypeName,
       isCorridor: true,
       isNoDirection: true,
       cells: cells,
     );
+  } else {
+    final definition = structures[instance.typeName];
+    if (definition == null) {
+      throw WorldError.unknownStructureType(typeName: instance.typeName);
+    }
+    structure = definition;
   }
-  final structure = structures[instance.typeName];
-  if (structure == null) {
-    throw WorldError.unknownStructureType(typeName: instance.typeName);
-  }
-  return structure;
+  return PlacedStructure(
+    structure: structure,
+    layer: instance.layer,
+    originX: instance.originX,
+    originY: instance.originY,
+    rotation: instance.rotation,
+    isSuspicious: instance.isSuspicious,
+  );
 }
 
 @Freezed(addImplicitFinal: false, makeCollectionsUnmodifiable: false)
@@ -316,15 +347,15 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
   final errors = WorldErrors(errors: <WorldError>[]);
   final world = World(layers: worldFile.layers, minX: worldFile.minX, maxX: worldFile.maxX, minY: worldFile.minY, maxY: worldFile.maxY);
   for (final instance in worldFile.instances) {
-    Structure structure;
+    PlacedStructure structured;
     try {
-      structure = resolveStructure(instance, structures);
+      structured = resolvePlacedStructure(instance, structures);
     } on WorldError catch (e) {
       errors.push(e);
       continue;
     }
     try {
-      world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation, instance.isSuspicious);
+      world.placeStructure(structured);
     } on WorldErrors catch (e) {
       errors.merge(e);
     }

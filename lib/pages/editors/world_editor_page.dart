@@ -86,8 +86,8 @@ class _WorldEditorRegistry {
     for (int i = 0; i < worldFile.instances.length; i++) {
       final instance = worldFile.instances[i];
       try {
-        final structure = resolveStructure(instance, structures);
-        final structureId = world.placeStructure(instance.layer, structure, instance.originX, instance.originY, instance.rotation, instance.isSuspicious);
+        final structured = resolvePlacedStructure(instance, structures);
+        final structureId = world.placeStructure(structured);
         instanceIndexToStructureId[i] = structureId;
       } on WorldErrors catch (e) {
         errorsByInstanceIndex[i] = e;
