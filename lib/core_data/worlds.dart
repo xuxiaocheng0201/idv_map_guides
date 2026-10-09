@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cachemesh/cachemesh.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
@@ -26,7 +27,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
   }
 
   final Cache cache = Cache();
-  Future<T> _fetchWithCache<T>({required String key, required Future<T> Function() fetch}) async {
+  Future<T> _fetchWithCache<T>({required String key, required Future<T> Function() fetch, String? debugLabel}) async {
     final result = await cache.get(
       key: key,
       fetch: () async {
@@ -43,6 +44,10 @@ class WorldsManager<W extends BaseWorldsEnums> {
         return result.value;
       case Failure():
         if (result.stackTrace == null) throw result.error;
+        if (kDebugMode) {
+          final message = debugLabel ?? key;
+          print('error when get `$message`');
+        }
         Error.throwWithStackTrace(result.error, result.stackTrace!);
     }
   }
@@ -66,6 +71,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         final worldFile = deserializeWorld(data);
         return (data, constructWorld(structures, worldFile));
       },
+      debugLabel: '${world.runtimeType}/${world.name}',
     );
   }
 

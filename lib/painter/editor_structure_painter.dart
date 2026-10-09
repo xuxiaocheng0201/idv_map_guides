@@ -12,6 +12,7 @@ class EditorStructurePainter extends CustomPainter {
   final bool editingOutline;
   final Position? selectedCell;
   final int? selectedVertexIndex;
+  final bool showOriginalCells;
 
   EditorStructurePainter({
     required this.structure,
@@ -20,6 +21,7 @@ class EditorStructurePainter extends CustomPainter {
     this.editingOutline = false,
     this.selectedCell,
     this.selectedVertexIndex,
+    this.showOriginalCells = false,
   });
 
   @override
@@ -47,6 +49,16 @@ class EditorStructurePainter extends CustomPainter {
     final outline = buildStructureFillPathTransformed(structured, pointOffset, cellRect);
     if (!outline.getBounds().isEmpty) {
       drawCellPath(canvas, outline, structure.isCorridor, cellSize, false);
+    }
+    if (showOriginalCells && hasOutline) {
+      final baseColor = suspiciousColor;
+      final cellFill = Paint()
+        ..style = PaintingStyle.fill
+        ..color = baseColor.withValues(alpha: 0.1);
+      for (final p in structured.placedCells) {
+        final r = cellRect(p.x, p.y);
+        canvas.drawRect(r, cellFill);
+      }
     }
     // 资源 / 楼梯
     for (final entry in structure.cells.entries) {

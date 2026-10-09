@@ -402,6 +402,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                             editingOutline: _outlineEditMode,
                             selectedCell: _outlineEditMode ? null : _selectedCell,
                             selectedVertexIndex: _outlineEditMode ? _selectedVertexIndex : null,
+                            showOriginalCells: !_outlineEditMode,
                           ),
                         ),
                       );
