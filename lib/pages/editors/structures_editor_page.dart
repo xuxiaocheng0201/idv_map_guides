@@ -382,15 +382,15 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTapUp: _outlineEditMode ? (details) => _handleOutlineTap(
-                          details.localPosition, cellSize, height, structure,
+                          details.localPosition, cellSize, width, height, structure,
                         ) : (details) => _handleCanvasTap(
                           details.localPosition, paintSize, cellSize, width, height, structure,
                         ),
                         onPanStart: _outlineEditMode ? (details) => _handleOutlinePanStart(
-                          details.localPosition, cellSize, height, structure,
+                          details.localPosition, cellSize, width, height, structure,
                         ) : null,
                         onPanUpdate: _outlineEditMode ? (details) => _handleOutlinePanUpdate(
-                          details.localPosition, cellSize, height, structure,
+                          details.localPosition, cellSize, width, height, structure,
                         ) : null,
                         onPanEnd: _outlineEditMode ? (details) => _handleOutlinePanEnd() : null,
                         child: CustomPaint(
@@ -487,9 +487,9 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   // ────────────────────────────────────────────────
 
   double _round1(double v) => (v * 10).roundToDouble() / 10;
-  ShapePoint _canvasToLocal(Offset local, double cellSize, int height) => ShapePoint(
-    x: _round1(local.dx / cellSize),
-    y: _round1(height - local.dy / cellSize),
+  ShapePoint _canvasToLocal(Offset local, double cellSize, int width, int height) => ShapePoint(
+    x: _round1(local.dx / cellSize).clamp(0.0, width.toDouble()),
+    y: _round1(height - local.dy / cellSize).clamp(0.0, height.toDouble()),
   );
   Offset _localToCanvas(ShapePoint p, double cellSize, int height) => Offset(
       p.x * cellSize,
@@ -507,13 +507,13 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     return null;
   }
 
-  void _handleOutlineTap(Offset local, double cellSize, int height, Structure structure) {
+  void _handleOutlineTap(Offset local, double cellSize, int width, int height, Structure structure) {
     final hit = _findVertexAt(local, cellSize, height, structure);
     if (hit != null) {
       setState(() => _selectedVertexIndex = hit);
       return;
     }
-    final p = _canvasToLocal(local, cellSize, height);
+    final p = _canvasToLocal(local, cellSize, width, height);
     setState(() {
       final outline = (structure.outline ?? <ShapePoint>[]).toList();
       outline.add(p);
@@ -522,7 +522,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     });
   }
 
-  void _handleOutlinePanStart(Offset local, double cellSize, int height, Structure structure) {
+  void _handleOutlinePanStart(Offset local, double cellSize, int width, int height, Structure structure) {
     final hit = _findVertexAt(local, cellSize, height, structure);
     if (hit != null) {
       setState(() {
@@ -532,12 +532,12 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
     }
   }
 
-  void _handleOutlinePanUpdate(Offset local, double cellSize, int height, Structure structure) {
+  void _handleOutlinePanUpdate(Offset local, double cellSize, int width, int height, Structure structure) {
     final idx = _draggingVertexIndex;
     if (idx == null) return;
     final outline = structure.outline;
     if (outline == null || idx >= outline.length) return;
-    final p = _canvasToLocal(local, cellSize, height);
+    final p = _canvasToLocal(local, cellSize, width, height);
     setState(() {
       outline[idx] = p;
     });
