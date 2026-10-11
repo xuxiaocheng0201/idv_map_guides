@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
+import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/main.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
@@ -22,6 +23,7 @@ class _SecretSwitchState extends State<SecretSwitch> {
   DateTime? _lastTap;
 
   void _handleTap() {
+    if (editorMode.value) return;
     final now = DateTime.now();
     if (_lastTap == null || now.difference(_lastTap!) > const Duration(seconds: 1)) {
       _taps = 0;
@@ -102,7 +104,7 @@ class _HomePageState extends State<HomePage> {
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
                     final info = snapshot.data;
-                    final text = info == null ? 'null' : '${info.version}+${info.buildNumber}';
+                    final text = info == null ? 'null' : '${info.version}+$bundledVersion';
                     return SecretSwitch(child: Text(text));
                   },
                 ),

@@ -4,6 +4,8 @@ import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 
+const String bundledVersion = '20260930';
+
 abstract interface class BaseWorldsEnums implements Enum {
 }
 
