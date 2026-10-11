@@ -32,3 +32,15 @@ IdentityV Cryptic Notes maps.
 5. 查看其他相似地图
 - [x] 入口缩略图一致地图
 - [ ] 全地图结构相似
+
+## License
+
+This project is dual-licensed:
+
+Source Code: All source code in this repository is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+See the LICENSE file for the full license text.
+
+Map Data Assets: The map data files located in the assets/maps/ directory (*.data) are dedicated to the public domain under the Creative Commons CC0 1.0 Universal license.
+See the [LICENSE-ASSETS-CC0](LICENSE-ASSETS-CC0) file or the official CC0 1.0 deed for details.
+
+This means you are free to use, modify, and distribute the code under AGPL terms, and you can use the map data for any purpose without any restrictions or attribution requirements.

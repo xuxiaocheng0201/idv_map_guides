@@ -15,3 +15,5 @@
 /assets/**/*.precomputed
 !/tool
 !/.github
+
+!/**/LICENSE*
