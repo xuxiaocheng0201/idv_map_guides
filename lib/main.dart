@@ -20,7 +20,9 @@ void main() async {
       options.dsn = dsn;
       options.sendDefaultPii = true;
       options.sampleRate = 1.0;
+      options.tracesSampleRate = 0.2;
       options.attachScreenshot = true;
+      options.privacy.maskAllText = false;
       options.replay.sessionSampleRate = 0.1;
       options.replay.onErrorSampleRate = 1.0;
     }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
@@ -50,8 +52,12 @@ class MyApp extends StatelessWidget {
           onGenerateRoute: (settings) {
             final routes = <String, WidgetBuilder>{
               Routes.home: (context) => const HomePage(),
-              Routes.entrances: (context) => const EntranceFeaturePage(),
-              Routes.worlds: (context) => const WorldListPage(),
+              Routes.entrances: (context) => EntranceFeaturePage(
+                arguments: settings.arguments as EntranceFeaturePageArguments?,
+              ),
+              Routes.worlds: (context) => WorldListPage(
+                arguments: settings.arguments as WorldListPageArguments?,
+              ),
               if (editorMode.value) Routes.editorStructure: (context) => const StructuresEditorPage(),
               if (editorMode.value) Routes.editorWorld: (context) => const WorldEditorPage(),
             };

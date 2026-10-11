@@ -84,6 +84,7 @@ class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.novice;
   @override List<TheBringerOfDoomNoviceWorlds> get allWorlds => TheBringerOfDoomNoviceWorlds.values;
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground];
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main];
   @override String worldAssets(TheBringerOfDoomNoviceWorlds world) => 'world.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
@@ -158,6 +159,7 @@ enum TheBringerOfDoomHardWorlds implements BaseWorldsEnums {
 class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoomHardWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.hard;
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground, GroundLayer.second];
   @override List<TheBringerOfDoomHardWorlds> get allWorlds => TheBringerOfDoomHardWorlds.values;
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround, EntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
@@ -230,6 +232,7 @@ class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.insane;
   @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => TheBringerOfDoomInsaneWorlds.values;
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground, GroundLayer.second, GroundLayer.basement];
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);

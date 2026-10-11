@@ -154,7 +154,7 @@ class _HomePageState extends State<HomePage> {
                     Navigator.pushNamed(
                       context,
                       Routes.entrances,
-                      arguments: EntranceFeaturePageArgument(manager: manager),
+                      arguments: EntranceFeaturePageArguments(manager: manager),
                     );
                   },
                   child: Text(S.of(context).homeEnter),

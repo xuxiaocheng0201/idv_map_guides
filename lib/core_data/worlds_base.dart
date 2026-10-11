@@ -13,6 +13,7 @@ abstract class WorldsProvider<W extends BaseWorldsEnums> {
   WorldType get type;
   WorldDifficulty get difficulty;
   List<W> get allWorlds;
+  List<GroundLayer> get allLayers;
   List<EntranceType> get validEntrances;
   String worldAssets(W world);
   MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);

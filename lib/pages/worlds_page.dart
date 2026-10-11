@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
@@ -11,10 +10,10 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/metrics.dart';
 import 'package:idv_map_guides/painter/painter_common.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
 import 'package:idv_map_guides/routes.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class WorldListPageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
@@ -38,24 +37,26 @@ enum _NavigatePathView {
 }
 
 class WorldListPage extends StatefulWidget {
-  const WorldListPage({super.key});
+  final WorldListPageArguments? arguments;
+  const WorldListPage({super.key, required this.arguments});
 
   @override
   State<WorldListPage> createState() => _WorldListPageState();
 }
 
 class _WorldListPageState extends State<WorldListPage> {
-  late WorldsManager<BaseWorldsEnums> manager;
-  late List<BaseWorldsEnums> worlds;
-  late EntranceType entrance;
-  late DefaultNavigateSettings _defaultNavigateSettings;
-  bool _initialized = false;
-  late BaseWorldsEnums _currentWorld;
+  WorldsManager<BaseWorldsEnums> get manager => widget.arguments!.manager;
+  List<BaseWorldsEnums> get worlds => widget.arguments!.worlds;
+  List<GroundLayer> get layers => manager.provider.allLayers;
+  EntranceType get entrance => widget.arguments!.entrance;
+  DefaultNavigateSettings get _defaultNavigateSettings => widget.arguments!.settings;
 
   final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
   bool _isFullscreen = false;
+
+  int _currentWorldIndex = 0;
   int _currentLayerIndex = 0;
-  List<GroundLayer> _currentLayers = const [];
+  BaseWorldsEnums get _currentWorld => worlds[_currentWorldIndex];
 
   bool _navigateMode = true;
   bool _showNavigateProperties = true;
@@ -65,12 +66,9 @@ class _WorldListPageState extends State<WorldListPage> {
   final Map<BaseWorldsEnums, UnionNavigateArguments> _navigateArguments = <BaseWorldsEnums, UnionNavigateArguments>{};
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initialized) return;
-    _initialized = true;
-    final argument = ModalRoute.of(context)?.settings.arguments as WorldListPageArguments?;
-    if (argument == null) {
+  void initState() {
+    super.initState();
+    if (widget.arguments == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
@@ -80,23 +78,19 @@ class _WorldListPageState extends State<WorldListPage> {
       });
       return;
     }
-    manager = argument.manager;
-    worlds = argument.worlds;
-    entrance = argument.entrance;
-    _defaultNavigateSettings = argument.settings;
     _navigateDouble = _defaultNavigateSettings.useDouble;
-    _currentWorld = worlds.first;
-    Sentry.metrics.count('worlds', 1, attributes: {
-      'type': SentryAttribute.string(manager.provider.type.label(context)),
-      'difficulty': SentryAttribute.string(manager.provider.difficulty.label(context)),
-      'map': SentryAttribute.string(worldLabel(_currentWorld, context)),
-    });
   }
 
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    metricWorldInstance(context, _currentWorld);
   }
 
   @override
@@ -133,19 +127,19 @@ class _WorldListPageState extends State<WorldListPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: SegmentedButton(
-                selected: {_currentWorld},
+                selected: {_currentWorldIndex},
                 segments: [
-                  for (final world in worlds)
+                  for (final (index, world) in worlds.indexed)
                     ButtonSegment(
-                      value: world,
+                      value: index,
                       label: Text(worldLabel(world, context)),
                     )
                 ],
                 showSelectedIcon: false,
                 emptySelectionAllowed: false,
                 multiSelectionEnabled: false,
-                onSelectionChanged: (w) => setState(() {
-                  _currentWorld = w.first;
+                onSelectionChanged: (indexes) => setState(() {
+                  _currentWorldIndex = indexes.first;
                 }),
               ),
             ),
@@ -158,11 +152,6 @@ class _WorldListPageState extends State<WorldListPage> {
               return const Center(child: CircularProgressIndicator());
             }
             final world = snapshot.data!;
-            final layers = world.layers.sortedBy((e) => e.index);
-            _currentLayers = layers;
-            if (_currentLayerIndex >= layers.length) {
-              _currentLayerIndex = 0;
-            }
             final layer = layers[_currentLayerIndex];
             final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
               return UnionNavigateArguments.fromProvider(
@@ -218,10 +207,10 @@ class _WorldListPageState extends State<WorldListPage> {
                             SegmentedButton(
                               selected: {_currentLayerIndex},
                               segments: [
-                                for (int i = 0; i < layers.length; i++)
+                                for (final (index, layer) in layers.indexed)
                                   ButtonSegment(
-                                    value: i,
-                                    label: Text(layers[i].label(context)),
+                                    value: index,
+                                    label: Text(layer.label(context)),
                                   )
                               ],
                               showSelectedIcon: false,
@@ -321,22 +310,16 @@ class _WorldListPageState extends State<WorldListPage> {
   }
 
   void _cycleLayer({required bool reverse}) {
-    if (_currentLayers.isEmpty) return;
-    final len = _currentLayers.length;
+    final len = layers.length;
     setState(() {
       _currentLayerIndex = (_currentLayerIndex + (reverse ? -1 : 1) + len) % len;
     });
   }
 
   void _cycleWorld({required bool reverse}) {
-    if (worlds.length < 2) return;
     final len = worlds.length;
-    final current = worlds.indexWhere((w) => identical(w, _currentWorld) || w == _currentWorld);
-    final next = ((current < 0 ? 0 : current) + (reverse ? -1 : 1) + len) % len;
     setState(() {
-      _currentWorld = worlds[next];
-      _currentLayerIndex = 0;
-      _currentLayers = const [];
+      _currentWorldIndex = (_currentWorldIndex + (reverse ? -1 : 1) + len) % len;
     });
   }
 

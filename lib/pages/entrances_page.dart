@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
@@ -11,38 +10,37 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/metrics.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
 
-class EntranceFeaturePageArgument {
+class EntranceFeaturePageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
-  const EntranceFeaturePageArgument({required this.manager});
+  const EntranceFeaturePageArguments({required this.manager});
 }
 
 class EntranceFeaturePage extends StatefulWidget {
-  const EntranceFeaturePage({super.key});
+  final EntranceFeaturePageArguments? arguments;
+  const EntranceFeaturePage({super.key, required this.arguments});
 
   @override
   State<EntranceFeaturePage> createState() => _EntranceFeaturePageState();
 }
 
 class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTickerProviderStateMixin {
-  late WorldsManager<BaseWorldsEnums> manager;
+  WorldsManager<BaseWorldsEnums> get manager => widget.arguments!.manager;
+
   bool _loading = true;
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
-  bool _initialized = false;
 
   DefaultNavigateSettings _defaultNavigateSettings = DefaultNavigateSettings();
   bool _showNavigateProperties = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initialized) return;
-    _initialized = true;
-    final argument = ModalRoute.of(context)?.settings.arguments as EntranceFeaturePageArgument?;
-    if (argument == null) {
+  void initState() {
+    super.initState();
+    if (widget.arguments == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
@@ -52,7 +50,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       });
       return;
     }
-    manager = argument.manager;
     _loadAllData();
   }
 
@@ -78,6 +75,12 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       _worlds[entrance] = featureMap;
     }
     if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    metricWorldTypeDifficulty(context, manager.provider.type, manager.provider.difficulty);
   }
 
   @override
