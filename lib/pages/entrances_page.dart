@@ -21,7 +21,7 @@ class EntranceFeaturePageArguments {
 }
 
 class EntranceFeaturePage extends StatefulWidget {
-  final EntranceFeaturePageArguments? arguments;
+  final EntranceFeaturePageArguments arguments;
   const EntranceFeaturePage({super.key, required this.arguments});
 
   @override
@@ -29,7 +29,7 @@ class EntranceFeaturePage extends StatefulWidget {
 }
 
 class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTickerProviderStateMixin {
-  WorldsManager<BaseWorldsEnums> get manager => widget.arguments!.manager;
+  WorldsManager<BaseWorldsEnums> get manager => widget.arguments.manager;
 
   bool _loading = true;
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
@@ -40,16 +40,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   @override
   void initState() {
     super.initState();
-    if (widget.arguments == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        } else {
-          Navigator.popAndPushNamed(context, Routes.home);
-        }
-      });
-      return;
-    }
     _loadAllData();
   }
 

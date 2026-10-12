@@ -13,7 +13,6 @@ import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/metrics.dart';
 import 'package:idv_map_guides/painter/painter_common.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
-import 'package:idv_map_guides/routes.dart';
 
 class WorldListPageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
@@ -37,7 +36,7 @@ enum _NavigatePathView {
 }
 
 class WorldListPage extends StatefulWidget {
-  final WorldListPageArguments? arguments;
+  final WorldListPageArguments arguments;
   const WorldListPage({super.key, required this.arguments});
 
   @override
@@ -45,11 +44,11 @@ class WorldListPage extends StatefulWidget {
 }
 
 class _WorldListPageState extends State<WorldListPage> {
-  WorldsManager<BaseWorldsEnums> get manager => widget.arguments!.manager;
-  List<BaseWorldsEnums> get worlds => widget.arguments!.worlds;
+  WorldsManager<BaseWorldsEnums> get manager => widget.arguments.manager;
+  List<BaseWorldsEnums> get worlds => widget.arguments.worlds;
   List<GroundLayer> get layers => manager.provider.allLayers;
-  EntranceType get entrance => widget.arguments!.entrance;
-  DefaultNavigateSettings get _defaultNavigateSettings => widget.arguments!.settings;
+  EntranceType get entrance => widget.arguments.entrance;
+  DefaultNavigateSettings get _defaultNavigateSettings => widget.arguments.settings;
 
   final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
   bool _isFullscreen = false;
@@ -68,16 +67,6 @@ class _WorldListPageState extends State<WorldListPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.arguments == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        } else {
-          Navigator.popAndPushNamed(context, Routes.home);
-        }
-      });
-      return;
-    }
     _navigateDouble = _defaultNavigateSettings.useDouble;
   }
 

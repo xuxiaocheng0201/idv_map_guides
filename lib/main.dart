@@ -50,18 +50,35 @@ class MyApp extends StatelessWidget {
           onGenerateTitle: (context) => S.of(context).title,
           initialRoute: Routes.home,
           onGenerateRoute: (settings) {
-            final routes = <String, WidgetBuilder>{
-              Routes.home: (context) => const HomePage(),
-              Routes.entrances: (context) => EntranceFeaturePage(
-                arguments: settings.arguments as EntranceFeaturePageArguments?,
-              ),
-              Routes.worlds: (context) => WorldListPage(
-                arguments: settings.arguments as WorldListPageArguments?,
-              ),
-              if (editorMode.value) Routes.editorStructure: (context) => const StructuresEditorPage(),
-              if (editorMode.value) Routes.editorWorld: (context) => const WorldEditorPage(),
-            };
-            final builder = routes[settings.name] ?? routes[Routes.home]!;
+            WidgetBuilder? resolve(RouteSettings settings) {
+              switch (settings.name) {
+                case Routes.home:
+                  return (context) => const HomePage();
+                case Routes.entrances:
+                  final args = settings.arguments as EntranceFeaturePageArguments?;
+                  if (args == null) return null;
+                  return (context) => EntranceFeaturePage(arguments: args);
+                case Routes.worlds:
+                  final args = settings.arguments as WorldListPageArguments?;
+                  if (args == null) return null;
+                  return (context) => WorldListPage(arguments: args);
+                case Routes.editorStructure:
+                  if (!editorMode.value) return null;
+                  return (context) => const StructuresEditorPage();
+                case Routes.editorWorld:
+                  if (!editorMode.value) return null;
+                  return (context) => const WorldEditorPage();
+                default:
+                  return null;
+              }
+            }
+            final builder = resolve(settings);
+            if (builder == null) {
+              return MaterialPageRoute(
+                settings: const RouteSettings(name: Routes.home),
+                builder: (context) => const HomePage(),
+              );
+            }
             return MaterialPageRoute(
               settings: settings,
               builder: builder,
