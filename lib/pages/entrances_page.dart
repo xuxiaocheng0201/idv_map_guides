@@ -10,7 +10,6 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/metrics.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
@@ -65,12 +64,6 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       _worlds[entrance] = featureMap;
     }
     if (mounted) setState(() => _loading = false);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    metricWorldTypeDifficulty(context, manager.provider.type, manager.provider.difficulty);
   }
 
   @override

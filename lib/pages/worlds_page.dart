@@ -10,9 +10,9 @@ import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/setting.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/metrics.dart';
 import 'package:idv_map_guides/painter/painter_common.dart';
 import 'package:idv_map_guides/painter/world_painter.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class WorldListPageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
@@ -50,9 +50,6 @@ class _WorldListPageState extends State<WorldListPage> {
   EntranceType get entrance => widget.arguments.entrance;
   DefaultNavigateSettings get _defaultNavigateSettings => widget.arguments.settings;
 
-  final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
-  bool _isFullscreen = false;
-
   int _currentWorldIndex = 0;
   int _currentLayerIndex = 0;
   BaseWorldsEnums get _currentWorld => worlds[_currentWorldIndex];
@@ -64,22 +61,50 @@ class _WorldListPageState extends State<WorldListPage> {
   _NavigatePathView _navigatePathView = _NavigatePathView.both;
   final Map<BaseWorldsEnums, UnionNavigateArguments> _navigateArguments = <BaseWorldsEnums, UnionNavigateArguments>{};
 
+  bool _isFullscreen = false;
+
+  final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
+  DateTime? _viewWorldStartTime;
+
+  void _startView() {
+    _viewWorldStartTime = DateTime.now();
+  }
+
+  void _endView() {
+    if (_viewWorldStartTime == null) return;
+    final elapsedMs = DateTime.now().difference(_viewWorldStartTime!).inMilliseconds;
+    _viewWorldStartTime = null;
+    Sentry.metrics.distribution(
+      'world_view',
+      elapsedMs.toDouble(),
+      unit: SentryMetricUnit.millisecond,
+      attributes: {
+        'map_name': SentryAttribute.string(worldLabel(_currentWorld, context)),
+        'entrance_type': SentryAttribute.string(entrance.label(context)),
+      },
+    );
+  }
+
+  void _switchView(int newWorldIndex) {
+    _endView();
+    setState(() => _currentWorldIndex = newWorldIndex);
+    _startView();
+  }
+
   @override
   void initState() {
     super.initState();
     _navigateDouble = _defaultNavigateSettings.useDouble;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startView();
+    });
   }
 
   @override
   void dispose() {
+    _endView();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    metricWorldInstance(context, _currentWorld);
   }
 
   @override
@@ -127,9 +152,7 @@ class _WorldListPageState extends State<WorldListPage> {
                 showSelectedIcon: false,
                 emptySelectionAllowed: false,
                 multiSelectionEnabled: false,
-                onSelectionChanged: (indexes) => setState(() {
-                  _currentWorldIndex = indexes.first;
-                }),
+                onSelectionChanged: (indexes) => _switchView(indexes.first),
               ),
             ),
           ],
@@ -307,9 +330,7 @@ class _WorldListPageState extends State<WorldListPage> {
 
   void _cycleWorld({required bool reverse}) {
     final len = worlds.length;
-    setState(() {
-      _currentWorldIndex = (_currentWorldIndex + (reverse ? -1 : 1) + len) % len;
-    });
+    _switchView((_currentWorldIndex + (reverse ? -1 : 1) + len) % len);
   }
 
   void _handleNavigateCellTap(World world, GroundLayer layer, int x, int y) {

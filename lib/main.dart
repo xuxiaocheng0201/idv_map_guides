@@ -85,7 +85,9 @@ class MyApp extends StatelessWidget {
             );
           },
           navigatorObservers: [
-            SentryNavigatorObserver(),
+            SentryNavigatorObserver(
+              setRouteNameAsTransaction: true,
+            ),
           ],
         ),
       ),
