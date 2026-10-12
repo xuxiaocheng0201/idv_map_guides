@@ -20,6 +20,11 @@ class WorldListPageArguments {
   final EntranceType entrance;
   final DefaultNavigateSettings settings;
   const WorldListPageArguments({required this.manager, required this.worlds, required this.entrance, required this.settings});
+
+  @override
+  String toString() {
+    return 'WorldListPageArguments(type: ${manager.provider.type.name}, difficulty: ${manager.provider.difficulty.name}, worlds: ${worlds.map((e) => e.name).toList()}), entrance: ${entrance.name}';
+  }
 }
 
 enum _NavigateEditMode {
@@ -64,25 +69,31 @@ class _WorldListPageState extends State<WorldListPage> {
   bool _isFullscreen = false;
 
   final FocusNode _focusNode = FocusNode(debugLabel: 'WorldListPage');
-  DateTime? _viewWorldStartTime;
+  DateTime? _viewMetricStartTime;
+  String? _viewMetricMapName;
+  String? _viewMetricEntranceName;
 
   void _startView() {
-    _viewWorldStartTime = DateTime.now();
+    _viewMetricStartTime = DateTime.now();
+    _viewMetricMapName = worldLabel(_currentWorld, context);
+    _viewMetricEntranceName = entrance.label(context);
   }
 
   void _endView() {
-    if (_viewWorldStartTime == null) return;
-    final elapsedMs = DateTime.now().difference(_viewWorldStartTime!).inMilliseconds;
-    _viewWorldStartTime = null;
+    if (_viewMetricStartTime == null) return;
+    final elapsedMs = DateTime.now().difference(_viewMetricStartTime!).inMilliseconds;
     Sentry.metrics.distribution(
       'world_view',
       elapsedMs.toDouble(),
       unit: SentryMetricUnit.millisecond,
       attributes: {
-        'map_name': SentryAttribute.string(worldLabel(_currentWorld, context)),
-        'entrance_type': SentryAttribute.string(entrance.label(context)),
+        'map_name': SentryAttribute.string(_viewMetricMapName!),
+        'entrance_type': SentryAttribute.string(_viewMetricEntranceName!),
       },
     );
+    _viewMetricStartTime = null;
+    _viewMetricMapName = null;
+    _viewMetricEntranceName = null;
   }
 
   void _switchView(int newWorldIndex) {

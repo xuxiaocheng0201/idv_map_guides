@@ -17,6 +17,11 @@ import 'package:idv_map_guides/routes.dart';
 class EntranceFeaturePageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
   const EntranceFeaturePageArguments({required this.manager});
+
+  @override
+  String toString() {
+    return 'EntranceFeaturePageArguments(type: ${manager.provider.type.name}, difficulty: ${manager.provider.difficulty.name})';
+  }
 }
 
 class EntranceFeaturePage extends StatefulWidget {
