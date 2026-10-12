@@ -770,6 +770,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.4.1"
+  sw:
+    dependency: "direct dev"
+    description:
+      name: sw
+      sha256: "9e1af47523717ec1bf3c30979fe612d1f88d0eb3781d62876feab3ada9d9c0a6"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.2.0"
   system_info2:
     dependency: transitive
     description:

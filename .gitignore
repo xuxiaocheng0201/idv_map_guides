@@ -17,3 +17,6 @@
 !/.github
 
 !/**/LICENSE*
+
+!/web
+/web/workers

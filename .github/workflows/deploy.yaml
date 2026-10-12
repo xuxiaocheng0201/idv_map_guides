@@ -44,7 +44,6 @@ jobs:
 
       - name: Generate codes
         run: |
-          flutter create --platforms web .
           flutter pub get
           dart run intl_utils:generate
           dart run build_runner build
@@ -56,9 +55,14 @@ jobs:
 
       - name: Build Web
         run: |
+          dart compile js "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.js"
+          dart compile js "./lib/core_navigator/navigator_double.web.g.dart" -o "./web/workers/navigator_double.web.g.dart.js"
           dart compile wasm "./lib/core_navigator/navigator.web.g.dart" -o "./web/workers/navigator.web.g.dart.wasm" --source-maps
           dart compile wasm "./lib/core_navigator/navigator_double.web.g.dart" -o "./web/workers/navigator_double.web.g.dart.wasm" --source-maps
           flutter build web --release --wasm --base-href /${{ github.event.repository.name }}/ --dart-define SENTRY_DSN=${{ secrets.SENTRY_DSN }} --source-maps
+          rm -f build/web/index.html
+          mv build/web/index.prod.html build/web/index.html
+          dart run sw:generate --version "$(git rev-parse --short=8 HEAD)" --keep-maps
 
       - name: Upload Debug Symbols to Sentry
         run: dart run sentry_dart_plugin

@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+    <defs>
+        <radialGradient id="sapphireGrad" cx="45%" cy="35%" r="55%">
+            <stop offset="0%" stop-color="#7ec8e3"/>
+            <stop offset="25%" stop-color="#4a90d9"/>
+            <stop offset="55%" stop-color="#2a4a7f"/>
+            <stop offset="85%" stop-color="#1a2a5a"/>
+            <stop offset="100%" stop-color="#0d1a3a"/>
+        </radialGradient>
+        <radialGradient id="sapphireHighlight" cx="30%" cy="25%" r="30%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.6)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </radialGradient>
+        <linearGradient id="metalRing" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#e8c86a"/>
+            <stop offset="30%" stop-color="#c9a84c"/>
+            <stop offset="60%" stop-color="#8a7a3a"/>
+            <stop offset="100%" stop-color="#4a3a1a"/>
+        </linearGradient>
+        <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1a1a2e"/>
+            <stop offset="100%" stop-color="#0a0a12"/>
+        </radialGradient>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <filter id="softGlow">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+
+    <rect width="500" height="500" rx="20" fill="url(#bgGlow)"/>
+
+    <circle cx="250" cy="250" r="210" fill="none" stroke="#3a2a1a" stroke-width="12"/>
+    <circle cx="250" cy="250" r="200" fill="none" stroke="url(#metalRing)" stroke-width="8"/>
+
+    <g stroke="#e8c86a" stroke-width="2.5">
+        <line x1="250" y1="60" x2="250" y2="90"/>
+        <line x1="250" y1="410" x2="250" y2="440"/>
+        <line x1="410" y1="250" x2="440" y2="250"/>
+        <line x1="60" y1="250" x2="90" y2="250"/>
+    </g>
+
+    <g stroke="#c9a84c" stroke-width="1.5">
+        <line x1="250" y1="60" x2="250" y2="90" transform="rotate(45,250,250)"/>
+        <line x1="250" y1="60" x2="250" y2="90" transform="rotate(135,250,250)"/>
+        <line x1="250" y1="60" x2="250" y2="90" transform="rotate(225,250,250)"/>
+        <line x1="250" y1="60" x2="250" y2="90" transform="rotate(315,250,250)"/>
+    </g>
+
+    <g stroke="#8a7a3a" stroke-width="1">
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(15,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(30,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(60,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(75,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(105,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(120,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(150,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(165,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(195,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(210,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(240,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(255,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(285,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(300,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(330,250,250)"/>
+        <line x1="250" y1="55" x2="250" y2="70" transform="rotate(345,250,250)"/>
+    </g>
+
+    <g font-family="'Times New Roman', serif" font-size="22" fill="#e8c86a" text-anchor="middle" font-weight="bold">
+        <text x="250" y="48">N</text>
+        <text x="250" y="470">S</text>
+        <text x="460" y="258">E</text>
+        <text x="40" y="258">W</text>
+    </g>
+
+    <circle cx="250" cy="250" r="155" fill="none" stroke="#8a7a3a" stroke-width="1.5"/>
+    <circle cx="250" cy="250" r="145" fill="none" stroke="#4a3a2a" stroke-width="1"/>
+
+    <g stroke="#5a4a2a" stroke-width="0.8" fill="none">
+        <path d="M160,250 Q205,180 250,250 Q295,320 340,250" opacity="0.5"/>
+        <path d="M160,250 Q205,320 250,250 Q295,180 340,250" opacity="0.5"/>
+        <circle cx="205" cy="215" r="3" opacity="0.4"/>
+        <circle cx="295" cy="285" r="3" opacity="0.4"/>
+    </g>
+
+    <g filter="url(#glow)">
+        <polygon points="250,115 242,250 250,250 258,250 250,115" fill="#e8c86a" opacity="0.7"/>
+        <polygon points="250,115 235,240 250,250 265,240 250,115" fill="none" stroke="#e8c86a" stroke-width="1" opacity="0.5"/>
+        <circle cx="250" cy="250" r="8" fill="#e8c86a" opacity="0.8"/>
+        <circle cx="250" cy="250" r="4" fill="#1a1a2e"/>
+    </g>
+
+    <g filter="url(#glow)">
+        <path d="M195,185 L235,155 L265,155 L305,185 L305,315 L250,365 L195,315 Z"
+              fill="#2a1a0a" stroke="#8a7a3a" stroke-width="2"/>
+        <path d="M202,192 L238,165 L262,165 L298,192 L298,308 L250,352 L202,308 Z"
+              fill="none" stroke="#5a4a2a" stroke-width="1.5"/>
+
+        <path d="M208,198 L240,172 L260,172 L292,198 L292,302 L250,345 L208,302 Z"
+              fill="url(#sapphireGrad)"/>
+
+        <path d="M230,250 L250,200 L270,250 L250,320 Z" fill="rgba(255,255,255,0.04)"/>
+        <path d="M208,250 L230,250 L250,320 L220,290 Z" fill="rgba(0,0,0,0.08)"/>
+        <path d="M292,250 L270,250 L250,320 L280,290 Z" fill="rgba(0,0,0,0.06)"/>
+
+        <ellipse cx="235" cy="215" rx="25" ry="35" fill="url(#sapphireHighlight)" transform="rotate(-15,235,215)"/>
+
+        <path d="M220,300 L250,345 L280,300 L250,285 Z" fill="rgba(0,0,20,0.4)"/>
+
+        <g font-family="'Courier New', monospace" font-size="9" fill="rgba(200,180,150,0.25)"
+           text-anchor="middle" letter-spacing="1">
+            <text x="250" y="220">I START IN</text>
+            <text x="250" y="233">THE DEEP</text>
+            <text x="250" y="260">I HIDE IN</text>
+            <text x="250" y="273">THE BLOOM</text>
+            <text x="250" y="300">WHO AM I</text>
+        </g>
+
+        <circle cx="250" cy="110" r="10" fill="none" stroke="url(#metalRing)" stroke-width="3"/>
+        <circle cx="250" cy="110" r="6" fill="none" stroke="#4a3a2a" stroke-width="1"/>
+
+        <rect x="244" y="118" width="12" height="25" rx="2" fill="url(#metalRing)" stroke="#3a2a1a" stroke-width="1"/>
+
+        <path d="M235,145 Q215,130 222,115" stroke="url(#metalRing)" stroke-width="3" fill="none"/>
+        <path d="M265,145 Q285,130 278,115" stroke="url(#metalRing)" stroke-width="3" fill="none"/>
+
+        <circle cx="227" cy="125" r="2.5" fill="#e8c86a"/>
+        <circle cx="273" cy="125" r="2.5" fill="#e8c86a"/>
+
+        <path d="M230,155 L270,155 L268,163 L232,163 Z" fill="url(#metalRing)" stroke="#3a2a1a" stroke-width="1"/>
+        <circle cx="238" cy="159" r="1.5" fill="#e8c86a"/>
+        <circle cx="262" cy="159" r="1.5" fill="#e8c86a"/>
+        <circle cx="250" cy="159" r="1.5" fill="#e8c86a"/>
+    </g>
+
+    <path d="M200,220 Q225,180 250,220 Q275,260 300,220 L300,320 L250,380 L200,320 Z"
+          fill="rgba(74,144,217,0.08)" filter="url(#softGlow)"/>
+
+    <g stroke="#4a3a2a" stroke-width="1" fill="none" opacity="0.5">
+        <path d="M30,30 L70,30 L70,40 L40,40 L40,70 L30,70 Z"/>
+        <path d="M35,35 L65,35 L65,38 L38,38 L38,65 L35,65 Z" fill="#3a2a1a"/>
+        <path d="M470,30 L430,30 L430,40 L460,40 L460,70 L470,70 Z"/>
+        <path d="M465,35 L435,35 L435,38 L462,38 L462,65 L465,65 Z" fill="#3a2a1a"/>
+        <path d="M30,470 L70,470 L70,460 L40,460 L40,430 L30,430 Z"/>
+        <path d="M35,465 L65,465 L65,462 L38,462 L38,435 L35,435 Z" fill="#3a2a1a"/>
+        <path d="M470,470 L430,470 L430,460 L460,460 L460,430 L470,430 Z"/>
+        <path d="M465,465 L435,465 L435,462 L462,462 L462,435 L465,435 Z" fill="#3a2a1a"/>
+    </g>
+
+    <path d="M200,55 Q250,40 300,55" stroke="#8a7a3a" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M210,62 Q250,50 290,62" stroke="#5a4a2a" stroke-width="1" fill="none" opacity="0.4"/>
+</svg>

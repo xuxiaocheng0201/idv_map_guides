@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0 - 2026/10/13
+
+- feat 添加冷启动进度展示
+- feat 添加界面 logo
+- fix 修复一个统计 api 的 NPE 问题
+
 ## 3.2.0 - 2026/10/12 - 8d8ad4b9fa286e55791edef89c6243f31b55ad5c
 
 - fix 修复路由错误
