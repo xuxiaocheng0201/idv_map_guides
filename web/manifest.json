@@ -1,0 +1,11 @@
+{
+    "name": "idv_map_guides",
+    "short_name": "idv_map_guides",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "IdentityV CrypticNotes maps guide.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false
+}
