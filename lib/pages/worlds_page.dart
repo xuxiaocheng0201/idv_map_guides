@@ -74,6 +74,7 @@ class _WorldListPageState extends State<WorldListPage> {
   String? _viewMetricEntranceName;
 
   void _startView() {
+    if (!mounted) return;
     _viewMetricStartTime = DateTime.now();
     _viewMetricMapName = worldLabel(_currentWorld, context);
     _viewMetricEntranceName = entrance.label(context);
