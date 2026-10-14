@@ -379,6 +379,46 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     final distExit = distLandmarkExit[current];
     return (dist: distTotal + distExit, path: path);
   }
+  /// 2-opt 优化
+  /// [path] 含起点不含出口
+  /// [fixedPrefix] 为不允许参与反转的前缀长度（固定先取关键资源点）
+  ({int dist, List<int> path}) twoOpt(List<int> path, int fixedPrefix) {
+    int costOf(List<int> p) {
+      int total = 0;
+      bool keyed = keyResource == null || p.first == keyPositionLandmark;
+      for (int i = 0; i + 1 < p.length; i++) {
+        final d = distLandmarks[p[i]][p[i + 1]]!;
+        total += d * (keyed ? defaultWeight : keyResourceWeight);
+        if (!keyed && p[i + 1] == keyPositionLandmark) keyed = true;
+      }
+      total += distLandmarkExit[p.last] * defaultWeight;
+      return total;
+    }
+    var bestPath = List<int>.from(path);
+    var bestCost = costOf(bestPath);
+    var improved = true;
+    while (improved) {
+      improved = false;
+      // 反转 [i+1, j]，要求 i+1 >= fixedPrefix 以保留前缀
+      for (var i = fixedPrefix - 1; i < bestPath.length - 1; i++) {
+        for (var j = i + 2; j < bestPath.length; j++) {
+          final candidate = List<int>.from(bestPath);
+          candidate.replaceRange(
+            i + 1,
+            j + 1,
+            candidate.sublist(i + 1, j + 1).reversed,
+          );
+          final c = costOf(candidate);
+          if (c < bestCost) {
+            bestCost = c;
+            bestPath = candidate;
+            improved = true;
+          }
+        }
+      }
+    }
+    return (dist: bestCost, path: bestPath);
+  }
   // 计算上界
   int? greedyCost;
   List<int>? greedyPath;
@@ -389,6 +429,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     if (distKey != null && result != null) {
       greedyCost = distKey * keyResourceWeight + result.dist * defaultWeight;
       greedyPath = <int>[startLandmark, ...result.path];
+      final improved = twoOpt(greedyPath, 2);
+      greedyCost = improved.dist;
+      greedyPath = improved.path;
     }
   } else {
     // 不存在关键资源点/起点就是关键资源点(直接传送)，直接收集所有资源
@@ -396,6 +439,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
     if (result != null) {
       greedyCost = result.dist * defaultWeight;
       greedyPath = result.path;
+      final improved = twoOpt(greedyPath, 1);
+      greedyCost = improved.dist;
+      greedyPath = improved.path;
     }
   }
 
