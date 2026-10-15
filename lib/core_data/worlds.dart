@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:cachemesh/cachemesh.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
@@ -13,12 +12,21 @@ import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class WorldsManager<W extends BaseWorldsEnums> {
   final WorldsProvider<W> provider;
   WorldsManager({required this.provider});
 
   Future<Uint8List> _loadAssets(String file) async {
+    Sentry.addBreadcrumb(Breadcrumb(
+      message: 'loadAssets',
+      data: {
+        'type': provider.type.assets,
+        'difficulty': provider.difficulty.assets,
+        'file': file,
+      },
+    ));
     try {
       return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
     } on FlutterError {

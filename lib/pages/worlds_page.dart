@@ -78,6 +78,16 @@ class _WorldListPageState extends State<WorldListPage> {
     _viewMetricStartTime = DateTime.now();
     _viewMetricMapName = worldLabel(_currentWorld, context);
     _viewMetricEntranceName = entrance.label(context);
+    Sentry.addBreadcrumb(Breadcrumb.userInteraction(
+      subCategory: 'viewWorld',
+      data: {
+        'type': manager.provider.type.assets,
+        'difficulty': manager.provider.difficulty.assets,
+        'world': _viewMetricMapName,
+        'entrance': _viewMetricEntranceName,
+        'layer': _currentLayerIndex,
+      },
+    ));
   }
 
   void _endView() {

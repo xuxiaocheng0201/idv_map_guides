@@ -13,6 +13,7 @@ import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class EntranceFeaturePageArguments {
   final WorldsManager<BaseWorldsEnums> manager;
@@ -347,15 +348,22 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                     final world = snapshot.data!;
                     return InkWell(
                       onTap: () {
+                        final arguments = WorldListPageArguments(
+                          manager: manager,
+                          worlds: worlds,
+                          entrance: entrance,
+                          settings: _defaultNavigateSettings,
+                        );
+                        Sentry.addBreadcrumb(Breadcrumb.userInteraction(
+                          subCategory: 'worldThumbnail',
+                          data: {
+                            'arguments': arguments.toString(),
+                          },
+                        ));
                         Navigator.pushNamed(
                           context,
                           Routes.worlds,
-                          arguments: WorldListPageArguments(
-                            manager: manager,
-                            worlds: worlds,
-                            entrance: entrance,
-                            settings: _defaultNavigateSettings,
-                          ),
+                          arguments: arguments,
                         );
                       },
                       child: CustomPaint(
