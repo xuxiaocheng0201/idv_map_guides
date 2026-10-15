@@ -81,15 +81,18 @@ class _WorldListPageState extends State<WorldListPage> {
   }
 
   void _endView() {
-    if (_viewMetricStartTime == null) return;
-    final elapsedMs = DateTime.now().difference(_viewMetricStartTime!).inMilliseconds;
+    final startTime = _viewMetricStartTime;
+    final mapName = _viewMetricMapName;
+    final entranceName = _viewMetricEntranceName;
+    if (startTime == null || mapName == null || entranceName == null) return;
+    final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
     Sentry.metrics.distribution(
       'world_view',
       elapsedMs.toDouble(),
       unit: SentryMetricUnit.millisecond,
       attributes: {
-        'map_name': SentryAttribute.string(_viewMetricMapName!),
-        'entrance_type': SentryAttribute.string(_viewMetricEntranceName!),
+        'map_name': SentryAttribute.string(mapName),
+        'entrance_type': SentryAttribute.string(entranceName),
       },
     );
     _viewMetricStartTime = null;

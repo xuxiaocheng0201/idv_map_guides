@@ -81,6 +81,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         key: 'precomputed/navigate/${world.index}',
         fetch: () async {
           final data = await _loadAssets('${provider.precomputedNavigateAssets(world)}.precomputed');
+          if (data.isEmpty) throw FormatException();
           final (_, paths) = deserializePrecomputedNavigatePath(data);
           for (final entry in paths.entries) {
             _fetchWithCache(
@@ -104,6 +105,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         key: 'precomputed/navigate_double/${world.index}',
         fetch: () async {
           final data = await _loadAssets('${provider.precomputedNavigateDoubleAssets(world)}.precomputed');
+          if (data.isEmpty) throw FormatException();
           final (_, paths) = deserializePrecomputedNavigateDoublePath(data);
           for (final entry in paths.entries) {
             _fetchWithCache(
