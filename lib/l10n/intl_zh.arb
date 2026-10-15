@@ -1,6 +1,8 @@
 {
   "@@locale": "zh",
   "title": "第五人格加页手记小抄",
+  "feedback": "问题反馈",
+
   "worldTheBringerOfDoom": "厄运之女",
   "difficultyNovice": "新手",
   "difficultyEasy": "简单",
@@ -28,6 +30,7 @@
   "entranceTypeMain": "正门",
   "entranceTypeSideGround": "一楼侧门",
   "entranceTypeSideSecond": "二楼侧门",
+
   "worldTheBringerOfDoomNovice": "新手",
   "worldTheBringerOfDoomHardNorth1": "北-1",
   "worldTheBringerOfDoomHardNorth1Sofa": "北-1沙发",
@@ -85,6 +88,7 @@
   "worldTheBringerOfDoomInsaneWestVerticalCornerStair": "左-拐角楼梯",
   "worldTheBringerOfDoomInsaneWestStair1": "左-骑士1",
   "worldTheBringerOfDoomInsaneWestStair": "左-骑士",
+
   "mainEntranceFeatureHasUp": "前开",
   "mainEntranceFeatureHasLeft": "左开",
   "mainEntranceFeatureHasRight": "右开",

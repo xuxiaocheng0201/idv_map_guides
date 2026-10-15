@@ -1,6 +1,8 @@
 {
   "@@locale": "en",
   "title": "IDV Cryptic Notes Map Guides",
+  "feedback": "Feedback",
+
   "worldTheBringerOfDoom": "The Bringer Of Doom",
   "difficultyNovice": "Novice",
   "difficultyEasy": "Easy",
@@ -28,6 +30,7 @@
   "entranceTypeMain": "Main",
   "entranceTypeSideGround": "Side Ground",
   "entranceTypeSideSecond": "Side Second",
+
   "worldTheBringerOfDoomNovice": "新手",
   "worldTheBringerOfDoomHardNorth1": "北-1",
   "worldTheBringerOfDoomHardNorth1Sofa": "北-1沙发",
@@ -85,6 +88,7 @@
   "worldTheBringerOfDoomInsaneWestVerticalCornerStair": "左-拐角楼梯",
   "worldTheBringerOfDoomInsaneWestStair1": "左-骑士1",
   "worldTheBringerOfDoomInsaneWestStair": "左-骑士",
+
   "mainEntranceFeatureHasUp": "Up",
   "mainEntranceFeatureHasLeft": "Left",
   "mainEntranceFeatureHasRight": "Right",

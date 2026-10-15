@@ -11,8 +11,11 @@ import 'package:idv_map_guides/routes.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:toastification/toastification.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+const initializeSentry = !kDebugMode;
+
 void main() async {
-  if (kDebugMode) {
+  if (!initializeSentry) {
     runApp(const MyApp());
   } else {
     const dsn = String.fromEnvironment('SENTRY_DSN');
@@ -20,11 +23,10 @@ void main() async {
       options.dsn = dsn;
       options.sendDefaultPii = true;
       options.sampleRate = 1.0;
-      options.tracesSampleRate = 0.2;
+      options.tracesSampleRate = 1.0;
       options.attachScreenshot = true;
       options.privacy.maskAllText = false;
-      options.replay.sessionSampleRate = 0.1;
-      options.replay.onErrorSampleRate = 1.0;
+      options.navigatorKey = navigatorKey;
     }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
   }
 }
@@ -48,6 +50,7 @@ class MyApp extends StatelessWidget {
           ],
           supportedLocales: S.delegate.supportedLocales,
           onGenerateTitle: (context) => S.of(context).title,
+          navigatorKey: navigatorKey,
           initialRoute: Routes.home,
           onGenerateRoute: (settings) {
             WidgetBuilder? resolve(RouteSettings settings) {
