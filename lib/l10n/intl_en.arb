@@ -2,6 +2,7 @@
   "@@locale": "en",
   "title": "IDV Cryptic Notes Map Guides",
   "feedback": "Feedback",
+  "loadError": "Error, please refresh.",
 
   "worldTheBringerOfDoom": "The Bringer Of Doom",
   "difficultyNovice": "Novice",

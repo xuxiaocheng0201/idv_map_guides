@@ -188,7 +188,7 @@ class _WorldListPageState extends State<WorldListPage> {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
-            final world = snapshot.data!;
+            final world = snapshot.requireData;
             final layer = layers[_currentLayerIndex];
             final navigateArguments = _navigateMode ? _navigateArguments.putIfAbsent(_currentWorld, () {
               return UnionNavigateArguments.fromProvider(

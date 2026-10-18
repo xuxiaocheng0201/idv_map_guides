@@ -38,6 +38,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   WorldsManager<BaseWorldsEnums> get manager => widget.arguments.manager;
 
   bool _loading = true;
+  bool _loadError = false;
   final Map<EntranceType, SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>> _worlds = {};
 
   DefaultNavigateSettings _defaultNavigateSettings = DefaultNavigateSettings();
@@ -50,27 +51,32 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
   }
 
   Future<void> _loadAllData() async {
-    for (final entrance in manager.provider.validEntrances) {
-      assert(entrance.displayable);
-      final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>();
-      for (final worldType in manager.provider.allWorlds) {
-        final world = await manager.getWorld(worldType);
-        final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
-        final signature = painter.getSignature();
-        final feature = switch (entrance) {
-          EntranceType.main => EntranceFeature.main(feature: manager.provider.inferMainEntranceFeature(world, entrance)),
-          EntranceType.sideGround => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
-          EntranceType.sideSecond => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
-          EntranceType.alterBasement => throw UnsupportedError('alter basement is not displayable'),
-        };
-        featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<BaseWorldsEnums>>(
-          equals: (a, b) => const ListEquality<bool>().equals(a, b),
-          hashCode: (a) => const ListEquality<bool>().hash(a),
-        )).putIfAbsent(signature, () => []).add(worldType);
+    try {
+      for (final entrance in manager.provider.validEntrances) {
+        assert(entrance.displayable);
+        final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>();
+        for (final worldType in manager.provider.allWorlds) {
+          final world = await manager.getWorld(worldType);
+          final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
+          final signature = painter.getSignature();
+          final feature = switch (entrance) {
+            EntranceType.main => EntranceFeature.main(feature: manager.provider.inferMainEntranceFeature(world, entrance)),
+            EntranceType.sideGround => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
+            EntranceType.sideSecond => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
+            EntranceType.alterBasement => throw UnsupportedError('alter basement is not displayable'),
+          };
+          featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<BaseWorldsEnums>>(
+            equals: (a, b) => const ListEquality<bool>().equals(a, b),
+            hashCode: (a) => const ListEquality<bool>().hash(a),
+          )).putIfAbsent(signature, () => []).add(worldType);
+        }
+        _worlds[entrance] = featureMap;
       }
-      _worlds[entrance] = featureMap;
+      if (mounted) setState(() => _loading = false);
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+      if (mounted) setState(() { _loading = false; _loadError = true; });
     }
-    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -94,6 +100,16 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError
+          ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red),
+                Text(S.of(context).loadError),
+              ],
+            ),
+          )
           : Row(
             children: [
               Expanded(child: _buildEntranceTabBar(context)),
@@ -352,7 +368,11 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                     if (snapshot.connectionState != ConnectionState.done) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final world = snapshot.data!;
+                    if (snapshot.hasError) {
+                      Sentry.captureException(snapshot.error!, stackTrace: snapshot.stackTrace!);
+                      return const Center(child: Text('error'));
+                    }
+                    final world = snapshot.requireData;
                     return InkWell(
                       onTap: () {
                         final arguments = WorldListPageArguments(

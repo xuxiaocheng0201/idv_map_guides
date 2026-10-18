@@ -27,11 +27,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         'file': file,
       },
     ));
-    try {
-      return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
-    } on FlutterError {
-      return Uint8List(0); // load failed
-    }
+    return Uint8List.sublistView(await rootBundle.load('assets/maps/${provider.type.assets}/${provider.difficulty.assets}/$file'));
   }
 
   final Cache cache = Cache();

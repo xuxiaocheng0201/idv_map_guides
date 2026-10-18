@@ -2,6 +2,7 @@
   "@@locale": "zh",
   "title": "第五人格加页手记小抄",
   "feedback": "问题反馈",
+  "loadError": "加载错误，请刷新重试",
 
   "worldTheBringerOfDoom": "厄运之女",
   "difficultyNovice": "新手",
