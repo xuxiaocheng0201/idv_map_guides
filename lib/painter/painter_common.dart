@@ -373,9 +373,11 @@ void paintLayerEntrances(
   int maxX,
   int minY,
   int maxY,
+  bool paintNotDisplayable,
 ) {
   for (final entry in world.entrances.entries) {
-    if (entry.key.layer != layer || !entry.key.displayable) continue;
+    if (entry.key.layer != layer) continue;
+    if (!paintNotDisplayable && !entry.key.displayable) continue;
     final entrance = entry.value;
     if (entrance.x < minX || entrance.x > maxX || entrance.y < minY || entrance.y > maxY) {
       continue;

@@ -79,7 +79,7 @@ class WorldPainter extends CustomPainter {
       canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY,
       shouldDrawResource: (x, y) => resources.contains(Node(layer, x, y)),
     );
-    paintLayerEntrances(canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY);
+    paintLayerEntrances(canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY, false);
 
     paintPath(canvas, cellSize, path2, layer, _cellCenter, path2Color);
     paintPath(canvas, cellSize, path, layer, _cellCenter, pathColor);

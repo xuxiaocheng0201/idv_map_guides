@@ -40,6 +40,7 @@ class EditorWorldPainter extends CustomPainter {
     paintLayerEntrances(
       canvas, world, layer, cellSize, cellRect,
       world.minX, world.maxX, world.minY, world.maxY,
+      true,
     );
     if (selectedStructure != null) {
       paintLayerSelectedBorders(
