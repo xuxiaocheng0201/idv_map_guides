@@ -96,9 +96,9 @@ class WorldsManager<W extends BaseWorldsEnums> {
           return ();
         },
       );
-    } on FormatException {
+    } on Exception {
       // silently fallback to compute realtime
-    } on RangeError {
+    } on Error {
       // silently fallback to compute realtime
     }
   }
@@ -120,9 +120,9 @@ class WorldsManager<W extends BaseWorldsEnums> {
           return ();
         },
       );
-    } on FormatException {
+    } on Exception {
       // silently fallback to compute realtime
-    } on RangeError {
+    } on Error {
       // silently fallback to compute realtime
     }
   }
