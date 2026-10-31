@@ -66,6 +66,31 @@ extension TheBringerOfDoomNoviceWorldsL10n on TheBringerOfDoomNoviceWorlds {
   }
 }
 
+extension TheBringerOfDoomEasyWorldsL10n on TheBringerOfDoomEasyWorlds {
+  String label(BuildContext context) {
+    return switch (this) {
+      TheBringerOfDoomEasyWorlds.northL => S.of(context).worldTheBringerOfDoomEasyNorthL,
+      TheBringerOfDoomEasyWorlds.northFiveBed => S.of(context).worldTheBringerOfDoomEasyNorthFiveBed,
+      TheBringerOfDoomEasyWorlds.northConcave => S.of(context).worldTheBringerOfDoomEasyNorthConcave,
+      TheBringerOfDoomEasyWorlds.northRed => S.of(context).worldTheBringerOfDoomEasyNorthRed,
+      TheBringerOfDoomEasyWorlds.northRedDiagonal => S.of(context).worldTheBringerOfDoomEasyNorthRedDiagonal,
+      TheBringerOfDoomEasyWorlds.eastH => S.of(context).worldTheBringerOfDoomEasyEastH,
+      TheBringerOfDoomEasyWorlds.eastL => S.of(context).worldTheBringerOfDoomEasyEastL,
+      TheBringerOfDoomEasyWorlds.eastT => S.of(context).worldTheBringerOfDoomEasyEastT,
+      TheBringerOfDoomEasyWorlds.eastTwoL => S.of(context).worldTheBringerOfDoomEasyEastTwoL,
+      TheBringerOfDoomEasyWorlds.eastFlatHammer => S.of(context).worldTheBringerOfDoomEasyEastFlatHammer,
+      TheBringerOfDoomEasyWorlds.eastHammer => S.of(context).worldTheBringerOfDoomEasyEastHammer,
+      TheBringerOfDoomEasyWorlds.eastFork => S.of(context).worldTheBringerOfDoomEasyEastFork,
+      TheBringerOfDoomEasyWorlds.westL => S.of(context).worldTheBringerOfDoomEasyWestL,
+      TheBringerOfDoomEasyWorlds.westY => S.of(context).worldTheBringerOfDoomEasyWestY,
+      TheBringerOfDoomEasyWorlds.westZ => S.of(context).worldTheBringerOfDoomEasyWestZ,
+      TheBringerOfDoomEasyWorlds.westCross => S.of(context).worldTheBringerOfDoomEasyWestCross,
+      TheBringerOfDoomEasyWorlds.westLong1 => S.of(context).worldTheBringerOfDoomEasyWestLong1,
+      TheBringerOfDoomEasyWorlds.westFork => S.of(context).worldTheBringerOfDoomEasyWestFork,
+    };
+  }
+}
+
 extension TheBringerOfDoomHardWorldsL10n on TheBringerOfDoomHardWorlds {
   String label(BuildContext context) {
     return switch (this) {
@@ -140,6 +165,7 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
 
 String worldLabel(BaseWorldsEnums world, BuildContext context) {
   if (world is TheBringerOfDoomNoviceWorlds) return world.label(context);
+  if (world is TheBringerOfDoomEasyWorlds) return world.label(context);
   if (world is TheBringerOfDoomHardWorlds) return world.label(context);
   if (world is TheBringerOfDoomInsaneWorlds) return world.label(context);
   return (world as dynamic).label(context) as String; // unreachable

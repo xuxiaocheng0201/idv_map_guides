@@ -15,7 +15,7 @@ WorldsProvider<BaseWorldsEnums>? worldProvider(WorldType type, WorldDifficulty d
   return switch (type) {
     WorldType.theBringerOfDoom => switch (diff) {
       WorldDifficulty.novice => TheBringerOfDoomNoviceWorldsProvider(),
-      WorldDifficulty.easy => null,
+      WorldDifficulty.easy => TheBringerOfDoomEasyWorldsProvider(),
       WorldDifficulty.normal => null,
       WorldDifficulty.hard => TheBringerOfDoomHardWorldsProvider(),
       WorldDifficulty.insane => TheBringerOfDoomInsaneWorldsProvider(),
@@ -60,7 +60,7 @@ Future<bool> isWorldUpToDate(
 }
 
 Future<void> main(List<String> args) async {
-  final force = args.contains('--force');
+  final force = args.contains('--force') || args.contains('-f');
   final root = Directory.current;
   stdout.writeln('[precompute] 开始预计算导航');
   for (final type in WorldType.values) {

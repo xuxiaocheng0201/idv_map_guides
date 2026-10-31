@@ -92,6 +92,60 @@ class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDo
   @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
 
+enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
+  northL,
+  northFiveBed,
+  northConcave,
+  northRed,
+  northRedDiagonal,
+  eastH,
+  eastL,
+  eastT,
+  eastTwoL,
+  eastFlatHammer,
+  eastHammer,
+  eastFork,
+  westL,
+  westY,
+  westZ,
+  westCross,
+  westLong1,
+  westFork;
+
+  String get _assets => switch (this) {
+    northL => 'north_l',
+    northFiveBed => 'north_five_bed',
+    northConcave => 'north_concave',
+    northRed => 'north_red',
+    northRedDiagonal => 'north_red_diagonal',
+    eastH => 'east_h',
+    eastL => 'east_l',
+    eastT => 'east_t',
+    eastTwoL => 'east_two_l',
+    eastFlatHammer => 'east_flat_hammer',
+    eastHammer => 'east_hammer',
+    eastFork => 'east_fork',
+    westL => 'west_l',
+    westY => 'west_y',
+    westZ => 'west_z',
+    westCross => 'west_cross',
+    westLong1 => 'west_long_1',
+    westFork => 'west_fork',
+  };
+}
+
+class TheBringerOfDoomEasyWorldsProvider extends WorldsProvider<TheBringerOfDoomEasyWorlds> {
+  @override WorldType get type => WorldType.theBringerOfDoom;
+  @override WorldDifficulty get difficulty => WorldDifficulty.easy;
+  @override List<TheBringerOfDoomEasyWorlds> get allWorlds => TheBringerOfDoomEasyWorlds.values;
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground];
+  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround];
+  @override String worldAssets(TheBringerOfDoomEasyWorlds world) => 'world_${world._assets}.data';
+  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
+  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
+}
+
 enum TheBringerOfDoomHardWorlds implements BaseWorldsEnums {
   north1,
   north1Sofa,

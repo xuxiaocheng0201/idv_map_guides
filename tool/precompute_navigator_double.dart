@@ -28,7 +28,7 @@ Future<bool> isWorldUpToDate(
 }
 
 Future<void> main(List<String> args) async {
-  final force = args.contains('--force');
+  final force = args.contains('--force') || args.contains('-f');
   final root = Directory.current;
   stdout.writeln('[precompute/double] 开始预计算导航');
   for (final type in WorldType.values) {
