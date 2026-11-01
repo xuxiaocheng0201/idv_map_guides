@@ -62,18 +62,48 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
   };
 }
 
+int _entrancesLength(EntranceType from, EntranceType to) {
+  return switch (from) {
+    EntranceType.main => switch (to) {
+      EntranceType.main => 0,
+      EntranceType.sideGround => 15,
+      EntranceType.sideSecond => 15,
+      EntranceType.alterBasement => throw UnimplementedError(),
+    },
+    EntranceType.sideGround => switch (to) {
+      EntranceType.main => 15,
+      EntranceType.sideGround => 0,
+      EntranceType.sideSecond => 20,
+      EntranceType.alterBasement => throw UnimplementedError(),
+    },
+    EntranceType.sideSecond => switch (to) {
+      EntranceType.main => 8,
+      EntranceType.sideGround => 20,
+      EntranceType.sideSecond => 0,
+      EntranceType.alterBasement => throw UnimplementedError(),
+    },
+    EntranceType.alterBasement => throw UnimplementedError(),
+  };
+}
+
 NavigateArguments _navigateArguments(World world, EntranceType entrance) {
   final entrancePos = world.entrances[entrance]!.position;
   final startNode = Node(entrance.layer, entrancePos.x, entrancePos.y);
   final resources = Set.of(world.resources);
-  final exitNodes = <Node>{};
+  final exitNodes = <EntranceType, Node>{};
   for (final entry in world.entrances.entries) {
     if (!entry.key.displayable) continue;
     final node = Node(entry.key.layer, entry.value.x, entry.value.y);
-    exitNodes.add(node);
+    exitNodes[entry.key] = node;
   }
-  // TODO: set entrancesLength
-  return NavigateArguments(start: startNode, resources: resources, exits: exitNodes);
+  final entrancesLength = <(Node, Node), int>{};
+  for (final from in exitNodes.entries) {
+    for (final to in exitNodes.entries) {
+      if (from.key == to.key) continue;
+      entrancesLength[(from.value, to.value)] = _entrancesLength(from.key, to.key);
+    }
+  }
+  return NavigateArguments(start: startNode, resources: resources, exits: exitNodes.values.toSet(), entrancesLength: entrancesLength);
 }
 
 enum TheBringerOfDoomNoviceWorlds implements BaseWorldsEnums {

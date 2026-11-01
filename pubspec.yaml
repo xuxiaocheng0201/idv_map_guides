@@ -1,12 +1,12 @@
 name: idv_map_guides
-description: "IdentityV CrypticNotes maps guide."
+description: "IdentityV CrypticNotes map guide."
 publish_to: 'none'
 
-version: 3.8.0
+version: 3.9.0
 
 environment:
-  sdk: ^3.13.5
-  flutter: ^3.47.7
+  sdk: ^3.13.7
+  flutter: ^3.47.9
 
 dependencies:
   flutter:
@@ -18,8 +18,8 @@ dependencies:
   package_info_plus: ^10.2.2
   sentry_flutter: ^10.2.0
   freezed_annotation: ^3.1.0
-  toastification: ^3.2.0
-  file_picker: ^13.1.0
+  toastification: ^3.2.2
+  file_picker: ^13.3.1
   path: ^1.9.1
   messagepack: ^0.2.1
   comparators: ^1.2.0
