@@ -75,7 +75,6 @@ extension TheBringerOfDoomEasyWorldsL10n on TheBringerOfDoomEasyWorlds {
       TheBringerOfDoomEasyWorlds.northRed => S.of(context).worldTheBringerOfDoomEasyNorthRed,
       TheBringerOfDoomEasyWorlds.northRedDiagonal => S.of(context).worldTheBringerOfDoomEasyNorthRedDiagonal,
       TheBringerOfDoomEasyWorlds.eastH => S.of(context).worldTheBringerOfDoomEasyEastH,
-      TheBringerOfDoomEasyWorlds.eastL => S.of(context).worldTheBringerOfDoomEasyEastL,
       TheBringerOfDoomEasyWorlds.eastT => S.of(context).worldTheBringerOfDoomEasyEastT,
       TheBringerOfDoomEasyWorlds.eastTwoL => S.of(context).worldTheBringerOfDoomEasyEastTwoL,
       TheBringerOfDoomEasyWorlds.eastFlatHammer => S.of(context).worldTheBringerOfDoomEasyEastFlatHammer,
@@ -85,6 +84,7 @@ extension TheBringerOfDoomEasyWorldsL10n on TheBringerOfDoomEasyWorlds {
       TheBringerOfDoomEasyWorlds.westY => S.of(context).worldTheBringerOfDoomEasyWestY,
       TheBringerOfDoomEasyWorlds.westZ => S.of(context).worldTheBringerOfDoomEasyWestZ,
       TheBringerOfDoomEasyWorlds.westCross => S.of(context).worldTheBringerOfDoomEasyWestCross,
+      TheBringerOfDoomEasyWorlds.westReverseC => S.of(context).worldTheBringerOfDoomEasyWestReverseC,
       TheBringerOfDoomEasyWorlds.westLong1 => S.of(context).worldTheBringerOfDoomEasyWestLong1,
       TheBringerOfDoomEasyWorlds.westFork => S.of(context).worldTheBringerOfDoomEasyWestFork,
     };

@@ -99,7 +99,6 @@ enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
   northRed,
   northRedDiagonal,
   eastH,
-  eastL,
   eastT,
   eastTwoL,
   eastFlatHammer,
@@ -109,6 +108,7 @@ enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
   westY,
   westZ,
   westCross,
+  westReverseC,
   westLong1,
   westFork;
 
@@ -119,7 +119,6 @@ enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
     northRed => 'north_red',
     northRedDiagonal => 'north_red_diagonal',
     eastH => 'east_h',
-    eastL => 'east_l',
     eastT => 'east_t',
     eastTwoL => 'east_two_l',
     eastFlatHammer => 'east_flat_hammer',
@@ -129,6 +128,7 @@ enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
     westY => 'west_y',
     westZ => 'west_z',
     westCross => 'west_cross',
+    westReverseC => 'west_reverse_c',
     westLong1 => 'west_long_1',
     westFork => 'west_fork',
   };
