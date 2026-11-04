@@ -137,7 +137,6 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
       TheBringerOfDoomInsaneWorlds.northStair => S.of(context).worldTheBringerOfDoomInsaneNorthStair,
       TheBringerOfDoomInsaneWorlds.southThreeRed => S.of(context).worldTheBringerOfDoomInsaneSouthThreeRed,
       TheBringerOfDoomInsaneWorlds.southH => S.of(context).worldTheBringerOfDoomInsaneSouthH,
-      TheBringerOfDoomInsaneWorlds.southN => S.of(context).worldTheBringerOfDoomInsaneSouthN,
       TheBringerOfDoomInsaneWorlds.southFloating => S.of(context).worldTheBringerOfDoomInsaneSouthFloating,
       TheBringerOfDoomInsaneWorlds.southWhiteRoom => S.of(context).worldTheBringerOfDoomInsaneSouthWhiteRoom,
       TheBringerOfDoomInsaneWorlds.eastC => S.of(context).worldTheBringerOfDoomInsaneEastC,
@@ -146,7 +145,6 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
       TheBringerOfDoomInsaneWorlds.eastBreakC => S.of(context).worldTheBringerOfDoomInsaneEastBreakC,
       TheBringerOfDoomInsaneWorlds.eastShortT => S.of(context).worldTheBringerOfDoomInsaneEastShortT,
       TheBringerOfDoomInsaneWorlds.eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
-      TheBringerOfDoomInsaneWorlds.west1VerticalBookGallery => S.of(context).worldTheBringerOfDoomInsaneWest1VerticalBookGallery,
       TheBringerOfDoomInsaneWorlds.west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
       TheBringerOfDoomInsaneWorlds.westZ => S.of(context).worldTheBringerOfDoomInsaneWestZ,
       TheBringerOfDoomInsaneWorlds.westMeetingRoom => S.of(context).worldTheBringerOfDoomInsaneWestMeetingRoom,
@@ -158,7 +156,6 @@ extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
       TheBringerOfDoomInsaneWorlds.westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
       TheBringerOfDoomInsaneWorlds.westVerticalCornerStair => S.of(context).worldTheBringerOfDoomInsaneWestVerticalCornerStair,
       TheBringerOfDoomInsaneWorlds.westStair1 => S.of(context).worldTheBringerOfDoomInsaneWestStair1,
-      TheBringerOfDoomInsaneWorlds.westStair => S.of(context).worldTheBringerOfDoomInsaneWestStair,
     };
   }
 }

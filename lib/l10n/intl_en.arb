@@ -87,7 +87,6 @@
   "worldTheBringerOfDoomInsaneNorthStair": "北-骑士",
   "worldTheBringerOfDoomInsaneSouthThreeRed": "南-三红",
   "worldTheBringerOfDoomInsaneSouthH": "南-H",
-  "worldTheBringerOfDoomInsaneSouthN": "南-N",
   "worldTheBringerOfDoomInsaneSouthFloating": "南-悬空桌",
   "worldTheBringerOfDoomInsaneSouthWhiteRoom": "南-白房",
   "worldTheBringerOfDoomInsaneEastC": "右-C",
@@ -96,7 +95,6 @@
   "worldTheBringerOfDoomInsaneEastBreakC": "右-断C",
   "worldTheBringerOfDoomInsaneEastShortT": "右-短T",
   "worldTheBringerOfDoomInsaneEastLongZ": "右-长Z",
-  "worldTheBringerOfDoomInsaneWest1VerticalBookGallery": "左-1竖图书走廊",
   "worldTheBringerOfDoomInsaneWest11": "左-11",
   "worldTheBringerOfDoomInsaneWestZ": "左-Z",
   "worldTheBringerOfDoomInsaneWestMeetingRoom": "左-会客厅",
@@ -108,7 +106,6 @@
   "worldTheBringerOfDoomInsaneWestVerticalL": "左-竖L",
   "worldTheBringerOfDoomInsaneWestVerticalCornerStair": "左-拐角楼梯",
   "worldTheBringerOfDoomInsaneWestStair1": "左-骑士1",
-  "worldTheBringerOfDoomInsaneWestStair": "左-骑士",
 
   "mainEntranceFeatureHasUp": "Up",
   "mainEntranceFeatureHasLeft": "Left",

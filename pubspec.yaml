@@ -2,7 +2,7 @@ name: idv_map_guides
 description: "IdentityV CrypticNotes map guide."
 publish_to: 'none'
 
-version: 3.9.0
+version: 3.10.0
 
 environment:
   sdk: ^3.13.7
@@ -16,10 +16,10 @@ dependencies:
   intl: any
   cupertino_icons: ^2.0.0
   package_info_plus: ^10.2.2
-  sentry_flutter: ^10.2.0
+  sentry_flutter: ^10.3.0
   freezed_annotation: ^3.1.0
   toastification: ^3.2.2
-  file_picker: ^13.3.1
+  file_picker: ^13.3.2
   path: ^1.9.1
   messagepack: ^0.2.1
   comparators: ^1.2.0
@@ -37,7 +37,7 @@ dev_dependencies:
   freezed: ^4.0.3
   squadron_builder: ^9.3.2
   crypto: ^3.0.7
-  sw: ^0.2.0
+  sw: ^0.3.0
 
 flutter:
   uses-material-design: true

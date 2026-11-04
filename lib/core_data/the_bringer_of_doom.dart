@@ -260,7 +260,6 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   northStair,
   southThreeRed,
   southH,
-  southN,
   southFloating,
   southWhiteRoom,
   eastC,
@@ -269,7 +268,6 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   eastBreakC,
   eastShortT,
   eastLongZ,
-  west1VerticalBookGallery,
   west11,
   westZ,
   westMeetingRoom,
@@ -280,8 +278,7 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   westVertical5Bed,
   westVerticalL,
   westVerticalCornerStair,
-  westStair1,
-  westStair;
+  westStair1;
 
   String get _assets => switch (this) {
     northB => 'north_b',
@@ -291,7 +288,6 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
     northStair => 'north_stair',
     southThreeRed => 'south_three_red',
     southH => 'south_h',
-    southN => 'south_n',
     southFloating => 'south_floating',
     southWhiteRoom => 'south_white_room',
     eastC => 'east_c',
@@ -300,7 +296,6 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
     eastBreakC => 'east_break_c',
     eastShortT => 'east_short_t',
     eastLongZ => 'east_long_z',
-    west1VerticalBookGallery => 'west_1_vertical_book_gallery',
     west11 => 'west_11',
     westZ => 'west_z',
     westMeetingRoom => 'west_meeting_room',
@@ -312,7 +307,6 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
     westVerticalL => 'west_vertical_l',
     westVerticalCornerStair => 'west_vertical_corner_stair',
     westStair1 => 'west_stair_1',
-    westStair => 'west_stair',
   };
 }
 
