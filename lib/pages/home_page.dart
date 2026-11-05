@@ -55,7 +55,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   WorldType _world = WorldType.theBringerOfDoom;
-  WorldDifficulty _difficulty = WorldDifficulty.insane;
+  WorldDifficulty _difficulty = WorldDifficulty.nightmare;
 
   @override
   Widget build(BuildContext context) {

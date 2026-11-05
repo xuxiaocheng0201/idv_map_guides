@@ -19,7 +19,7 @@ extension WorldDifficultyL10n on WorldDifficulty {
       WorldDifficulty.easy => S.of(context).difficultyEasy,
       WorldDifficulty.normal => S.of(context).difficultyNormal,
       WorldDifficulty.hard => S.of(context).difficultyHard,
-      WorldDifficulty.insane => S.of(context).difficultyInsane,
+      WorldDifficulty.nightmare => S.of(context).difficultyNightmare,
     };
   }
 }
@@ -127,35 +127,35 @@ extension TheBringerOfDoomHardWorldsL10n on TheBringerOfDoomHardWorlds {
   }
 }
 
-extension TheBringerOfDoomInsaneWorldsL10n on TheBringerOfDoomInsaneWorlds {
+extension TheBringerOfDoomNightmareWorldsL10n on TheBringerOfDoomNightmareWorlds {
   String label(BuildContext context) {
     return switch (this) {
-      TheBringerOfDoomInsaneWorlds.northB => S.of(context).worldTheBringerOfDoomInsaneNorthB,
-      TheBringerOfDoomInsaneWorlds.northZ1 => S.of(context).worldTheBringerOfDoomInsaneNorthZ1,
-      TheBringerOfDoomInsaneWorlds.northCactus => S.of(context).worldTheBringerOfDoomInsaneNorthCactus,
-      TheBringerOfDoomInsaneWorlds.northLoop => S.of(context).worldTheBringerOfDoomInsaneNorthLoop,
-      TheBringerOfDoomInsaneWorlds.northStair => S.of(context).worldTheBringerOfDoomInsaneNorthStair,
-      TheBringerOfDoomInsaneWorlds.southThreeRed => S.of(context).worldTheBringerOfDoomInsaneSouthThreeRed,
-      TheBringerOfDoomInsaneWorlds.southH => S.of(context).worldTheBringerOfDoomInsaneSouthH,
-      TheBringerOfDoomInsaneWorlds.southFloating => S.of(context).worldTheBringerOfDoomInsaneSouthFloating,
-      TheBringerOfDoomInsaneWorlds.southWhiteRoom => S.of(context).worldTheBringerOfDoomInsaneSouthWhiteRoom,
-      TheBringerOfDoomInsaneWorlds.eastC => S.of(context).worldTheBringerOfDoomInsaneEastC,
-      TheBringerOfDoomInsaneWorlds.east1Lightning => S.of(context).worldTheBringerOfDoomInsaneEast1Lightning,
-      TheBringerOfDoomInsaneWorlds.eastCactus => S.of(context).worldTheBringerOfDoomInsaneEastCactus,
-      TheBringerOfDoomInsaneWorlds.eastBreakC => S.of(context).worldTheBringerOfDoomInsaneEastBreakC,
-      TheBringerOfDoomInsaneWorlds.eastShortT => S.of(context).worldTheBringerOfDoomInsaneEastShortT,
-      TheBringerOfDoomInsaneWorlds.eastLongZ => S.of(context).worldTheBringerOfDoomInsaneEastLongZ,
-      TheBringerOfDoomInsaneWorlds.west11 => S.of(context).worldTheBringerOfDoomInsaneWest11,
-      TheBringerOfDoomInsaneWorlds.westZ => S.of(context).worldTheBringerOfDoomInsaneWestZ,
-      TheBringerOfDoomInsaneWorlds.westMeetingRoom => S.of(context).worldTheBringerOfDoomInsaneWestMeetingRoom,
-      TheBringerOfDoomInsaneWorlds.westFlipT => S.of(context).worldTheBringerOfDoomInsaneWestFlipT,
-      TheBringerOfDoomInsaneWorlds.westCross => S.of(context).worldTheBringerOfDoomInsaneWestCross,
-      TheBringerOfDoomInsaneWorlds.westVertical1BookGallery => S.of(context).worldTheBringerOfDoomInsaneWestVertical1BookGallery,
-      TheBringerOfDoomInsaneWorlds.westVertical1Corner => S.of(context).worldTheBringerOfDoomInsaneWestVertical1Corner,
-      TheBringerOfDoomInsaneWorlds.westVertical5Bed => S.of(context).worldTheBringerOfDoomInsaneWestVertical5Bed,
-      TheBringerOfDoomInsaneWorlds.westVerticalL => S.of(context).worldTheBringerOfDoomInsaneWestVerticalL,
-      TheBringerOfDoomInsaneWorlds.westVerticalCornerStair => S.of(context).worldTheBringerOfDoomInsaneWestVerticalCornerStair,
-      TheBringerOfDoomInsaneWorlds.westStair1 => S.of(context).worldTheBringerOfDoomInsaneWestStair1,
+      TheBringerOfDoomNightmareWorlds.northB => S.of(context).worldTheBringerOfDoomNightmareNorthB,
+      TheBringerOfDoomNightmareWorlds.northZ1 => S.of(context).worldTheBringerOfDoomNightmareNorthZ1,
+      TheBringerOfDoomNightmareWorlds.northCactus => S.of(context).worldTheBringerOfDoomNightmareNorthCactus,
+      TheBringerOfDoomNightmareWorlds.northLoop => S.of(context).worldTheBringerOfDoomNightmareNorthLoop,
+      TheBringerOfDoomNightmareWorlds.northStair => S.of(context).worldTheBringerOfDoomNightmareNorthStair,
+      TheBringerOfDoomNightmareWorlds.southThreeRed => S.of(context).worldTheBringerOfDoomNightmareSouthThreeRed,
+      TheBringerOfDoomNightmareWorlds.southH => S.of(context).worldTheBringerOfDoomNightmareSouthH,
+      TheBringerOfDoomNightmareWorlds.southFloating => S.of(context).worldTheBringerOfDoomNightmareSouthFloating,
+      TheBringerOfDoomNightmareWorlds.southWhiteRoom => S.of(context).worldTheBringerOfDoomNightmareSouthWhiteRoom,
+      TheBringerOfDoomNightmareWorlds.eastC => S.of(context).worldTheBringerOfDoomNightmareEastC,
+      TheBringerOfDoomNightmareWorlds.east1Lightning => S.of(context).worldTheBringerOfDoomNightmareEast1Lightning,
+      TheBringerOfDoomNightmareWorlds.eastCactus => S.of(context).worldTheBringerOfDoomNightmareEastCactus,
+      TheBringerOfDoomNightmareWorlds.eastBreakC => S.of(context).worldTheBringerOfDoomNightmareEastBreakC,
+      TheBringerOfDoomNightmareWorlds.eastShortT => S.of(context).worldTheBringerOfDoomNightmareEastShortT,
+      TheBringerOfDoomNightmareWorlds.eastLongZ => S.of(context).worldTheBringerOfDoomNightmareEastLongZ,
+      TheBringerOfDoomNightmareWorlds.west11 => S.of(context).worldTheBringerOfDoomNightmareWest11,
+      TheBringerOfDoomNightmareWorlds.westZ => S.of(context).worldTheBringerOfDoomNightmareWestZ,
+      TheBringerOfDoomNightmareWorlds.westMeetingRoom => S.of(context).worldTheBringerOfDoomNightmareWestMeetingRoom,
+      TheBringerOfDoomNightmareWorlds.westFlipT => S.of(context).worldTheBringerOfDoomNightmareWestFlipT,
+      TheBringerOfDoomNightmareWorlds.westCross => S.of(context).worldTheBringerOfDoomNightmareWestCross,
+      TheBringerOfDoomNightmareWorlds.westVertical1BookGallery => S.of(context).worldTheBringerOfDoomNightmareWestVertical1BookGallery,
+      TheBringerOfDoomNightmareWorlds.westVertical1Corner => S.of(context).worldTheBringerOfDoomNightmareWestVertical1Corner,
+      TheBringerOfDoomNightmareWorlds.westVertical5Bed => S.of(context).worldTheBringerOfDoomNightmareWestVertical5Bed,
+      TheBringerOfDoomNightmareWorlds.westVerticalL => S.of(context).worldTheBringerOfDoomNightmareWestVerticalL,
+      TheBringerOfDoomNightmareWorlds.westVerticalCornerStair => S.of(context).worldTheBringerOfDoomNightmareWestVerticalCornerStair,
+      TheBringerOfDoomNightmareWorlds.westStair1 => S.of(context).worldTheBringerOfDoomNightmareWestStair1,
     };
   }
 }
@@ -164,6 +164,6 @@ String worldLabel(BaseWorldsEnums world, BuildContext context) {
   if (world is TheBringerOfDoomNoviceWorlds) return world.label(context);
   if (world is TheBringerOfDoomEasyWorlds) return world.label(context);
   if (world is TheBringerOfDoomHardWorlds) return world.label(context);
-  if (world is TheBringerOfDoomInsaneWorlds) return world.label(context);
+  if (world is TheBringerOfDoomNightmareWorlds) return world.label(context);
   return (world as dynamic).label(context) as String; // unreachable
 }

@@ -252,7 +252,7 @@ class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoom
   @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
 }
 
-enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
+enum TheBringerOfDoomNightmareWorlds implements BaseWorldsEnums {
   northB,
   northZ1,
   northCactus,
@@ -310,13 +310,13 @@ enum TheBringerOfDoomInsaneWorlds implements BaseWorldsEnums {
   };
 }
 
-class TheBringerOfDoomInsaneWorldsProvider extends WorldsProvider<TheBringerOfDoomInsaneWorlds> {
+class TheBringerOfDoomNightmareWorldsProvider extends WorldsProvider<TheBringerOfDoomNightmareWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
-  @override WorldDifficulty get difficulty => WorldDifficulty.insane;
-  @override List<TheBringerOfDoomInsaneWorlds> get allWorlds => TheBringerOfDoomInsaneWorlds.values;
+  @override WorldDifficulty get difficulty => WorldDifficulty.nightmare;
+  @override List<TheBringerOfDoomNightmareWorlds> get allWorlds => TheBringerOfDoomNightmareWorlds.values;
   @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground, GroundLayer.second, GroundLayer.basement];
   @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
-  @override String worldAssets(TheBringerOfDoomInsaneWorlds world) => 'world_${world._assets}.data';
+  @override String worldAssets(TheBringerOfDoomNightmareWorlds world) => 'world_${world._assets}.data';
   @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
   @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
   @override

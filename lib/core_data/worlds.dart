@@ -183,7 +183,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
 final _theBringerOfDoomNovice = WorldsManager(provider: TheBringerOfDoomNoviceWorldsProvider());
 final _theBringerOfDoomEasy = WorldsManager(provider: TheBringerOfDoomEasyWorldsProvider());
 final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
-final _theBringerOfDoomInsane = WorldsManager(provider: TheBringerOfDoomInsaneWorldsProvider());
+final _theBringerOfDoomNightmare = WorldsManager(provider: TheBringerOfDoomNightmareWorldsProvider());
 
 WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
   return switch (type) {
@@ -192,7 +192,7 @@ WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty
       WorldDifficulty.easy => _theBringerOfDoomEasy,
       WorldDifficulty.normal => null,
       WorldDifficulty.hard => _theBringerOfDoomHard,
-      WorldDifficulty.insane => _theBringerOfDoomInsane,
+      WorldDifficulty.nightmare => _theBringerOfDoomNightmare,
     },
   }?..preload();
 }

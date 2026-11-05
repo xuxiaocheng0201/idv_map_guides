@@ -18,7 +18,7 @@ WorldsProvider<BaseWorldsEnums>? worldProvider(WorldType type, WorldDifficulty d
       WorldDifficulty.easy => TheBringerOfDoomEasyWorldsProvider(),
       WorldDifficulty.normal => null,
       WorldDifficulty.hard => TheBringerOfDoomHardWorldsProvider(),
-      WorldDifficulty.insane => TheBringerOfDoomInsaneWorldsProvider(),
+      WorldDifficulty.nightmare => TheBringerOfDoomNightmareWorldsProvider(),
     },
   };
 }

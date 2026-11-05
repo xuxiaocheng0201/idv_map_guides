@@ -15,14 +15,14 @@ enum WorldDifficulty {
   easy,
   normal,
   hard,
-  insane;
+  nightmare;
 
   String get assets => switch (this) {
     WorldDifficulty.novice => 'novice',
     WorldDifficulty.easy => 'easy',
     WorldDifficulty.normal => 'normal',
     WorldDifficulty.hard => 'hard',
-    WorldDifficulty.insane => 'insane',
+    WorldDifficulty.nightmare => 'nightmare',
   };
 }
 
