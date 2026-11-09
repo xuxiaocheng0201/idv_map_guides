@@ -1,4 +1,5 @@
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
@@ -12,12 +13,12 @@ abstract interface class BaseWorldsEnums implements Enum {
 abstract class WorldsProvider<W extends BaseWorldsEnums> {
   WorldType get type;
   WorldDifficulty get difficulty;
+  WorldCodec get codec;
   List<W> get allWorlds;
   List<GroundLayer> get allLayers;
   List<EntranceType> get validEntrances;
   String worldAssets(W world);
-  MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance);
-  SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance);
+  EntranceFeature inferEntranceFeature(World world, EntranceType entrance);
   NavigateArguments navigateArguments(World world, EntranceType entrance);
   NavigateDoubleArguments navigateDoubleArguments(World world, EntranceType entrance1, EntranceType entrance2) {
     final origin1 = navigateArguments(world, entrance1);

@@ -5,6 +5,14 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/painter/painter_common.dart';
 
+class _NeutralLayer implements GroundLayer {
+  const _NeutralLayer();
+  @override int get index => 0;
+  @override int get code => 0;
+  @override GroundLayer? up() => null;
+  @override GroundLayer? down() => null;
+}
+
 class EditorStructurePainter extends CustomPainter {
   final Structure structure;
   final int width;
@@ -36,7 +44,7 @@ class EditorStructurePainter extends CustomPainter {
 
     final structured = PlacedStructure(
       structure: structure,
-      layer: GroundLayer.ground,
+      layer: const _NeutralLayer(),
       originX: 0,
       originY: 0,
       rotation: Rotation.cw0,

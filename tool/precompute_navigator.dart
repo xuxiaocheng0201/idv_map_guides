@@ -6,21 +6,13 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
-import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
+import 'package:idv_map_guides/core_data/modules.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
 
 WorldsProvider<BaseWorldsEnums>? worldProvider(WorldType type, WorldDifficulty diff) {
-  return switch (type) {
-    WorldType.theBringerOfDoom => switch (diff) {
-      WorldDifficulty.novice => TheBringerOfDoomNoviceWorldsProvider(),
-      WorldDifficulty.easy => TheBringerOfDoomEasyWorldsProvider(),
-      WorldDifficulty.normal => null,
-      WorldDifficulty.hard => TheBringerOfDoomHardWorldsProvider(),
-      WorldDifficulty.nightmare => TheBringerOfDoomNightmareWorldsProvider(),
-    },
-  };
+  return worldsProviderFor(type, diff);
 }
 
 Future<Uint8List> readAsset(Directory root, WorldType type, WorldDifficulty difficulty, String name) async {
@@ -47,12 +39,13 @@ Future<bool> isWorldUpToDate(
   WorldDifficulty difficulty,
   String name,
   String expectedHash,
+  WorldCodec codec,
 ) async {
   final file = File('${root.path}/assets/maps/${type.assets}/${difficulty.assets}/$name.precomputed');
   if (!await file.exists()) return false;
   try {
     final content = await file.readAsBytes();
-    final (storedHash, _) = deserializePrecomputedNavigatePath(content);
+    final (storedHash, _) = deserializePrecomputedNavigatePath(content, codec);
     return storedHash == expectedHash;
   } catch (_) {
     return false;
@@ -70,6 +63,7 @@ Future<void> main(List<String> args) async {
         stdout.writeln('[precompute] 跳过 ${type.name}/${difficulty.name}（未实现）');
         continue;
       }
+      final codec = provider.codec;
       final total = provider.allWorlds.length;
       int current = 0;
       stdout.writeln('[precompute] 处理 ${type.name}/${difficulty.name}，共 $total 个世界');
@@ -79,12 +73,12 @@ Future<void> main(List<String> args) async {
         current++;
         final worldBytes = await readAsset(root, type, difficulty, provider.worldAssets(world));
         final worldHash = computeWorldHash(structuresBytes, worldBytes);
-        if (!force && await isWorldUpToDate(root, type, difficulty, provider.precomputedNavigateAssets(world), worldHash)) {
+        if (!force && await isWorldUpToDate(root, type, difficulty, provider.precomputedNavigateAssets(world), worldHash, codec)) {
           stdout.writeln('[precompute] ($current/$total) ${type.name}/${difficulty.name}/$world 缓存有效，跳过');
           continue;
         }
         stdout.writeln('[precompute] ($current/$total) ${type.name}/${difficulty.name}/$world 开始计算');
-        final worldInstance = constructWorld(structures, deserializeWorld(worldBytes));
+        final worldInstance = constructWorld(structures, deserializeWorld(worldBytes, codec));
         final navigateArgs = provider.preloadNavigateArguments(worldInstance);
         final paths = <NavigateArguments, List<Node>>{};
         for (int i = 0; i < navigateArgs.length; i++) {
@@ -92,7 +86,7 @@ Future<void> main(List<String> args) async {
           stdout.writeln('[precompute] (${i + 1}/${navigateArgs.length}) ${arg.resources.length} 个资源点，计算中...');
           paths[arg] = navigate(worldInstance, arg);
         }
-        final data = serializePrecomputedNavigatePath(worldHash, paths);
+        final data = serializePrecomputedNavigatePath(worldHash, paths, codec);
         await writeAsset(root, type, difficulty, provider.precomputedNavigateAssets(world), data);
         stdout.writeln('[precompute] 已写入 ${type.name}/${difficulty.name}/$world (${paths.length} 条导航)');
       }

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:idv_map_guides/core/data.dart';
-import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
@@ -23,7 +22,7 @@ class WorldListPageArguments {
 
   @override
   String toString() {
-    return 'WorldListPageArguments(type: ${manager.provider.type.name}, difficulty: ${manager.provider.difficulty.name}, worlds: ${worlds.map((e) => e.name).toList()}), entrance: ${entrance.name}';
+    return 'WorldListPageArguments(type: ${manager.provider.type.name}, difficulty: ${manager.provider.difficulty.name}, worlds: ${worlds.map((e) => e.name).toList()}), entrance: ${entrance.index}';
   }
 }
 
@@ -77,7 +76,7 @@ class _WorldListPageState extends State<WorldListPage> {
     if (!mounted) return;
     _viewMetricStartTime = DateTime.now();
     _viewMetricMapName = worldLabel(_currentWorld, context);
-    _viewMetricEntranceName = entrance.label(context);
+    _viewMetricEntranceName = entranceLabel(context, entrance);
     Sentry.addBreadcrumb(Breadcrumb.userInteraction(
       subCategory: 'viewWorld',
       data: {
@@ -247,7 +246,7 @@ class _WorldListPageState extends State<WorldListPage> {
                                 for (final (index, layer) in layers.indexed)
                                   ButtonSegment(
                                     value: index,
-                                    label: Text(layer.label(context)),
+                                    label: Text(layerLabel(context, layer)),
                                   )
                               ],
                               showSelectedIcon: false,
@@ -283,7 +282,7 @@ class _WorldListPageState extends State<WorldListPage> {
                                       child: Column(
                                         children: [
                                           Text(
-                                            layer.label(context),
+                                            layerLabel(context, layer),
                                             style: Theme.of(context).textTheme.titleMedium,
                                             textAlign: TextAlign.center,
                                           ),
@@ -446,7 +445,7 @@ class _WorldListPageState extends State<WorldListPage> {
           icon: Icons.flag,
           title: S.of(context).worldsNavigateStartNode,
           value: S.of(context).worldsNavigateStartNodeValue(
-            current.start.layer.label(context),
+            layerLabel(context, current.start.layer),
             current.start.x,
             current.start.y,
           ),
@@ -475,7 +474,7 @@ class _WorldListPageState extends State<WorldListPage> {
             icon: Icons.flag_outlined,
             title: S.of(context).worldsNavigateDoubleStartNode,
             value: S.of(context).worldsNavigateStartNodeValue(
-              current.start2.layer.label(context),
+              layerLabel(context, current.start2.layer),
               current.start2.x,
               current.start2.y,
             ),

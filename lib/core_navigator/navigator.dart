@@ -686,17 +686,19 @@ List<Node> navigate(World world, NavigateArguments arguments) {
 base class NavigateSquadron {
   @SquadronMethod()
   Future<Uint8List> doCompute(
+    Uint8List codecData,
     Uint8List structuresFile,
     Uint8List worldFile,
     Uint8List arguments,
   ) async {
     try {
+      final codec = deserializeWorldCodec(codecData);
       final structures = deserializeStructures(structuresFile);
-      final world = deserializeWorld(worldFile);
+      final world = deserializeWorld(worldFile, codec);
       final worldInstance = constructWorld(structures, world);
-      final navigateArguments = deserializeNavigateArguments(arguments);
+      final navigateArguments = deserializeNavigateArguments(arguments, codec);
       final path = navigate(worldInstance, navigateArguments);
-      return serializeNavigatePath(path);
+      return serializeNavigatePath(path, codec);
     } catch (e, st) {
       // ignore: avoid_print
       assert(() { print(e); print(st); return true; }());
@@ -706,15 +708,17 @@ base class NavigateSquadron {
 }
 
 Future<List<Node>> navigateAsync(
+  WorldCodec codec,
   Uint8List structuresFile,
   Uint8List worldFile,
   NavigateArguments navigateArguments,
 ) async {
   final worker = NavigateSquadronWorker();
   try {
-    final arguments = serializeNavigateArguments(navigateArguments);
-    final path = await worker.doCompute(structuresFile, worldFile, arguments);
-    return deserializeNavigatePath(path);
+    final arguments = serializeNavigateArguments(navigateArguments, codec);
+    final codecData = serializeWorldCodec(codec);
+    final path = await worker.doCompute(codecData, structuresFile, worldFile, arguments);
+    return deserializeNavigatePath(path, codec);
   } finally {
     worker.stop();
   }

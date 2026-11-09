@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
+import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
 import 'package:idv_map_guides/pages/editors/world_editor_page.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
@@ -67,10 +68,14 @@ class MyApp extends StatelessWidget {
                   return (context) => WorldListPage(arguments: args);
                 case Routes.editorStructure:
                   if (!editorMode.value) return null;
-                  return (context) => const StructuresEditorPage();
+                  final structArgs = settings.arguments as EditorRouteArguments?;
+                  if (structArgs == null) return null;
+                  return (context) => StructuresEditorPage(mapKey: structArgs.mapKey, store: structArgs.store);
                 case Routes.editorWorld:
                   if (!editorMode.value) return null;
-                  return (context) => const WorldEditorPage();
+                  final worldArgs = settings.arguments as EditorRouteArguments?;
+                  if (worldArgs == null) return null;
+                  return (context) => WorldEditorPage(mapKey: worldArgs.mapKey, store: worldArgs.store);
                 default:
                   return null;
               }

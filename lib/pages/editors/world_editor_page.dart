@@ -8,57 +8,31 @@ import 'package:idv_map_guides/core/errors.dart';
 import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
+import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/pages/editors/cell_properties_panel.dart';
-import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
+import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:idv_map_guides/painter/editor_world_painter.dart';
 import 'package:path/path.dart' as p;
 
-const int defaultWorldMinX = -20;
-const int defaultWorldMaxX = 20;
-const int defaultWorldMinY = 0;
-const int defaultWorldMaxY = 30;
-
-var dataWorld = serializeWorld(WorldFile(
-  layers: <GroundLayer>{GroundLayer.ground},
-  minX: defaultWorldMinX,
-  maxX: defaultWorldMaxX,
-  minY: defaultWorldMinY,
-  maxY: defaultWorldMaxY,
-  instances: <StructureInstance>[],
-  entrances: <EntranceType, Position>{},
-));
-String? saveDirectory;
-String? saveFilename;
-
 class _WorldEditorRegistry {
+  final EditorStore store;
   Map<String, Structure> structures = {};
-  WorldFile worldFile = WorldFile(
-    layers: <GroundLayer>{GroundLayer.ground},
-    minX: defaultWorldMinX,
-    maxX: defaultWorldMaxX,
-    minY: defaultWorldMinY,
-    maxY: defaultWorldMaxY,
-    instances: <StructureInstance>[],
-    entrances: <EntranceType, Position>{},
-  );
-  World world = World(
-    layers: <GroundLayer>{GroundLayer.ground},
-    minX: defaultWorldMinX,
-    maxX: defaultWorldMaxX,
-    minY: defaultWorldMinY,
-    maxY: defaultWorldMaxY,
-  );
+  late WorldFile worldFile;
+  late World world;
   WorldErrors globalErrors = WorldErrors(errors: <WorldError>[]);
   Map<int, WorldErrors> errorsByInstanceIndex = {};
   Map<int, int> instanceIndexToStructureId = {};
 
-  _WorldEditorRegistry();
+  _WorldEditorRegistry(this.store) {
+    worldFile = emptyWorldFile(store.codec);
+    world = emptyWorld(store.codec);
+  }
 
   void read(void Function(void Function()) setState) {
-    final structures = deserializeStructures(dataStructures);
-    final worldFile = deserializeWorld(dataWorld);
+    final structures = deserializeStructures(store.structuresData);
+    final worldFile = deserializeWorld(store.worldData, store.codec);
     setState(() {
       this.structures = structures;
       this.worldFile = worldFile;
@@ -66,8 +40,8 @@ class _WorldEditorRegistry {
   }
 
   void write() {
-    final content = serializeWorld(worldFile);
-    dataWorld = content;
+    final content = serializeWorld(worldFile, store.codec);
+    store.worldData = content;
   }
 
   void buildWorld(void Function(void Function()) setState) {
@@ -132,7 +106,9 @@ class _WorldEditorRegistry {
 }
 
 class WorldEditorPage extends StatefulWidget {
-  const WorldEditorPage({super.key});
+  final String mapKey;
+  final EditorStore store;
+  const WorldEditorPage({super.key, required this.mapKey, required this.store});
 
   @override
   State<WorldEditorPage> createState() => _WorldEditorPageState();
@@ -140,19 +116,21 @@ class WorldEditorPage extends StatefulWidget {
 
 class _WorldEditorPageState extends State<WorldEditorPage> {
   late _WorldEditorRegistry _registry;
-  GroundLayer _currentLayer = GroundLayer.ground;
+  late GroundLayer _currentLayer;
   bool _isEditingEntrances = false;
   bool _isPickingPosition = false;
   int? _selectedInstanceIndex;
   Position? _selectedCell;
 
+  WorldCodec get codec => widget.store.codec;
+
   @override
   void initState() {
     super.initState();
-    _registry = _WorldEditorRegistry();
+    _registry = _WorldEditorRegistry(widget.store);
+    _currentLayer = codec.layers.first;
     _registry.read(setState);
     _registry.buildWorld(setState);
-    _currentLayer = GroundLayer.ground;
     _selectedInstanceIndex = null;
     _selectedCell = null;
   }
@@ -180,18 +158,11 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          dataWorld = serializeWorld(WorldFile(
-                            layers: <GroundLayer>{GroundLayer.ground},
-                            minX: defaultWorldMinX,
-                            maxX: defaultWorldMaxX,
-                            minY: defaultWorldMinY,
-                            maxY: defaultWorldMaxY,
-                            instances: <StructureInstance>[],
-                            entrances: <EntranceType, Position>{},
-                          ));
+                          widget.store.reset();
                           _registry.read(setState);
                           _registry.buildWorld(setState);
                           setState(() {
+                            _currentLayer = codec.layers.first;
                             _isPickingPosition = false;
                             _selectedInstanceIndex = null;
                             _selectedCell = null;
@@ -210,19 +181,19 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             tooltip: '导入',
             onPressed: () async {
               final file = await FilePicker.pickFile(
-                initialDirectory: saveDirectory,
+                initialDirectory: widget.store.saveDirectory,
               );
               if (file == null) return;
               final path = file.path;
               if (path == null) {
-                saveDirectory = null;
-                saveFilename = null;
+                widget.store.saveDirectory = null;
+                widget.store.saveFilename = null;
               } else {
-                saveDirectory = p.dirname(path);
-                saveFilename = p.basename(path);
+                widget.store.saveDirectory = p.dirname(path);
+                widget.store.saveFilename = p.basename(path);
               }
               final content = await file.readAsBytes();
-              dataWorld = content;
+              widget.store.worldData = content;
               _registry.read(setState);
               _registry.buildWorld(setState);
               setState(() {
@@ -241,9 +212,9 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
             icon: const Icon(Icons.share),
             tooltip: '导出',
             onPressed: () => FilePicker.saveFile(
-              initialDirectory: saveDirectory,
-              fileName: saveFilename ?? 'world.data',
-              bytes: dataWorld,
+              initialDirectory: widget.store.saveDirectory,
+              fileName: widget.store.saveFilename ?? 'world.data',
+              bytes: widget.store.worldData,
             ),
           ),
         ],
@@ -277,7 +248,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                         const SizedBox(width: 8),
                         if (_registry.hasErrors)
                           IconButton(
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.error,
                               color: Colors.red,
                             ),
@@ -314,7 +285,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                           style: TextStyle(color: hasError ? Colors.red : null),
                         ),
                         subtitle: Text(
-                          '层级: ${instance.layer.label(context)}  位置: (${instance.originX}, ${instance.originY}) 旋转 ${instance.rotation.label(context)}',
+                          '层级: ${layerLabel(context, instance.layer)}  位置: (${instance.originX}, ${instance.originY}) 旋转 ${instance.rotation.label(context)}',
                         ),
                         onTap: () => setState(() {
                           _selectedInstanceIndex = index;
@@ -420,11 +391,11 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                   _registry.buildWorld(setState);
                 },
               ),
-              for (final layer in GroundLayer.values)
+              for (final layer in codec.layers)
                 Padding(
                   padding: const EdgeInsets.all(4),
                   child: ChoiceChip(
-                    label: Text(layer.label(context)),
+                    label: Text(layerLabel(context, layer)),
                     selected: _currentLayer == layer,
                     onSelected: (selected) => setState(() => _currentLayer = layer),
                     backgroundColor: _registry.worldFile.layers.contains(layer) ? null : Colors.grey.withValues(alpha: 0.3),
@@ -558,19 +529,19 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         ),
         const Divider(),
         DropdownButtonFormField<int>(
-          initialValue: currentType == null ? 0 : (currentType.index + 1),
+          initialValue: currentType == null ? 0 : (currentType.code + 1),
           decoration: const InputDecoration(labelText: '入口类型'),
           items: [
             const DropdownMenuItem(value: 0, child: Text('无')),
-            for (final type in EntranceType.values)
-              DropdownMenuItem(value: type.index + 1, child: Text(type.label(context))),
+            for (final type in codec.entrances)
+              DropdownMenuItem(value: type.code + 1, child: Text(entranceLabel(context, type))),
           ],
           onChanged: (index) {
             if (currentType != null) setState(() => _registry.worldFile.entrances.remove(currentType));
             if (index == null || index == 0) {
               _registry.buildWorld(setState);
             } else {
-              final value = EntranceType.values[index - 1];
+              final value = codec.entrances.firstWhere((e) => e.code + 1 == index);
               setState(() => _registry.worldFile.entrances[value] = position);
               _registry.buildWorld(setState);
             }
@@ -637,8 +608,8 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
         DropdownButtonFormField<GroundLayer>(
           initialValue: instance.layer,
           decoration: const InputDecoration(labelText: '所属层级'),
-          items: GroundLayer.values
-              .map((layer) => DropdownMenuItem(value: layer, child: Text(layer.label(context))))
+          items: codec.layers
+              .map((layer) => DropdownMenuItem(value: layer, child: Text(layerLabel(context, layer))))
               .toList(),
           onChanged: (value) {
             if (value != null) {
@@ -869,7 +840,6 @@ class _CorridorCellsEditorDialogState extends State<_CorridorCellsEditorDialog> 
         child: Text('点击画布空白格子添加单元格'),
       );
     }
-    final cell = _cells[position]!;
     return CellPropertiesPanel(
       position: position,
       cell: _cells[position]!,

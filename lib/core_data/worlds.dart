@@ -7,11 +7,12 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
-import 'package:idv_map_guides/core_data/the_bringer_of_doom.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
+import 'package:idv_map_guides/maps/phosphorescence_disease/provider.dart';
+import 'package:idv_map_guides/maps/the_bringer_of_doom/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class WorldsManager<W extends BaseWorldsEnums> {
@@ -72,7 +73,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
       key: 'world/${world.index}',
       fetch: () async {
         final data = await _loadAssets(provider.worldAssets(world));
-        final worldFile = deserializeWorld(data);
+        final worldFile = deserializeWorld(data, provider.codec);
         return (data, constructWorld(structures, worldFile));
       },
       debugLabel: '${world.runtimeType}/${world.name}',
@@ -86,7 +87,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         fetch: () async {
           final data = await _loadAssets('${provider.precomputedNavigateAssets(world)}.precomputed');
           if (data.isEmpty) throw FormatException();
-          final (_, paths) = deserializePrecomputedNavigatePath(data);
+          final (_, paths) = deserializePrecomputedNavigatePath(data, provider.codec);
           for (final entry in paths.entries) {
             _fetchWithCache(
               key: 'navigate/${world.index}/${entry.key.identify}',
@@ -110,7 +111,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
         fetch: () async {
           final data = await _loadAssets('${provider.precomputedNavigateDoubleAssets(world)}.precomputed');
           if (data.isEmpty) throw FormatException();
-          final (_, paths) = deserializePrecomputedNavigateDoublePath(data);
+          final (_, paths) = deserializePrecomputedNavigateDoublePath(data, provider.codec);
           for (final entry in paths.entries) {
             _fetchWithCache(
               key: 'navigate_double/${world.index}/${entry.key.identify}',
@@ -139,33 +140,13 @@ class WorldsManager<W extends BaseWorldsEnums> {
     return (await _getWorld(world)).$2;
   }
 
-  Future<Map<MainEntranceFeature, Set<W>>> getWorldsByMainEntranceFeature(EntranceType entrance) async {
-    final result = <MainEntranceFeature, Set<W>>{};
-    for (final world in provider.allWorlds) {
-      final map = await getWorld(world);
-      final feature = provider.inferMainEntranceFeature(map, entrance);
-      result.putIfAbsent(feature, () => <W>{}).add(world);
-    }
-    return result;
-  }
-
-  Future<Map<SideEntranceFeature, Set<W>>> getWorldsBySideEntranceFeature(EntranceType entrance) async {
-    final result = <SideEntranceFeature, Set<W>>{};
-    for (final world in provider.allWorlds) {
-      final map = await getWorld(world);
-      final feature = provider.inferSideEntranceFeature(map, entrance);
-      result.putIfAbsent(feature, () => <W>{}).add(world);
-    }
-    return result;
-  }
-
   Future<List<Node>> getNavigateResult(W world, NavigateArguments arguments) async {
     final structuresFile = (await _getStructures()).$1;
     final worldFile = (await _getWorld(world)).$1;
     await _getPrecomputedNavigator(world);
     return await _fetchWithCache(
       key: 'navigate/${world.index}/${arguments.identify}',
-      fetch: () async => await navigateAsync(structuresFile, worldFile, arguments),
+      fetch: () async => await navigateAsync(provider.codec, structuresFile, worldFile, arguments),
     );
   }
 
@@ -175,7 +156,7 @@ class WorldsManager<W extends BaseWorldsEnums> {
     await _getPrecomputedNavigatorDouble(world);
     return await _fetchWithCache(
       key: 'navigate_double/${world.index}/${arguments.identify}',
-      fetch: () async => await navigateDoubleAsync(structuresFile, worldFile, arguments),
+      fetch: () async => await navigateDoubleAsync(provider.codec, structuresFile, worldFile, arguments),
     );
   }
 }
@@ -184,6 +165,7 @@ final _theBringerOfDoomNovice = WorldsManager(provider: TheBringerOfDoomNoviceWo
 final _theBringerOfDoomEasy = WorldsManager(provider: TheBringerOfDoomEasyWorldsProvider());
 final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
 final _theBringerOfDoomNightmare = WorldsManager(provider: TheBringerOfDoomNightmareWorldsProvider());
+final _phosphorescence = WorldsManager(provider: PhosphorescenceDiseaseWorldsProvider());
 
 WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
   return switch (type) {
@@ -193,6 +175,10 @@ WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty
       WorldDifficulty.normal => null,
       WorldDifficulty.hard => _theBringerOfDoomHard,
       WorldDifficulty.nightmare => _theBringerOfDoomNightmare,
+    },
+    WorldType.phosphorescenceDisease => switch (difficulty) {
+      WorldDifficulty.normal => _phosphorescence,
+      _ => null,
     },
   }?..preload();
 }

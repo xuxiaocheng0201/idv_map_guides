@@ -889,17 +889,19 @@ sealed class _DoubleAction with _$DoubleAction {
 base class NavigateDoubleSquadron {
   @SquadronMethod()
   Future<(Uint8List, Uint8List)> doCompute(
+    Uint8List codecData,
     Uint8List structuresFile,
     Uint8List worldFile,
     Uint8List arguments,
   ) async {
     try {
+      final codec = deserializeWorldCodec(codecData);
       final structures = deserializeStructures(structuresFile);
-      final world = deserializeWorld(worldFile);
+      final world = deserializeWorld(worldFile, codec);
       final worldInstance = constructWorld(structures, world);
-      final navigateArguments = deserializeNavigateDoubleArguments(arguments);
+      final navigateArguments = deserializeNavigateDoubleArguments(arguments, codec);
       final result = navigateDouble(worldInstance, navigateArguments);
-      return (serializeNavigatePath(result.path1), serializeNavigatePath(result.path2));
+      return (serializeNavigatePath(result.path1, codec), serializeNavigatePath(result.path2, codec));
     } catch (e, st) {
       // ignore: avoid_print
       assert(() { print(e); print(st); return true; }());
@@ -909,15 +911,17 @@ base class NavigateDoubleSquadron {
 }
 
 Future<({List<Node> path1, List<Node> path2})> navigateDoubleAsync(
+  WorldCodec codec,
   Uint8List structuresFile,
   Uint8List worldFile,
   NavigateDoubleArguments navigateArguments,
 ) async {
   final worker = NavigateDoubleSquadronWorker();
   try {
-    final arguments = serializeNavigateDoubleArguments(navigateArguments);
-    final (result1, result2) = await worker.doCompute(structuresFile, worldFile, arguments);
-    return (path1: deserializeNavigatePath(result1), path2: deserializeNavigatePath(result2));
+    final arguments = serializeNavigateDoubleArguments(navigateArguments, codec);
+    final codecData = serializeWorldCodec(codec);
+    final (result1, result2) = await worker.doCompute(codecData, structuresFile, worldFile, arguments);
+    return (path1: deserializeNavigatePath(result1, codec), path2: deserializeNavigatePath(result2, codec));
   } finally {
     worker.stop();
   }

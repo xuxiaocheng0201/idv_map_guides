@@ -21,24 +21,11 @@ abstract class Cell with _$Cell {
   }) = _Cell;
 }
 
-enum EntranceType {
-  main,
-  sideGround,
-  sideSecond,
-  alterBasement;
-
-  bool get displayable => switch (this) {
-    EntranceType.main => true,
-    EntranceType.sideGround => true,
-    EntranceType.sideSecond => true,
-    EntranceType.alterBasement => false,
-  };
-  GroundLayer get layer => switch (this) {
-    EntranceType.main => GroundLayer.ground,
-    EntranceType.sideGround => GroundLayer.ground,
-    EntranceType.sideSecond => GroundLayer.second,
-    EntranceType.alterBasement => GroundLayer.basement,
-  };
+abstract interface class EntranceType {
+  int get index;
+  int get code;
+  bool get displayable;
+  GroundLayer get layer;
 }
 
 @freezed

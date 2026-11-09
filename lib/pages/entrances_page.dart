@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:idv_map_guides/core/l10n.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
@@ -59,12 +58,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           final world = await manager.getWorld(worldType);
           final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
           final signature = painter.getSignature();
-          final feature = switch (entrance) {
-            EntranceType.main => EntranceFeature.main(feature: manager.provider.inferMainEntranceFeature(world, entrance)),
-            EntranceType.sideGround => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
-            EntranceType.sideSecond => EntranceFeature.side(feature: manager.provider.inferSideEntranceFeature(world, entrance)),
-            EntranceType.alterBasement => throw UnsupportedError('alter basement is not displayable'),
-          };
+          final feature = manager.provider.inferEntranceFeature(world, entrance);
           featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<BaseWorldsEnums>>(
             equals: (a, b) => const ListEquality<bool>().equals(a, b),
             hashCode: (a) => const ListEquality<bool>().hash(a),
@@ -164,7 +158,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
             segments: [
               ButtonSegment<EntranceType?>(value: null, label: Text(S.of(context).entrancesNavigateSettingDefault)),
               for (final entrance in manager.provider.validEntrances)
-                ButtonSegment<EntranceType?>(value: entrance, label: Text(entrance.label(context))),
+                ButtonSegment<EntranceType?>(value: entrance, label: Text(entranceLabel(context, entrance))),
             ],
             selected: {settings.startEntrance},
             showSelectedIcon: false,
@@ -183,7 +177,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
               segments: [
                 ButtonSegment<EntranceType?>(value: null, label: Text(S.of(context).entrancesNavigateSettingDefault)),
                 for (final entrance in manager.provider.validEntrances)
-                  ButtonSegment<EntranceType?>(value: entrance, label: Text(entrance.label(context))),
+                  ButtonSegment<EntranceType?>(value: entrance, label: Text(entranceLabel(context, entrance))),
               ],
               selected: {settings.startEntrance2},
               showSelectedIcon: false,
@@ -301,7 +295,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           TabBar(
             tabs: [
               for (final entrance in entrances)
-                Tab(text: entrance.label(context)),
+                Tab(text: entranceLabel(context, entrance)),
             ],
           ),
           Expanded(
@@ -326,7 +320,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
           TabBar.secondary(
             tabs: [
               for (final feature in worlds.keys)
-                Tab(text: feature.label(context)),
+                Tab(text: entranceFeatureLabel(context, feature)),
             ],
           ),
           Expanded(

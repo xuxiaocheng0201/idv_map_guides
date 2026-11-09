@@ -1,11 +1,16 @@
 import 'package:idv_map_guides/core/data.dart';
+import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
+import 'package:idv_map_guides/maps/the_bringer_of_doom/entrance.dart';
+import 'package:idv_map_guides/maps/the_bringer_of_doom/feature.dart';
+import 'package:idv_map_guides/maps/the_bringer_of_doom/layer.dart';
+import 'package:idv_map_guides/maps/the_bringer_of_doom/serde.dart';
 
-MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
+MainEntranceFeature _inferMainFeature(World world, TheBringerOfDoomEntranceType entrance) {
   final position = world.entrances[entrance]!.position;
   final mainEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   final upDoor = position.add(0, 4);
@@ -21,7 +26,7 @@ MainEntranceFeature _inferMainFeature(World world, EntranceType entrance) {
   );
 }
 
-SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
+SideEntranceFeature _inferSideFeature(World world, TheBringerOfDoomEntranceType entrance) {
   final position = world.entrances[entrance]!.position;
   final sideEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   Direction? facing;
@@ -62,39 +67,47 @@ SideEntranceFeature _inferSideFeature(World world, EntranceType entrance) {
   };
 }
 
-int _entrancesLength(EntranceType from, EntranceType to) {
-  return switch (from) {
-    EntranceType.main => switch (to) {
-      EntranceType.main => 0,
-      EntranceType.sideGround => 15,
-      EntranceType.sideSecond => 15,
-      EntranceType.alterBasement => throw UnimplementedError(),
-    },
-    EntranceType.sideGround => switch (to) {
-      EntranceType.main => 15,
-      EntranceType.sideGround => 0,
-      EntranceType.sideSecond => 20,
-      EntranceType.alterBasement => throw UnimplementedError(),
-    },
-    EntranceType.sideSecond => switch (to) {
-      EntranceType.main => 8,
-      EntranceType.sideGround => 20,
-      EntranceType.sideSecond => 0,
-      EntranceType.alterBasement => throw UnimplementedError(),
-    },
-    EntranceType.alterBasement => throw UnimplementedError(),
+EntranceFeature _inferEntranceFeature(World world, TheBringerOfDoomEntranceType entrance) {
+  return switch (entrance) {
+    TheBringerOfDoomEntranceType.main => TheBringerOfDoomEntranceFeature.main(_inferMainFeature(world, entrance)),
+    TheBringerOfDoomEntranceType.sideGround || TheBringerOfDoomEntranceType.sideSecond => TheBringerOfDoomEntranceFeature.side(_inferSideFeature(world, entrance)),
+    TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
   };
 }
 
-NavigateArguments _navigateArguments(World world, EntranceType entrance) {
+int _entrancesLength(TheBringerOfDoomEntranceType from, TheBringerOfDoomEntranceType to) {
+  return switch (from) {
+    TheBringerOfDoomEntranceType.main => switch (to) {
+      TheBringerOfDoomEntranceType.main => 0,
+      TheBringerOfDoomEntranceType.sideGround => 15,
+      TheBringerOfDoomEntranceType.sideSecond => 15,
+      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+    },
+    TheBringerOfDoomEntranceType.sideGround => switch (to) {
+      TheBringerOfDoomEntranceType.main => 15,
+      TheBringerOfDoomEntranceType.sideGround => 0,
+      TheBringerOfDoomEntranceType.sideSecond => 20,
+      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+    },
+    TheBringerOfDoomEntranceType.sideSecond => switch (to) {
+      TheBringerOfDoomEntranceType.main => 8,
+      TheBringerOfDoomEntranceType.sideGround => 20,
+      TheBringerOfDoomEntranceType.sideSecond => 0,
+      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+    },
+    TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+  };
+}
+
+NavigateArguments _navigateArguments(World world, TheBringerOfDoomEntranceType entrance) {
   final entrancePos = world.entrances[entrance]!.position;
   final startNode = Node(entrance.layer, entrancePos.x, entrancePos.y);
   final resources = Set.of(world.resources);
-  final exitNodes = <EntranceType, Node>{};
+  final exitNodes = <TheBringerOfDoomEntranceType, Node>{};
   for (final entry in world.entrances.entries) {
     if (!entry.key.displayable) continue;
     final node = Node(entry.key.layer, entry.value.x, entry.value.y);
-    exitNodes[entry.key] = node;
+    exitNodes[entry.key as TheBringerOfDoomEntranceType] = node;
   }
   final entrancesLength = <(Node, Node), int>{};
   for (final from in exitNodes.entries) {
@@ -113,13 +126,13 @@ enum TheBringerOfDoomNoviceWorlds implements BaseWorldsEnums {
 class TheBringerOfDoomNoviceWorldsProvider extends WorldsProvider<TheBringerOfDoomNoviceWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.novice;
+  @override WorldCodec get codec => theBringerOfDoomCodec;
   @override List<TheBringerOfDoomNoviceWorlds> get allWorlds => TheBringerOfDoomNoviceWorlds.values;
-  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground];
-  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main];
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[TheBringerOfDoomLayer.ground];
+  @override List<EntranceType> get validEntrances => const <EntranceType>[TheBringerOfDoomEntranceType.main];
   @override String worldAssets(TheBringerOfDoomNoviceWorlds world) => 'world.data';
-  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
-  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
-  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
+  @override EntranceFeature inferEntranceFeature(World world, EntranceType entrance) => _inferEntranceFeature(world, entrance as TheBringerOfDoomEntranceType);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance as TheBringerOfDoomEntranceType);
 }
 
 enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
@@ -167,13 +180,13 @@ enum TheBringerOfDoomEasyWorlds implements BaseWorldsEnums {
 class TheBringerOfDoomEasyWorldsProvider extends WorldsProvider<TheBringerOfDoomEasyWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.easy;
+  @override WorldCodec get codec => theBringerOfDoomCodec;
   @override List<TheBringerOfDoomEasyWorlds> get allWorlds => TheBringerOfDoomEasyWorlds.values;
-  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground];
-  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround];
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[TheBringerOfDoomLayer.ground];
+  @override List<EntranceType> get validEntrances => const <EntranceType>[TheBringerOfDoomEntranceType.main, TheBringerOfDoomEntranceType.sideGround];
   @override String worldAssets(TheBringerOfDoomEasyWorlds world) => 'world_${world._assets}.data';
-  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
-  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
-  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
+  @override EntranceFeature inferEntranceFeature(World world, EntranceType entrance) => _inferEntranceFeature(world, entrance as TheBringerOfDoomEntranceType);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance as TheBringerOfDoomEntranceType);
 }
 
 enum TheBringerOfDoomHardWorlds implements BaseWorldsEnums {
@@ -243,13 +256,13 @@ enum TheBringerOfDoomHardWorlds implements BaseWorldsEnums {
 class TheBringerOfDoomHardWorldsProvider extends WorldsProvider<TheBringerOfDoomHardWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.hard;
-  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground, GroundLayer.second];
+  @override WorldCodec get codec => theBringerOfDoomCodec;
   @override List<TheBringerOfDoomHardWorlds> get allWorlds => TheBringerOfDoomHardWorlds.values;
-  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideGround, EntranceType.sideSecond];
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[TheBringerOfDoomLayer.ground, TheBringerOfDoomLayer.second];
+  @override List<EntranceType> get validEntrances => const <EntranceType>[TheBringerOfDoomEntranceType.main, TheBringerOfDoomEntranceType.sideGround, TheBringerOfDoomEntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomHardWorlds world) => 'world_${world._assets}.data';
-  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
-  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
-  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance);
+  @override EntranceFeature inferEntranceFeature(World world, EntranceType entrance) => _inferEntranceFeature(world, entrance as TheBringerOfDoomEntranceType);
+  @override NavigateArguments navigateArguments(World world, EntranceType entrance) => _navigateArguments(world, entrance as TheBringerOfDoomEntranceType);
 }
 
 enum TheBringerOfDoomNightmareWorlds implements BaseWorldsEnums {
@@ -313,27 +326,27 @@ enum TheBringerOfDoomNightmareWorlds implements BaseWorldsEnums {
 class TheBringerOfDoomNightmareWorldsProvider extends WorldsProvider<TheBringerOfDoomNightmareWorlds> {
   @override WorldType get type => WorldType.theBringerOfDoom;
   @override WorldDifficulty get difficulty => WorldDifficulty.nightmare;
+  @override WorldCodec get codec => theBringerOfDoomCodec;
   @override List<TheBringerOfDoomNightmareWorlds> get allWorlds => TheBringerOfDoomNightmareWorlds.values;
-  @override List<GroundLayer> get allLayers => const <GroundLayer>[GroundLayer.ground, GroundLayer.second, GroundLayer.basement];
-  @override List<EntranceType> get validEntrances => const <EntranceType>[EntranceType.main, EntranceType.sideSecond];
+  @override List<GroundLayer> get allLayers => const <GroundLayer>[TheBringerOfDoomLayer.ground, TheBringerOfDoomLayer.second, TheBringerOfDoomLayer.basement];
+  @override List<EntranceType> get validEntrances => const <EntranceType>[TheBringerOfDoomEntranceType.main, TheBringerOfDoomEntranceType.sideSecond];
   @override String worldAssets(TheBringerOfDoomNightmareWorlds world) => 'world_${world._assets}.data';
-  @override MainEntranceFeature inferMainEntranceFeature(World world, EntranceType entrance) => _inferMainFeature(world, entrance);
-  @override SideEntranceFeature inferSideEntranceFeature(World world, EntranceType entrance) => _inferSideFeature(world, entrance);
+  @override EntranceFeature inferEntranceFeature(World world, EntranceType entrance) => _inferEntranceFeature(world, entrance as TheBringerOfDoomEntranceType);
   @override
   NavigateArguments navigateArguments(World world, EntranceType entrance) {
-    final origin = _navigateArguments(world, entrance);
+    final origin = _navigateArguments(world, entrance as TheBringerOfDoomEntranceType);
     final museRoomId = world.rooms['muse_room']!.firstOrNull!;
     Node? museRoomNode;
     find: for (int x = world.minX; x <= world.maxX; x++) {
       for (int y = world.minY; y <= world.maxY; y++) {
-        final cell = world.cell(GroundLayer.ground, x, y)!;
+        final cell = world.cell(TheBringerOfDoomLayer.ground, x, y)!;
         if (cell.structureId == museRoomId && cell.info.isResource) {
-          museRoomNode = Node(GroundLayer.ground, x, y);
+          museRoomNode = Node(TheBringerOfDoomLayer.ground, x, y);
           break find;
         }
       }
     }
-    final alterNode = world.entranceNode(EntranceType.alterBasement)!;
+    final alterNode = world.entranceNode(TheBringerOfDoomEntranceType.alterBasement)!;
     final keyResource = KeyResource(position: museRoomNode!, transport: alterNode, keyResourceWeight: 3);
     return origin.copyWith(keyResource: keyResource, defaultWeight: 2);
   }

@@ -11,34 +11,11 @@ part 'data.freezed.dart';
 //     |
 // ```
 
-enum GroundLayer {
-  basement,
-  ground,
-  second;
-
-  @useResult
-  GroundLayer? up() {
-    switch (this) {
-      case GroundLayer.basement:
-        return GroundLayer.ground;
-      case GroundLayer.ground:
-        return GroundLayer.second;
-      case GroundLayer.second:
-        return null;
-    }
-  }
-
-  @useResult
-  GroundLayer? down() {
-    switch (this) {
-      case GroundLayer.basement:
-        return null;
-      case GroundLayer.ground:
-        return GroundLayer.basement;
-      case GroundLayer.second:
-        return GroundLayer.ground;
-    }
-  }
+abstract interface class GroundLayer {
+  int get index;
+  int get code;
+  @useResult GroundLayer? up();
+  @useResult GroundLayer? down();
 }
 
 enum Rotation {

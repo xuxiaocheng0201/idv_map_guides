@@ -5,29 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/pages/editors/cell_properties_panel.dart';
+import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/editors/value_editor.dart';
 import 'package:idv_map_guides/painter/editor_structure_painter.dart';
 import 'package:path/path.dart' as p;
 import 'package:toastification/toastification.dart';
 
-const int defaultCanvasWidth = 5;
-const int defaultCanvasHeight = 5;
-
-const double vertexHitRadius = 12.0;
-
-var dataStructures = serializeStructures(<String, Structure>{});
-String? saveDirectory;
-String? saveFilename;
-
 class _StructuresRegistry {
+  final EditorStore store;
   Map<String, Structure> structures = <String, Structure>{};
   Map<String, (int, int)> canvas = <String, (int, int)>{};
   List<String> names = <String>[];
 
-  _StructuresRegistry();
+  _StructuresRegistry(this.store);
 
   void read(void Function(void Function()) setState) {
-    final structures = deserializeStructures(dataStructures);
+    final structures = deserializeStructures(store.structuresData);
     final names = structures.keys.toList();
     names.sort();
     final canvas = structures.map((name, structure) {
@@ -45,7 +38,7 @@ class _StructuresRegistry {
 
   void write() {
     final content = serializeStructures(structures);
-    dataStructures = content;
+    store.structuresData = content;
   }
 
   int? addStructure(String name, void Function(void Function()) setState) {
@@ -104,7 +97,9 @@ class _StructuresRegistry {
 }
 
 class StructuresEditorPage extends StatefulWidget {
-  const StructuresEditorPage({super.key});
+  final String mapKey;
+  final EditorStore store;
+  const StructuresEditorPage({super.key, required this.mapKey, required this.store});
 
   @override
   State<StructuresEditorPage> createState() => _StructuresEditorPageState();
@@ -122,7 +117,7 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
   @override
   void initState() {
     super.initState();
-    _registry = _StructuresRegistry();
+    _registry = _StructuresRegistry(widget.store);
     _registry.read(setState);
     _selectedIndex = null;
     _selectedCell = null;
@@ -139,19 +134,19 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             tooltip: '导入',
             onPressed: () async {
               final file = await FilePicker.pickFile(
-                initialDirectory: saveDirectory,
+                initialDirectory: widget.store.saveDirectory,
               );
               if (file == null) return;
               final path = file.path;
               if (path == null) {
-                saveDirectory = null;
-                saveFilename = null;
+                widget.store.saveDirectory = null;
+                widget.store.saveFilename = null;
               } else {
-                saveDirectory = p.dirname(path);
-                saveFilename = p.basename(path);
+                widget.store.saveDirectory = p.dirname(path);
+                widget.store.saveFilename = p.basename(path);
               }
               final content = await file.readAsBytes();
-              dataStructures = content;
+              widget.store.structuresData = content;
               setState(() {
                 _selectedCell = null;
                 _selectedIndex = null;
@@ -171,9 +166,9 @@ class _StructuresEditorPageState extends State<StructuresEditorPage> {
             icon: const Icon(Icons.share),
             tooltip: '导出',
             onPressed: () => FilePicker.saveFile(
-              initialDirectory: saveDirectory,
-              fileName: saveFilename ?? 'structures.data',
-              bytes: dataStructures,
+              initialDirectory: widget.store.saveDirectory,
+              fileName: widget.store.saveFilename ?? 'structures.data',
+              bytes: widget.store.structuresData,
             ),
           ),
         ],

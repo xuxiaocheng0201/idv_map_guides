@@ -6,22 +6,189 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:messagepack/messagepack.dart';
 
-extension GroundLayerSerde on GroundLayer {
-  static GroundLayer unpack(Unpacker unpacker) {
-    return switch (unpacker.unpackInt()) {
-      0 => GroundLayer.basement,
-      1 => GroundLayer.ground,
-      2 => GroundLayer.second,
-      _ => throw FormatException(),
-    };
+abstract interface class WorldCodec {
+  GroundLayer layerFromCode(int code);
+  int layerToCode(GroundLayer layer);
+  List<GroundLayer> get layers;
+
+  EntranceType entranceFromCode(int code);
+  int entranceToCode(EntranceType type);
+  List<EntranceType> get entrances;
+}
+
+class SimpleWorldCodec implements WorldCodec {
+  @override
+  final List<GroundLayer> layers;
+  @override
+  final List<EntranceType> entrances;
+
+  final Map<int, GroundLayer> _layerByCode;
+  final Map<GroundLayer, int> _codeByLayer = Map.identity();
+  final Map<int, EntranceType> _entranceByCode;
+  final Map<EntranceType, int> _codeByEntrance = Map.identity();
+
+  SimpleWorldCodec({
+    required List<GroundLayer> layers,
+    required List<EntranceType> entrances,
+  })  : layers = List.unmodifiable(layers),
+        entrances = List.unmodifiable(entrances),
+        _layerByCode = {for (final l in layers) l.code: l},
+        _entranceByCode = {for (final e in entrances) e.code: e} {
+    for (final l in layers) {
+      _codeByLayer[l] = l.code;
+    }
+    for (final e in entrances) {
+      _codeByEntrance[e] = e.code;
+    }
   }
-  void pack(Packer packer) {
-    packer.packInt(switch (this) {
-      GroundLayer.basement => 0,
-      GroundLayer.ground => 1,
-      GroundLayer.second => 2,
-    });
+
+  @override
+  GroundLayer layerFromCode(int code) {
+    final layer = _layerByCode[code];
+    if (layer == null) throw FormatException('unknown layer code: $code');
+    return layer;
   }
+
+  @override
+  int layerToCode(GroundLayer layer) {
+    final code = _codeByLayer[layer];
+    if (code == null) throw FormatException('unknown layer: $layer');
+    return code;
+  }
+
+  @override
+  EntranceType entranceFromCode(int code) {
+    final entrance = _entranceByCode[code];
+    if (entrance == null) throw FormatException('unknown entrance code: $code');
+    return entrance;
+  }
+
+  @override
+  int entranceToCode(EntranceType entrance) {
+    final code = _codeByEntrance[entrance];
+    if (code == null) throw FormatException('unknown entrance: $entrance');
+    return code;
+  }
+}
+
+class _RebuiltLayer implements GroundLayer {
+  @override
+  final int index;
+  @override
+  final int code;
+  final int? _upCode;
+  final int? _downCode;
+  final Map<int, GroundLayer> _layersByCode;
+
+  _RebuiltLayer(this.index, this.code, this._upCode, this._downCode, this._layersByCode);
+
+  @override
+  GroundLayer? up() => _upCode == null ? null : _layersByCode[_upCode];
+
+  @override
+  GroundLayer? down() => _downCode == null ? null : _layersByCode[_downCode];
+}
+
+class _RebuiltEntrance implements EntranceType {
+  @override
+  final int index;
+  @override
+  final int code;
+  @override
+  final bool displayable;
+  @override
+  final GroundLayer layer;
+
+  _RebuiltEntrance({
+    required this.index,
+    required this.code,
+    required this.displayable,
+    required this.layer,
+  });
+}
+
+void _packNullableInt(Packer packer, int? value) {
+  if (value == null) {
+    packer.packNull();
+  } else {
+    packer.packInt(value);
+  }
+}
+
+Uint8List serializeWorldCodec(WorldCodec codec) {
+  final packer = Packer();
+  packer.packListLength(2);
+  packer.packListLength(codec.layers.length);
+  for (final layer in codec.layers) {
+    packer.packListLength(4);
+    packer.packInt(layer.code);
+    packer.packInt(layer.index);
+    _packNullableInt(packer, layer.up()?.code);
+    _packNullableInt(packer, layer.down()?.code);
+  }
+  packer.packListLength(codec.entrances.length);
+  for (final entrance in codec.entrances) {
+    packer.packListLength(4);
+    packer.packInt(entrance.code);
+    packer.packInt(entrance.index);
+    packer.packBool(entrance.displayable);
+    packer.packInt(entrance.layer.code);
+  }
+  return packer.takeBytes();
+}
+
+WorldCodec deserializeWorldCodec(Uint8List content) {
+  final unpacker = Unpacker(content);
+  final len = unpacker.unpackListLength();
+  if (len != 2) throw FormatException();
+
+  final layersLen = unpacker.unpackListLength();
+  final layerCodes = <int>[];
+  final layerIndices = <int>[];
+  final upCodes = <int?>[];
+  final downCodes = <int?>[];
+  for (int i = 0; i < layersLen; i++) {
+    final l = unpacker.unpackListLength();
+    if (l != 4) throw FormatException();
+    layerCodes.add(unpacker.unpackInt()!);
+    layerIndices.add(unpacker.unpackInt()!);
+    upCodes.add(unpacker.unpackInt());
+    downCodes.add(unpacker.unpackInt());
+  }
+
+  final layersByCode = <int, GroundLayer>{};
+  final layers = <GroundLayer>[];
+  for (int i = 0; i < layersLen; i++) {
+    final layer = _RebuiltLayer(
+      layerIndices[i],
+      layerCodes[i],
+      upCodes[i],
+      downCodes[i],
+      layersByCode,
+    );
+    layersByCode[layerCodes[i]] = layer;
+    layers.add(layer);
+  }
+
+  final entrancesLen = unpacker.unpackListLength();
+  final entrances = <EntranceType>[];
+  for (int i = 0; i < entrancesLen; i++) {
+    final l = unpacker.unpackListLength();
+    if (l != 4) throw FormatException();
+    final code = unpacker.unpackInt()!;
+    final index = unpacker.unpackInt()!;
+    final displayable = unpacker.unpackBool();
+    final layerCode = unpacker.unpackInt()!;
+    if (displayable == null) throw FormatException();
+    entrances.add(_RebuiltEntrance(
+      code: code,
+      index: index,
+      displayable: displayable,
+      layer: layersByCode[layerCode] ?? (throw FormatException('unknown layer code: $layerCode')),
+    ));
+  }
+
+  return SimpleWorldCodec(layers: layers, entrances: entrances);
 }
 
 extension RotationSerde on Rotation {
@@ -34,6 +201,7 @@ extension RotationSerde on Rotation {
       _ => throw FormatException(),
     };
   }
+
   void pack(Packer packer) {
     packer.packInt(switch (this) {
       Rotation.cw0 => 0,
@@ -53,6 +221,7 @@ extension PositionSerde on Position {
     if (x == null || y == null) throw FormatException();
     return Position(x: x, y: y);
   }
+
   void pack(Packer packer) {
     packer.packListLength(2);
     packer.packInt(x);
@@ -61,18 +230,19 @@ extension PositionSerde on Position {
 }
 
 extension NodeSerde on Node {
-  static Node unpack(Unpacker unpacker) {
+  static Node unpack(Unpacker unpacker, WorldCodec codec) {
     final len = unpacker.unpackListLength();
     if (len != 3) throw FormatException();
-    final layer = GroundLayerSerde.unpack(unpacker);
+    final layerCode = unpacker.unpackInt();
     final x = unpacker.unpackInt();
     final y = unpacker.unpackInt();
-    if (x == null || y == null) throw FormatException();
-    return Node(layer, x, y);
+    if (layerCode == null || x == null || y == null) throw FormatException();
+    return Node(codec.layerFromCode(layerCode), x, y);
   }
-  void pack(Packer packer) {
+
+  void pack(Packer packer, WorldCodec codec) {
     packer.packListLength(3);
-    layer.pack(packer);
+    packer.packInt(codec.layerToCode(layer));
     packer.packInt(x);
     packer.packInt(y);
   }
@@ -88,6 +258,7 @@ extension StairTransportSerde on StairTransport {
       _ => throw FormatException(),
     };
   }
+
   void pack(Packer packer) {
     packer.packInt(switch (this) {
       StairTransport.nothing => 0,
@@ -107,6 +278,7 @@ extension EdgeTypeSerde on EdgeType {
       _ => throw FormatException(),
     };
   }
+
   void pack(Packer packer) {
     packer.packInt(switch (this) {
       EdgeType.nothing => 0,
@@ -130,6 +302,7 @@ extension CellInfoSerde on CellInfo {
       isResource: unpacker.unpackBool() ?? false,
     );
   }
+
   void pack(Packer packer) {
     packer.packListLength(6);
     if (isStair == null) {
@@ -154,6 +327,7 @@ extension ShapePointSerde on ShapePoint {
     if (x == null || y == null) throw FormatException();
     return ShapePoint(x: x, y: y);
   }
+
   void pack(Packer packer) {
     packer.packListLength(2);
     packer.packDouble(x);
@@ -191,6 +365,7 @@ extension StructureSerde on Structure {
       outline: outline.isEmpty ? null : outline,
     );
   }
+
   void pack(Packer packer) {
     packer.packListLength(4);
     packer.packBool(isCorridor);
@@ -233,12 +408,12 @@ Map<String, Structure> deserializeStructures(Uint8List content) {
 }
 
 extension StructureInstanceSerde on StructureInstance {
-  static StructureInstance unpack(Unpacker unpacker) {
+  static StructureInstance unpack(Unpacker unpacker, WorldCodec codec) {
     final len = unpacker.unpackListLength();
     if (len != 7) throw FormatException();
     final typeName = unpacker.unpackString();
     final isSuspicious = unpacker.unpackBool();
-    final layer = GroundLayerSerde.unpack(unpacker);
+    final layer = codec.layerFromCode(unpacker.unpackInt()!);
     final originX = unpacker.unpackInt();
     final originY = unpacker.unpackInt();
     final rotation = RotationSerde.unpack(unpacker);
@@ -260,11 +435,12 @@ extension StructureInstanceSerde on StructureInstance {
       cells: cells,
     );
   }
-  void pack(Packer packer) {
+
+  void pack(Packer packer, WorldCodec codec) {
     packer.packListLength(7);
     packer.packString(typeName);
     packer.packBool(isSuspicious);
-    layer.pack(packer);
+    packer.packInt(codec.layerToCode(layer));
     packer.packInt(originX);
     packer.packInt(originY);
     rotation.pack(packer);
@@ -281,34 +457,14 @@ extension StructureInstanceSerde on StructureInstance {
   }
 }
 
-extension EntranceTypeSerde on EntranceType {
-  static EntranceType unpack(Unpacker unpacker) {
-    return switch (unpacker.unpackInt()) {
-      0 => EntranceType.main,
-      1 => EntranceType.sideGround,
-      2 => EntranceType.sideSecond,
-      3 => EntranceType.alterBasement,
-      _ => throw FormatException(),
-    };
-  }
-  void pack(Packer packer) {
-    packer.packInt(switch (this) {
-      EntranceType.main => 0,
-      EntranceType.sideGround => 1,
-      EntranceType.sideSecond => 2,
-      EntranceType.alterBasement => 3,
-    });
-  }
-}
-
 extension WorldFileSerde on WorldFile {
-  static WorldFile unpack(Unpacker unpacker) {
+  static WorldFile unpack(Unpacker unpacker, WorldCodec codec) {
     final len = unpacker.unpackListLength();
     if (len != 7) throw FormatException();
     final layersLen = unpacker.unpackListLength();
     final layers = <GroundLayer>{};
     for (int i = 0; i < layersLen; i++) {
-      final layer = GroundLayerSerde.unpack(unpacker);
+      final layer = codec.layerFromCode(unpacker.unpackInt()!);
       layers.add(layer);
     }
     final minX = unpacker.unpackInt();
@@ -319,13 +475,13 @@ extension WorldFileSerde on WorldFile {
     final instancesLen = unpacker.unpackListLength();
     final instances = <StructureInstance>[];
     for (int i = 0; i < instancesLen; i++) {
-      final instance = StructureInstanceSerde.unpack(unpacker);
+      final instance = StructureInstanceSerde.unpack(unpacker, codec);
       instances.add(instance);
     }
     final entrancesLen = unpacker.unpackMapLength();
     final entrances = <EntranceType, Position>{};
     for (int i = 0; i < entrancesLen; i++) {
-      final type = EntranceTypeSerde.unpack(unpacker);
+      final type = codec.entranceFromCode(unpacker.unpackInt()!);
       final position = PositionSerde.unpack(unpacker);
       entrances[type] = position;
     }
@@ -339,11 +495,12 @@ extension WorldFileSerde on WorldFile {
       entrances: entrances,
     );
   }
-  void pack(Packer packer) {
+
+  void pack(Packer packer, WorldCodec codec) {
     packer.packListLength(7);
     packer.packListLength(layers.length);
-    for (final layer in layers) {
-      layer.pack(packer);
+    for (final layer in layers.sorted(compare<GroundLayer>((l) => l.index))) {
+      packer.packInt(codec.layerToCode(layer));
     }
     packer.packInt(minX);
     packer.packInt(maxX);
@@ -357,24 +514,24 @@ extension WorldFileSerde on WorldFile {
     ]));
     packer.packListLength(instances.length);
     for (final instance in instances) {
-      instance.pack(packer);
+      instance.pack(packer, codec);
     }
     final entrances = this.entrances.entries.sortedBy((e) => e.key.index);
     packer.packMapLength(entrances.length);
     for (final entry in entrances) {
-      entry.key.pack(packer);
+      packer.packInt(codec.entranceToCode(entry.key));
       entry.value.pack(packer);
     }
   }
 }
 
-Uint8List serializeWorld(WorldFile world) {
+Uint8List serializeWorld(WorldFile world, WorldCodec codec) {
   final packer = Packer();
-  world.pack(packer);
+  world.pack(packer, codec);
   return packer.takeBytes();
 }
 
-WorldFile deserializeWorld(Uint8List content) {
+WorldFile deserializeWorld(Uint8List content, WorldCodec codec) {
   final unpacker = Unpacker(content);
-  return WorldFileSerde.unpack(unpacker);
+  return WorldFileSerde.unpack(unpacker, codec);
 }

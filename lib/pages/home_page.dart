@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
+import 'package:idv_map_guides/core_data/modules.dart';
 import 'package:idv_map_guides/core_data/worlds.dart';
 import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/main.dart';
+import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/routes.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -68,25 +70,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               showDialog<void>(
                 context: context,
-                builder: (context) => Dialog(
-                  child: SizedBox(
-                    width: 300,
-                    height: 240,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          child: const Text('结构编辑'),
-                          onPressed: () => Navigator.pushReplacementNamed(context, Routes.editorStructure),
-                        ),
-                        TextButton(
-                          child: const Text('地图编辑'),
-                          onPressed: () => Navigator.pushReplacementNamed(context, Routes.editorWorld),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                builder: (context) => _EditorEntryDialog(),
               );
             },
           ) : null,
@@ -165,5 +149,65 @@ class _HomePageState extends State<HomePage> {
         );
       }
     );
+  }
+}
+
+class _EditorEntryDialog extends StatefulWidget {
+  @override
+  State<_EditorEntryDialog> createState() => _EditorEntryDialogState();
+}
+
+class _EditorEntryDialogState extends State<_EditorEntryDialog> {
+  WorldType _target = WorldType.theBringerOfDoom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: SizedBox(
+        width: 320,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('选择要编辑的地图'),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: WorldType.values.map((type) {
+                  return ChoiceChip(
+                    label: Text(type.label(context)),
+                    selected: _target == type,
+                    onSelected: (_) => setState(() => _target = type),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    child: const Text('结构编辑'),
+                    onPressed: () => _open(Routes.editorStructure),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    child: const Text('地图编辑'),
+                    onPressed: () => _open(Routes.editorWorld),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _open(String route) {
+    final codec = worldCodecFor(_target);
+    final store = editorStoreFor(_target.assets, codec);
+    final arguments = EditorRouteArguments(mapKey: _target.assets, store: store);
+    Navigator.pushReplacementNamed(context, route, arguments: arguments);
   }
 }
