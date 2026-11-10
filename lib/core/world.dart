@@ -327,7 +327,7 @@ abstract class WorldFile with _$WorldFile {
   }) = _WorldFile;
 }
 
-World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
+World constructWorld(Map<String, Structure> structures, WorldFile worldFile, {bool replaceStructureMismatchedDoor = true}) {
   if (worldFile.instances.isEmpty) {
     throw WorldErrors(errors: [WorldError.emptyMap()]);
   }
@@ -351,7 +351,7 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
     world.placeEntrance(entry.key, entry.value);
   }
   try {
-    world.validate(replaceStructureMismatchedDoor: true);
+    world.validate(replaceStructureMismatchedDoor: replaceStructureMismatchedDoor);
   } on WorldErrors catch (e) {
     errors.merge(e);
   }

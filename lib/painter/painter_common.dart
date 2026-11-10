@@ -125,7 +125,7 @@ void drawDoorSegment(Canvas canvas, Offset p1, Offset p2, double cellSize) {
     ..color = doorColor
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
-    ..strokeWidth = cellSize * 0.02;
+    ..strokeWidth = cellSize * 0.04;
   canvas.drawLine(Offset.lerp(p1, p2, 0.2)!, Offset.lerp(p1, p2, 0.8)!, paint);
 }
 
@@ -134,7 +134,7 @@ void drawHoleSegment(Canvas canvas, Offset p1, Offset p2, double cellSize) {
     ..color = holeColor
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
-    ..strokeWidth = cellSize * 0.02;
+    ..strokeWidth = cellSize * 0.04;
   const dashCount = 8;
   final normalDash = cellSize / 2 / dashCount;
   final dash = List<double>.filled(dashCount + 1, normalDash);
@@ -309,6 +309,8 @@ void paintCellEdges(
   bool hasOutline = false,
   bool Function(Direction)? isBoundary,
 }) {
+  canvas.save();
+  canvas.clipRect(rect);
   for (final direction in Direction.values) {
     final (p1, p2) = edgeSegment(rect, direction);
     final boundary = isBoundary?.call(direction) ?? false;
@@ -329,6 +331,7 @@ void paintCellEdges(
         break;
     }
   }
+  canvas.restore();
 }
 
 /// 单元格四边（外墙 / 门 / 洞 / 内墙）（不处理多边形外墙）
