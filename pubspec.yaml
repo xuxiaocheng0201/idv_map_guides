@@ -46,6 +46,7 @@ flutter:
     - assets/maps/the_bringer_of_doom/easy/
     - assets/maps/the_bringer_of_doom/hard/
     - assets/maps/the_bringer_of_doom/nightmare/
+    - assets/maps/phosphorescence_disease/nightmare/
 
 flutter_intl:
   enabled: true

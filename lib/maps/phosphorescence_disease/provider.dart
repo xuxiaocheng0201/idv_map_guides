@@ -9,27 +9,26 @@ import 'package:idv_map_guides/maps/phosphorescence_disease/feature.dart';
 import 'package:idv_map_guides/maps/phosphorescence_disease/layer.dart';
 import 'package:idv_map_guides/maps/phosphorescence_disease/serde.dart';
 
-enum PhosphorescenceDiseaseWorlds implements BaseWorldsEnums {
-  onlyOne;
+enum PhosphorescenceDiseaseNightmareWorlds implements BaseWorldsEnums {
+  map1;
 
-  String get _assets => switch (this) {
-    onlyOne => 'world',
+  int get _assertIndex => switch (this) {
+    PhosphorescenceDiseaseNightmareWorlds.map1 => 1,
   };
 }
 
-class PhosphorescenceDiseaseWorldsProvider extends WorldsProvider<PhosphorescenceDiseaseWorlds> {
+class PhosphorescenceDiseaseWorldsNightmareProvider extends WorldsProvider<PhosphorescenceDiseaseNightmareWorlds> {
   @override WorldType get type => WorldType.phosphorescenceDisease;
-  @override WorldDifficulty get difficulty => WorldDifficulty.normal;
+  @override WorldDifficulty get difficulty => WorldDifficulty.nightmare;
   @override WorldCodec get codec => phosphorescenceDiseaseCodec;
-  @override List<PhosphorescenceDiseaseWorlds> get allWorlds => PhosphorescenceDiseaseWorlds.values;
+  @override List<PhosphorescenceDiseaseNightmareWorlds> get allWorlds => PhosphorescenceDiseaseNightmareWorlds.values;
   @override List<GroundLayer> get allLayers => const <GroundLayer>[
     PhosphorescenceDiseaseLayer.level1,
     PhosphorescenceDiseaseLayer.level2,
     PhosphorescenceDiseaseLayer.level3,
-    PhosphorescenceDiseaseLayer.level4,
   ];
   @override List<EntranceType> get validEntrances => const <EntranceType>[PhosphorescenceDiseaseEntranceType.main];
-  @override String worldAssets(PhosphorescenceDiseaseWorlds world) => '${world._assets}.data';
+  @override String worldAssets(PhosphorescenceDiseaseNightmareWorlds world) => 'world_${world._assertIndex}.data';
 
   @override
   EntranceFeature inferEntranceFeature(World world, EntranceType entrance) {

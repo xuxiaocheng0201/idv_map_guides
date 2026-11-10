@@ -165,7 +165,7 @@ final _theBringerOfDoomNovice = WorldsManager(provider: TheBringerOfDoomNoviceWo
 final _theBringerOfDoomEasy = WorldsManager(provider: TheBringerOfDoomEasyWorldsProvider());
 final _theBringerOfDoomHard = WorldsManager(provider: TheBringerOfDoomHardWorldsProvider());
 final _theBringerOfDoomNightmare = WorldsManager(provider: TheBringerOfDoomNightmareWorldsProvider());
-final _phosphorescence = WorldsManager(provider: PhosphorescenceDiseaseWorldsProvider());
+final _phosphorescenceDiseaseNightmare = WorldsManager(provider: PhosphorescenceDiseaseWorldsNightmareProvider());
 
 WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty difficulty) {
   return switch (type) {
@@ -177,7 +177,7 @@ WorldsManager<BaseWorldsEnums>? getWorldsManager(WorldType type, WorldDifficulty
       WorldDifficulty.nightmare => _theBringerOfDoomNightmare,
     },
     WorldType.phosphorescenceDisease => switch (difficulty) {
-      WorldDifficulty.normal => _phosphorescence,
+      WorldDifficulty.nightmare => _phosphorescenceDiseaseNightmare,
       _ => null,
     },
   }?..preload();

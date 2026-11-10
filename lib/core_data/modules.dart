@@ -16,13 +16,16 @@ WorldsProvider<BaseWorldsEnums>? worldsProviderFor(WorldType type, WorldDifficul
     WorldType.theBringerOfDoom => switch (difficulty) {
       WorldDifficulty.novice => TheBringerOfDoomNoviceWorldsProvider(),
       WorldDifficulty.easy => TheBringerOfDoomEasyWorldsProvider(),
-      WorldDifficulty.normal => null,
+      WorldDifficulty.normal => null, // TODO
       WorldDifficulty.hard => TheBringerOfDoomHardWorldsProvider(),
       WorldDifficulty.nightmare => TheBringerOfDoomNightmareWorldsProvider(),
     },
     WorldType.phosphorescenceDisease => switch (difficulty) {
-      WorldDifficulty.normal => PhosphorescenceDiseaseWorldsProvider(),
-      _ => null,
+      WorldDifficulty.novice => null,
+      WorldDifficulty.easy => null,
+      WorldDifficulty.normal => null, // TODO
+      WorldDifficulty.hard => null, // TODO
+      WorldDifficulty.nightmare => PhosphorescenceDiseaseWorldsNightmareProvider(),
     },
   };
 }

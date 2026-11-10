@@ -59,6 +59,6 @@ String worldLabel(BaseWorldsEnums world, BuildContext context) {
   if (world is TheBringerOfDoomEasyWorlds) return world.label(context);
   if (world is TheBringerOfDoomHardWorlds) return world.label(context);
   if (world is TheBringerOfDoomNightmareWorlds) return world.label(context);
-  if (world is PhosphorescenceDiseaseWorlds) return world.label(context);
+  if (world is PhosphorescenceDiseaseNightmareWorlds) return world.label(context);
   return (world as dynamic).label(context) as String;
 }

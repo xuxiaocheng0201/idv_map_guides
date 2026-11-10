@@ -20,14 +20,22 @@ extension PhosphorescenceDiseaseEntranceTypeL10n on PhosphorescenceDiseaseEntran
   String label(BuildContext context) {
     return switch (this) {
       PhosphorescenceDiseaseEntranceType.main => S.of(context).phosphorescenceDiseaseEntranceMain,
+      PhosphorescenceDiseaseEntranceType.entranceLeft => '进口左转',
+      PhosphorescenceDiseaseEntranceType.entranceRight => '进口右转',
+      PhosphorescenceDiseaseEntranceType.entranceRailway => '轨道入口',
+      PhosphorescenceDiseaseEntranceType.minecartB2A => 'B2矿车1',
+      PhosphorescenceDiseaseEntranceType.minecartB2B => 'B2矿车2',
+      PhosphorescenceDiseaseEntranceType.minecartB3A => 'B3矿车1',
+      PhosphorescenceDiseaseEntranceType.minecartB3B => 'B3矿车2',
+      PhosphorescenceDiseaseEntranceType.minecartTransported => '矿车出口',
     };
   }
 }
 
-extension PhosphorescenceDiseaseWorldsL10n on PhosphorescenceDiseaseWorlds {
+extension PhosphorescenceDiseaseWorldsL10n on PhosphorescenceDiseaseNightmareWorlds {
   String label(BuildContext context) {
     return switch (this) {
-      PhosphorescenceDiseaseWorlds.onlyOne => S.of(context).worldPhosphorescenceDisease,
+      PhosphorescenceDiseaseNightmareWorlds.map1 => S.of(context).worldPhosphorescenceDisease,
     };
   }
 }
