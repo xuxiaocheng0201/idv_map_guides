@@ -74,7 +74,7 @@ class _WorldEditorRegistry {
       world.placeEntrance(entry.key, entry.value);
     }
     try {
-      world.validate(replaceStructureMismatchedDoor: false);
+      world.validate();
     } on WorldErrors catch (e) {
       globalErrors.merge(e);
     }

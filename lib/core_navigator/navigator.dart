@@ -283,7 +283,9 @@ List<Node> navigate(World world, NavigateArguments arguments) {
           }
           break;
         case EdgeType.door:
-          add(Node(u.layer, nx, ny));
+          if (neighbor.structureId != null) {
+            add(Node(u.layer, nx, ny));
+          }
           break;
         case EdgeType.innerWall:
           break;

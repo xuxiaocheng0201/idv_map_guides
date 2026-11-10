@@ -308,12 +308,15 @@ void paintCellEdges(
   double cellSize, {
   bool hasOutline = false,
   bool Function(Direction)? isBoundary,
+  bool Function(Direction)? isNeighborEmpty,
+  bool showDoorIntoVoid = true,
 }) {
   canvas.save();
   canvas.clipRect(rect);
   for (final direction in Direction.values) {
     final (p1, p2) = edgeSegment(rect, direction);
     final boundary = isBoundary?.call(direction) ?? false;
+    final neighborEmpty = isNeighborEmpty?.call(direction) ?? false;
     switch (info.getEdgeType(direction)) {
       case EdgeType.nothing:
         if (!hasOutline && boundary) {
@@ -321,6 +324,10 @@ void paintCellEdges(
         }
         break;
       case EdgeType.door:
+        if (neighborEmpty && !showDoorIntoVoid) {
+          drawWallSegment(canvas, p1, p2, cellSize);
+          break;
+        }
         drawDoorSegment(canvas, p1, p2, cellSize);
         break;
       case EdgeType.innerWall:
@@ -344,8 +351,10 @@ void paintLayerCellEdges(
   int minX,
   int maxX,
   int minY,
-  int maxY,
-) {
+  int maxY, {
+  bool? showDoorIntoVoid,
+}) {
+  final showDoor = showDoorIntoVoid ?? editorMode.value;
   for (int x = minX; x <= maxX; x++) {
     for (int y = minY; y <= maxY; y++) {
       final cell = world.cell(layer, x, y);
@@ -360,6 +369,12 @@ void paintLayerCellEdges(
           final n = world.cell(layer, x + dx, y + dy);
           return n == null || n.structureId != cell.structureId;
         },
+        isNeighborEmpty: (d) {
+          final (dx, dy) = d.dxy;
+          final n = world.cell(layer, x + dx, y + dy);
+          return n == null || n.structureId == null;
+        },
+        showDoorIntoVoid: showDoor,
       );
     }
   }

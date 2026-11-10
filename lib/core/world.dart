@@ -186,7 +186,7 @@ class World {
     entrances.remove(type);
   }
 
-  void validate({required bool replaceStructureMismatchedDoor}) {
+  void validate() {
     final errors = WorldErrors(errors: <WorldError>[]);
     if (entrances.isEmpty) {
       errors.push(WorldError.entranceMissing());
@@ -215,10 +215,6 @@ class World {
                 if (oppositeCell == null || oppositeCell.structureId == null || oppositeCell.info.getEdgeType(oppositeDoor.direction) != EdgeType.door) {
                   if (c.structureTypeName == corridorTypeName) {
                     errors.push(WorldError.doorMismatch(layer: layer, worldDoor: worldEdge));
-                  } else {
-                    if (replaceStructureMismatchedDoor) {
-                      c.info = c.info.setEdgeType(direction, EdgeType.nothing);
-                    }
                   }
                 }
                 break;
@@ -327,7 +323,7 @@ abstract class WorldFile with _$WorldFile {
   }) = _WorldFile;
 }
 
-World constructWorld(Map<String, Structure> structures, WorldFile worldFile, {bool replaceStructureMismatchedDoor = true}) {
+World constructWorld(Map<String, Structure> structures, WorldFile worldFile) {
   if (worldFile.instances.isEmpty) {
     throw WorldErrors(errors: [WorldError.emptyMap()]);
   }
@@ -351,7 +347,7 @@ World constructWorld(Map<String, Structure> structures, WorldFile worldFile, {bo
     world.placeEntrance(entry.key, entry.value);
   }
   try {
-    world.validate(replaceStructureMismatchedDoor: replaceStructureMismatchedDoor);
+    world.validate();
   } on WorldErrors catch (e) {
     errors.merge(e);
   }

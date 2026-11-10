@@ -11,7 +11,6 @@ import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
-import 'package:idv_map_guides/main.dart';
 import 'package:idv_map_guides/maps/phosphorescence_disease/provider.dart';
 import 'package:idv_map_guides/maps/the_bringer_of_doom/provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -70,13 +69,12 @@ class WorldsManager<W extends BaseWorldsEnums> {
 
   Future<(Uint8List, World)> _getWorld(W world) async {
     final structures = (await _getStructures()).$2;
-    final replaceStructureMismatchedDoor = !editorMode.value;
     return await _fetchWithCache(
       key: 'world/${world.index}',
       fetch: () async {
         final data = await _loadAssets(provider.worldAssets(world));
         final worldFile = deserializeWorld(data, provider.codec);
-        return (data, constructWorld(structures, worldFile, replaceStructureMismatchedDoor: replaceStructureMismatchedDoor));
+        return (data, constructWorld(structures, worldFile));
       },
       debugLabel: '${world.runtimeType}/${world.name}',
     );

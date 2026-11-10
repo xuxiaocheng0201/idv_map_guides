@@ -32,6 +32,7 @@ class EditorWorldPainter extends CustomPainter {
     paintLayerCellEdges(
       canvas, world, layer, cellSize, cellRect,
       world.minX, world.maxX, world.minY, world.maxY,
+      showDoorIntoVoid: true,
     );
     paintLayerCellDecorations(
       canvas, world, layer, cellSize, cellRect,
