@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
 import 'package:idv_map_guides/core_data/modules.dart';
@@ -9,6 +8,7 @@ import 'package:idv_map_guides/main.dart';
 import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:toastification/toastification.dart';
 

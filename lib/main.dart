@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:idv_map_guides/generated/l10n.dart';
 import 'package:idv_map_guides/pages/editors/editor_store.dart';
 import 'package:idv_map_guides/pages/editors/structures_editor_page.dart';
@@ -9,6 +7,7 @@ import 'package:idv_map_guides/pages/entrances_page.dart';
 import 'package:idv_map_guides/pages/home_page.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:toastification/toastification.dart';
 
@@ -43,11 +42,9 @@ class MyApp extends StatelessWidget {
       child: SafeArea(
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          localizationsDelegates: const [
+          localizationsDelegates: [
             S.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: S.supportedLocales,
           onGenerateTitle: (context) => S.of(context).title,

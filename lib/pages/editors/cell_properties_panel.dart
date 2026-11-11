@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CellPropertiesPanel extends StatelessWidget {
   final Position position;

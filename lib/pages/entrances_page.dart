@@ -1,7 +1,6 @@
 import 'dart:collection';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/l10n.dart';
@@ -13,6 +12,7 @@ import 'package:idv_map_guides/main.dart';
 import 'package:idv_map_guides/pages/worlds_page.dart';
 import 'package:idv_map_guides/painter/entrance_thumbnail_painter.dart';
 import 'package:idv_map_guides/routes.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class EntranceFeaturePageArguments {
