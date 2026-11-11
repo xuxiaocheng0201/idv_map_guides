@@ -45,7 +45,7 @@ jobs:
       - name: Generate codes
         run: |
           flutter pub get
-          dart run intl_utils:generate
+          flutter gen-l10n
           dart run build_runner build
 
       - name: Precompute assets

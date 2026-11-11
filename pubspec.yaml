@@ -19,27 +19,27 @@ dependencies:
   sentry_flutter: ^10.3.0
   freezed_annotation: ^3.1.0
   toastification: ^3.2.2
-  file_picker: ^13.3.2
+  file_picker: ^13.3.3
   path: ^1.9.1
   messagepack: ^0.2.1
   comparators: ^1.2.0
-  cachemesh: ^2.0.0
+  cachemesh: ^2.1.0
   collection: ^1.19.1
-  squadron: ^7.4.4
+  squadron: ^7.4.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  intl_utils: ^2.8.17
   sentry_dart_plugin: ^3.4.0
   build_runner: ^2.17.1
   freezed: ^4.0.3
   squadron_builder: ^9.3.2
-  crypto: ^3.0.7
-  sw: ^0.3.0
+  crypto: ^3.0.8
+  sw: ^0.5.0
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/maps/the_bringer_of_doom/novice/
@@ -47,9 +47,6 @@ flutter:
     - assets/maps/the_bringer_of_doom/hard/
     - assets/maps/the_bringer_of_doom/nightmare/
     - assets/maps/phosphorescence_disease/nightmare/
-
-flutter_intl:
-  enabled: true
 
 sentry:
   upload_debug_symbols: true

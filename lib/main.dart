@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: S.delegate.supportedLocales,
+          supportedLocales: S.supportedLocales,
           onGenerateTitle: (context) => S.of(context).title,
           navigatorKey: navigatorKey,
           initialRoute: Routes.home,

@@ -5,18 +5,21 @@
 !/pubspec.lock
 !/README.md
 !/CHANGELOG.md
-!/analysis_options.yaml
 
 !/lib
 /lib/generated
 /lib/**/*.freezed.dart
 /lib/**/*.g.dart
+!/tool
+
 !/assets
 /assets/**/*.precomputed
-!/tool
-!/.github
-
 !/**/LICENSE*
 
 !/web
 /web/workers
+
+!/.github
+
+!/analysis_options.yaml
+!/l10n.yaml
