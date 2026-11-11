@@ -19,6 +19,7 @@ abstract class WorldsProvider<W extends BaseWorldsEnums> {
   List<EntranceType> get validEntrances;
   String worldAssets(W world);
   EntranceFeature inferEntranceFeature(World world, EntranceType entrance);
+  ({int minX, int maxX, int minY, int maxY})? entranceThumbnail(World world, EntranceType entrance) => null;
   NavigateArguments navigateArguments(World world, EntranceType entrance);
   NavigateDoubleArguments navigateDoubleArguments(World world, EntranceType entrance1, EntranceType entrance2) {
     final origin1 = navigateArguments(world, entrance1);

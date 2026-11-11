@@ -49,14 +49,23 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
     _loadAllData();
   }
 
+  EntranceThumbnailPainter _painter(World world, EntranceType entrance) {
+    final paint = manager.provider.entranceThumbnail(world, entrance);
+    return paint == null
+        ? EntranceThumbnailPainter.auto(world: world, entrance: entrance)
+        : EntranceThumbnailPainter.custom(world: world, entrance: entrance,
+      offsetMinX: paint.minX, offsetMaxX: paint.maxX,
+      offsetMinY: paint.minY, offsetMaxY: paint.maxY,
+    );
+  }
+
   Future<void> _loadAllData() async {
     try {
       for (final entrance in manager.provider.validEntrances) {
-        assert(entrance.displayable);
         final featureMap = SplayTreeMap<EntranceFeature, LinkedHashMap<BoolList, List<BaseWorldsEnums>>>();
         for (final worldType in manager.provider.allWorlds) {
           final world = await manager.getWorld(worldType);
-          final painter = EntranceThumbnailPainter.auto(world: world, entrance: entrance);
+          final painter = _painter(world, entrance);
           final signature = painter.getSignature();
           final feature = manager.provider.inferEntranceFeature(world, entrance);
           featureMap.putIfAbsent(feature, () => LinkedHashMap<BoolList, List<BaseWorldsEnums>>(
@@ -388,7 +397,7 @@ class _EntranceFeaturePageState extends State<EntranceFeaturePage> with SingleTi
                         );
                       },
                       child: CustomPaint(
-                        painter: EntranceThumbnailPainter.auto(world: world, entrance: entrance),
+                        painter: _painter(world, entrance),
                       ),
                     );
                   },

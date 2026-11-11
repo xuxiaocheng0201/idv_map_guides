@@ -128,6 +128,20 @@ EntranceFeature _inferEntranceFeature(World world, PhosphorescenceDiseaseEntranc
   };
 }
 
+({int maxX, int maxY, int minX, int minY})? _entranceThumbnail(World world, PhosphorescenceDiseaseEntranceType entrance) {
+  return switch (entrance) {
+    PhosphorescenceDiseaseEntranceType.entranceLeft => (minX: -1, maxX: 5, minY: -1, maxY: 5),
+    PhosphorescenceDiseaseEntranceType.entranceRight => (minX: -5, maxX: 1, minY: -1, maxY: 5),
+    PhosphorescenceDiseaseEntranceType.entranceRailway => null,
+    PhosphorescenceDiseaseEntranceType.main ||
+    PhosphorescenceDiseaseEntranceType.minecartB2A ||
+    PhosphorescenceDiseaseEntranceType.minecartB2B ||
+    PhosphorescenceDiseaseEntranceType.minecartB3A ||
+    PhosphorescenceDiseaseEntranceType.minecartB3B ||
+    PhosphorescenceDiseaseEntranceType.minecartTransported => throw StateError('invalid entrance type'),
+  };
+}
+
 enum PhosphorescenceDiseaseNightmareWorlds implements BaseWorldsEnums {
   map1,
   map2,
@@ -169,6 +183,10 @@ class PhosphorescenceDiseaseWorldsNightmareProvider extends WorldsProvider<Phosp
   @override WorldDifficulty get difficulty => WorldDifficulty.nightmare;
   @override WorldCodec get codec => phosphorescenceDiseaseCodec;
   @override List<PhosphorescenceDiseaseNightmareWorlds> get allWorlds => PhosphorescenceDiseaseNightmareWorlds.values;
+  // @override List<PhosphorescenceDiseaseNightmareWorlds> get allWorlds => [
+  //   PhosphorescenceDiseaseNightmareWorlds.map1,
+  //   PhosphorescenceDiseaseNightmareWorlds.map2,
+  // ];
   @override List<GroundLayer> get allLayers => const <GroundLayer>[
     PhosphorescenceDiseaseLayer.level1,
     PhosphorescenceDiseaseLayer.level2,
@@ -181,6 +199,7 @@ class PhosphorescenceDiseaseWorldsNightmareProvider extends WorldsProvider<Phosp
   ];
   @override String worldAssets(PhosphorescenceDiseaseNightmareWorlds world) => 'world_${world._assertIndex}.data';
   @override EntranceFeature inferEntranceFeature(World world, EntranceType entrance) => _inferEntranceFeature(world, entrance as PhosphorescenceDiseaseEntranceType);
+  @override ({int maxX, int maxY, int minX, int minY})? entranceThumbnail(World world, EntranceType entrance) => _entranceThumbnail(world, entrance as PhosphorescenceDiseaseEntranceType);
 
   @override
   NavigateArguments navigateArguments(World world, EntranceType entrance) {

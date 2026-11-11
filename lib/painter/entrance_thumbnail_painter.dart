@@ -14,7 +14,7 @@ class EntranceThumbnailPainter extends CustomPainter {
   final int offsetMinY;
   final int offsetMaxY;
 
-  EntranceThumbnailPainter._({
+  EntranceThumbnailPainter.custom({
     required this.world,
     required this.entrance,
     this.offsetMinX = -3,
@@ -32,7 +32,7 @@ class EntranceThumbnailPainter extends CustomPainter {
     assert(square.isOdd, 'square must be odd');
     final radius = square ~/ 2;
     final adjusted = _adjustOffsets(world, entrance, -radius, radius, -radius, radius);
-    return EntranceThumbnailPainter._(
+    return EntranceThumbnailPainter.custom(
       world: world,
       entrance: entrance,
       offsetMinX: adjusted.$1,
@@ -71,7 +71,7 @@ class EntranceThumbnailPainter extends CustomPainter {
     paintLayerCellDecorations(
       canvas, world, layer, cellSize, cellRect, minX, maxX, minY, maxY,
       onCell: (x, y, rect) {
-        if (entrancePos.x == x && entrancePos.y == y) {
+        if (entrance.displayable && entrancePos.x == x && entrancePos.y == y) {
           drawEntrance(canvas, rect, cellSize);
         }
       },
