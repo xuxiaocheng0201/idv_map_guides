@@ -122,6 +122,8 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
   int? _selectedInstanceIndex;
   Position? _selectedCell;
 
+  final ScrollController _toolsScrollController = ScrollController();
+
   WorldCodec get codec => widget.store.codec;
 
   @override
@@ -133,6 +135,12 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     _registry.buildWorld(setState);
     _selectedInstanceIndex = null;
     _selectedCell = null;
+  }
+
+  @override
+  void dispose() {
+    _toolsScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -374,70 +382,76 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
     final currentLayerInWorld = _registry.worldFile.layers.contains(_currentLayer);
     return Column(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              currentLayerInWorld ? IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () {
-                  setState(() => _registry.worldFile.layers.remove(_currentLayer));
-                  _registry.buildWorld(setState);
-                },
-              ) : IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  setState(() => _registry.worldFile.layers.add(_currentLayer));
-                  _registry.buildWorld(setState);
-                },
-              ),
-              for (final layer in codec.layers)
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: ChoiceChip(
-                    label: Text(layerLabel(context, layer)),
-                    selected: _currentLayer == layer,
-                    onSelected: (selected) => setState(() => _currentLayer = layer),
-                    backgroundColor: _registry.worldFile.layers.contains(layer) ? null : Colors.grey.withValues(alpha: 0.3),
-                  ),
+        Scrollbar(
+          controller: _toolsScrollController,
+          thumbVisibility: true,
+          thickness: 4,
+          child: SingleChildScrollView(
+            controller: _toolsScrollController,
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                currentLayerInWorld ? IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: () {
+                    setState(() => _registry.worldFile.layers.remove(_currentLayer));
+                    _registry.buildWorld(setState);
+                  },
+                ) : IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    setState(() => _registry.worldFile.layers.add(_currentLayer));
+                    _registry.buildWorld(setState);
+                  },
                 ),
-              const SizedBox(width: 16),
-              ValueEditor(
-                label: 'X',
-                value: _registry.worldFile.minX,
-                onSet: (newMinX) {
-                  setState(() => _registry.worldFile.minX = newMinX);
-                  _registry.buildWorld(setState);
-                },
-              ),
-              const SizedBox(width: 16),
-              ValueEditor(
-                label: '～',
-                value: _registry.worldFile.maxX,
-                onSet: (newMaxX) {
-                  setState(() => _registry.worldFile.maxX = newMaxX);
-                  _registry.buildWorld(setState);
-                },
-              ),
-              const SizedBox(width: 16),
-              ValueEditor(
-                label: 'Y',
-                value: _registry.worldFile.minY,
-                onSet: (newMinY) {
-                  setState(() => _registry.worldFile.minY = newMinY);
-                  _registry.buildWorld(setState);
-                },
-              ),
-              const SizedBox(width: 16),
-              ValueEditor(
-                label: '～',
-                value: _registry.worldFile.maxY,
-                onSet: (newMaxY) {
-                  setState(() => _registry.worldFile.maxY = newMaxY);
-                  _registry.buildWorld(setState);
-                },
-              ),
-            ],
+                for (final layer in codec.layers)
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: ChoiceChip(
+                      label: Text(layerLabel(context, layer)),
+                      selected: _currentLayer == layer,
+                      onSelected: (selected) => setState(() => _currentLayer = layer),
+                      backgroundColor: _registry.worldFile.layers.contains(layer) ? null : Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ),
+                const SizedBox(width: 16),
+                ValueEditor(
+                  label: 'X',
+                  value: _registry.worldFile.minX,
+                  onSet: (newMinX) {
+                    setState(() => _registry.worldFile.minX = newMinX);
+                    _registry.buildWorld(setState);
+                  },
+                ),
+                const SizedBox(width: 16),
+                ValueEditor(
+                  label: '～',
+                  value: _registry.worldFile.maxX,
+                  onSet: (newMaxX) {
+                    setState(() => _registry.worldFile.maxX = newMaxX);
+                    _registry.buildWorld(setState);
+                  },
+                ),
+                const SizedBox(width: 16),
+                ValueEditor(
+                  label: 'Y',
+                  value: _registry.worldFile.minY,
+                  onSet: (newMinY) {
+                    setState(() => _registry.worldFile.minY = newMinY);
+                    _registry.buildWorld(setState);
+                  },
+                ),
+                const SizedBox(width: 16),
+                ValueEditor(
+                  label: '～',
+                  value: _registry.worldFile.maxY,
+                  onSet: (newMaxY) {
+                    setState(() => _registry.worldFile.maxY = newMaxY);
+                    _registry.buildWorld(setState);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
