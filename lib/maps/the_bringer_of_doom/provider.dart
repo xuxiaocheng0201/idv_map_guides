@@ -11,6 +11,10 @@ import 'package:idv_map_guides/maps/the_bringer_of_doom/layer.dart';
 import 'package:idv_map_guides/maps/the_bringer_of_doom/serde.dart';
 
 MainEntranceFeature _inferMainFeature(World world, TheBringerOfDoomEntranceType entrance) {
+  assert (switch (entrance) {
+    TheBringerOfDoomEntranceType.main => true,
+    _ => false,
+  });
   final position = world.entrances[entrance]!.position;
   final mainEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   final upDoor = position.add(0, 4);
@@ -27,6 +31,10 @@ MainEntranceFeature _inferMainFeature(World world, TheBringerOfDoomEntranceType 
 }
 
 SideEntranceFeature _inferSideFeature(World world, TheBringerOfDoomEntranceType entrance) {
+  assert (switch (entrance) {
+    TheBringerOfDoomEntranceType.sideGround || TheBringerOfDoomEntranceType.sideSecond => true,
+    _ => false,
+  });
   final position = world.entrances[entrance]!.position;
   final sideEntranceId = world.cell(entrance.layer, position.x, position.y)!.structureId!;
   Direction? facing;
@@ -71,7 +79,7 @@ EntranceFeature _inferEntranceFeature(World world, TheBringerOfDoomEntranceType 
   return switch (entrance) {
     TheBringerOfDoomEntranceType.main => TheBringerOfDoomEntranceFeature.main(_inferMainFeature(world, entrance)),
     TheBringerOfDoomEntranceType.sideGround || TheBringerOfDoomEntranceType.sideSecond => TheBringerOfDoomEntranceFeature.side(_inferSideFeature(world, entrance)),
-    TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+    TheBringerOfDoomEntranceType.alterBasement => throw StateError('invalid entrance type'),
   };
 }
 
@@ -81,21 +89,21 @@ int _entrancesLength(TheBringerOfDoomEntranceType from, TheBringerOfDoomEntrance
       TheBringerOfDoomEntranceType.main => 0,
       TheBringerOfDoomEntranceType.sideGround => 15,
       TheBringerOfDoomEntranceType.sideSecond => 15,
-      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+      TheBringerOfDoomEntranceType.alterBasement => throw StateError('invalid dest'),
     },
     TheBringerOfDoomEntranceType.sideGround => switch (to) {
       TheBringerOfDoomEntranceType.main => 15,
       TheBringerOfDoomEntranceType.sideGround => 0,
       TheBringerOfDoomEntranceType.sideSecond => 20,
-      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+      TheBringerOfDoomEntranceType.alterBasement => throw StateError('invalid dest'),
     },
     TheBringerOfDoomEntranceType.sideSecond => switch (to) {
       TheBringerOfDoomEntranceType.main => 8,
       TheBringerOfDoomEntranceType.sideGround => 20,
       TheBringerOfDoomEntranceType.sideSecond => 0,
-      TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+      TheBringerOfDoomEntranceType.alterBasement => throw StateError('invalid dest'),
     },
-    TheBringerOfDoomEntranceType.alterBasement => throw UnimplementedError(),
+    TheBringerOfDoomEntranceType.alterBasement => throw StateError('invalid dest'),
   };
 }
 

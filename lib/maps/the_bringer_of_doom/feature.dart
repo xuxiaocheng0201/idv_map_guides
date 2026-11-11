@@ -1,15 +1,16 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 
-class MainEntranceFeature implements Comparable<MainEntranceFeature> {
-  final bool hasUpDoor;
-  final bool hasLeftDoor;
-  final bool hasRightDoor;
+part 'feature.freezed.dart';
 
-  const MainEntranceFeature({
-    required this.hasUpDoor,
-    required this.hasLeftDoor,
-    required this.hasRightDoor,
-  });
+@freezed
+abstract class MainEntranceFeature with _$MainEntranceFeature implements Comparable<MainEntranceFeature> {
+  const MainEntranceFeature._();
+  const factory MainEntranceFeature({
+    required bool hasUpDoor,
+    required bool hasLeftDoor,
+    required bool hasRightDoor,
+  }) = _MainEntranceFeature;
 
   @override
   int compareTo(MainEntranceFeature b) {
@@ -23,41 +24,32 @@ class MainEntranceFeature implements Comparable<MainEntranceFeature> {
     return 0;
   }
 
-  int _count(MainEntranceFeature f) =>
-      (f.hasUpDoor ? 1 : 0) + (f.hasLeftDoor ? 1 : 0) + (f.hasRightDoor ? 1 : 0);
+  int _count(MainEntranceFeature f) =>(f.hasUpDoor ? 1 : 0) + (f.hasLeftDoor ? 1 : 0) + (f.hasRightDoor ? 1 : 0);
 }
 
-enum SideEntranceFeature { north, east, south, west, other }
+enum SideEntranceFeature implements Comparable<SideEntranceFeature> {
+  north,
+  east,
+  south,
+  west,
+  other;
 
-sealed class TheBringerOfDoomEntranceFeature implements EntranceFeature {
-  const TheBringerOfDoomEntranceFeature();
+  @override
+  int compareTo(SideEntranceFeature other) => index.compareTo(other.index);
+}
 
-  const factory TheBringerOfDoomEntranceFeature.main(MainEntranceFeature feature) =
-      MainEntranceFeatureValue;
-
-  const factory TheBringerOfDoomEntranceFeature.side(SideEntranceFeature feature) =
-      SideEntranceFeatureValue;
+@freezed
+sealed class TheBringerOfDoomEntranceFeature with _$TheBringerOfDoomEntranceFeature implements EntranceFeature {
+  const TheBringerOfDoomEntranceFeature._();
+  const factory TheBringerOfDoomEntranceFeature.main(MainEntranceFeature feature) = MainEntranceFeatureValue;
+  const factory TheBringerOfDoomEntranceFeature.side(SideEntranceFeature feature) = SideEntranceFeatureValue;
 
   @override
   int compareTo(EntranceFeature other) {
     return switch ((this, other)) {
       (MainEntranceFeatureValue a, MainEntranceFeatureValue b) => a.feature.compareTo(b.feature),
-      (MainEntranceFeatureValue(), SideEntranceFeatureValue()) => 1,
-      (SideEntranceFeatureValue(), MainEntranceFeatureValue()) => -1,
-      (SideEntranceFeatureValue a, SideEntranceFeatureValue b) => a.feature.index.compareTo(b.feature.index),
+      (SideEntranceFeatureValue a, SideEntranceFeatureValue b) => a.feature.compareTo(b.feature),
       _ => 0,
     };
   }
-}
-
-class MainEntranceFeatureValue extends TheBringerOfDoomEntranceFeature {
-  final MainEntranceFeature feature;
-
-  const MainEntranceFeatureValue(this.feature) : super();
-}
-
-class SideEntranceFeatureValue extends TheBringerOfDoomEntranceFeature {
-  final SideEntranceFeature feature;
-
-  const SideEntranceFeatureValue(this.feature) : super();
 }

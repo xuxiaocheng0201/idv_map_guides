@@ -16,24 +16,20 @@ import 'package:idv_map_guides/maps/the_bringer_of_doom/layer.dart';
 import 'package:idv_map_guides/maps/the_bringer_of_doom/provider.dart';
 
 extension WorldTypeL10n on WorldType {
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldType.theBringerOfDoom => S.of(context).worldTheBringerOfDoom,
-      WorldType.phosphorescenceDisease => S.of(context).worldPhosphorescenceDisease,
-    };
-  }
+  String label(BuildContext context) => switch (this) {
+    WorldType.theBringerOfDoom => S.of(context).worldTheBringerOfDoom,
+    WorldType.phosphorescenceDisease => S.of(context).worldPhosphorescenceDisease,
+  };
 }
 
 extension WorldDifficultyL10n on WorldDifficulty {
-  String label(BuildContext context) {
-    return switch (this) {
-      WorldDifficulty.novice => S.of(context).difficultyNovice,
-      WorldDifficulty.easy => S.of(context).difficultyEasy,
-      WorldDifficulty.normal => S.of(context).difficultyNormal,
-      WorldDifficulty.hard => S.of(context).difficultyHard,
-      WorldDifficulty.nightmare => S.of(context).difficultyNightmare,
-    };
-  }
+  String label(BuildContext context) => switch (this) {
+    WorldDifficulty.novice => S.of(context).difficultyNovice,
+    WorldDifficulty.easy => S.of(context).difficultyEasy,
+    WorldDifficulty.normal => S.of(context).difficultyNormal,
+    WorldDifficulty.hard => S.of(context).difficultyHard,
+    WorldDifficulty.nightmare => S.of(context).difficultyNightmare,
+  };
 }
 
 String layerLabel(BuildContext context, GroundLayer layer) {
