@@ -183,10 +183,6 @@ class PhosphorescenceDiseaseWorldsNightmareProvider extends WorldsProvider<Phosp
   @override WorldDifficulty get difficulty => WorldDifficulty.nightmare;
   @override WorldCodec get codec => phosphorescenceDiseaseCodec;
   @override List<PhosphorescenceDiseaseNightmareWorlds> get allWorlds => PhosphorescenceDiseaseNightmareWorlds.values;
-  // @override List<PhosphorescenceDiseaseNightmareWorlds> get allWorlds => [
-  //   PhosphorescenceDiseaseNightmareWorlds.map1,
-  //   PhosphorescenceDiseaseNightmareWorlds.map2,
-  // ];
   @override List<GroundLayer> get allLayers => const <GroundLayer>[
     PhosphorescenceDiseaseLayer.level1,
     PhosphorescenceDiseaseLayer.level2,
