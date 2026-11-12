@@ -103,6 +103,14 @@ class _WorldEditorRegistry {
   void removeInstance(int index, void Function(void Function()) setState) {
     setState(() => worldFile.instances.removeAt(index));
   }
+
+  int duplicateInstance(int index, void Function(void Function()) setState) {
+    final origin = worldFile.instances[index];
+    final copy = origin.copyWith();
+    final newIndex = worldFile.instances.length;
+    setState(() => worldFile.instances.add(copy));
+    return newIndex;
+  }
 }
 
 class WorldEditorPage extends StatefulWidget {
@@ -158,6 +166,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                 context: context,
                 builder: (context) {
                   return AlertDialog(
+                    content: const Text('确认是否清空地图'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -590,6 +599,18 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                   _registry.removeInstance(index, setState);
                   _registry.buildWorld(setState);
                   setState(() => _selectedInstanceIndex = null);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: '复制此结构实例',
+                onPressed: () {
+                  final newIndex = _registry.duplicateInstance(index, setState);
+                  _registry.buildWorld(setState);
+                  setState(() {
+                    _selectedInstanceIndex = newIndex;
+                    _isPickingPosition = true;
+                  });
                 },
               ),
             ],
