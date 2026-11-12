@@ -7,13 +7,8 @@ import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
 import 'package:idv_map_guides/core_data/modules.dart';
-import 'package:idv_map_guides/core_data/worlds_base.dart';
 import 'package:idv_map_guides/core_navigator/navigator.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
-
-WorldsProvider<BaseWorldsEnums>? worldProvider(WorldType type, WorldDifficulty diff) {
-  return worldsProviderFor(type, diff);
-}
 
 Future<Uint8List> readAsset(Directory root, WorldType type, WorldDifficulty difficulty, String name) async {
   final path = '${root.path}/assets/maps/${type.assets}/${difficulty.assets}/$name';
@@ -58,9 +53,9 @@ Future<void> main(List<String> args) async {
   stdout.writeln('[precompute] 开始预计算导航');
   for (final type in WorldType.values) {
     for (final difficulty in WorldDifficulty.values) {
-      final provider = worldProvider(type, difficulty);
+      final provider = worldsProviderFor(type, difficulty);
       if (provider == null) {
-        stdout.writeln('[precompute] 跳过 ${type.name}/${difficulty.name}（未实现）');
+        stdout.writeln('[precompute] 跳过 ${type.name}/${difficulty.name}');
         continue;
       }
       final codec = provider.codec;

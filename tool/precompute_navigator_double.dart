@@ -4,6 +4,7 @@ import 'package:idv_map_guides/core/data.dart';
 import 'package:idv_map_guides/core/serde.dart';
 import 'package:idv_map_guides/core/world.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
+import 'package:idv_map_guides/core_data/modules.dart';
 import 'package:idv_map_guides/core_navigator/navigator_double.dart';
 import 'package:idv_map_guides/core_navigator/serde.dart';
 
@@ -34,7 +35,7 @@ Future<void> main(List<String> args) async {
   stdout.writeln('[precompute/double] 开始预计算导航');
   for (final type in WorldType.values) {
     for (final difficulty in WorldDifficulty.values) {
-      final provider = worldProvider(type, difficulty);
+      final provider = worldsProviderFor(type, difficulty);
       if (provider == null) {
         stdout.writeln('[precompute/double] 跳过 ${type.name}/${difficulty.name}（未实现）');
         continue;
