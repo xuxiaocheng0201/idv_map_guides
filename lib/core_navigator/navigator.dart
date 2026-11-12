@@ -283,7 +283,7 @@ List<Node> navigate(World world, NavigateArguments arguments) {
           }
           break;
         case EdgeType.door:
-          if (neighbor.structureId != null) {
+          if (neighbor.structureId != null && neighbor.info.getEdgeType(direction.rotate(Rotation.cw180)) == EdgeType.door) {
             add(Node(u.layer, nx, ny));
           }
           break;
