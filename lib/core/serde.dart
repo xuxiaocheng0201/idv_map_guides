@@ -338,7 +338,7 @@ extension ShapePointSerde on ShapePoint {
 extension StructureSerde on Structure {
   static Structure unpack(Unpacker unpacker, String name) {
     final len = unpacker.unpackListLength();
-    if (len != 3 && len != 4) throw FormatException(); // FIXME: 4 only
+    if (len != 4) throw FormatException();
     final isCorridor = unpacker.unpackBool();
     final isNoDirection = unpacker.unpackBool();
     if (isCorridor == null || isNoDirection == null) throw FormatException();
@@ -350,12 +350,10 @@ extension StructureSerde on Structure {
       cells[key] = value;
     }
     final outline = <ShapePoint>[];
-    if (len == 4) {
-      final outlineLen = unpacker.unpackListLength();
-      for (int i = 0; i < outlineLen; i++) {
-        final point = ShapePointSerde.unpack(unpacker);
-        outline.add(point);
-      }
+    final outlineLen = unpacker.unpackListLength();
+    for (int i = 0; i < outlineLen; i++) {
+      final point = ShapePointSerde.unpack(unpacker);
+      outline.add(point);
     }
     return Structure(
       name: name,

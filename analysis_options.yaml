@@ -1,6 +1,3 @@
-plugins:
-  build_runner_hook: ^2.0.2
-
 analyzer:
   exclude:
     - build/**
