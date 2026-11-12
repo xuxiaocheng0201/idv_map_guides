@@ -14,7 +14,7 @@ const int defaultWorldMinY = 0;
 const int defaultWorldMaxY = 30;
 
 WorldFile emptyWorldFile(WorldCodec codec) => WorldFile(
-  layers: <GroundLayer>{codec.layers.first},
+  layers: Set.of(codec.layers),
   minX: defaultWorldMinX,
   maxX: defaultWorldMaxX,
   minY: defaultWorldMinY,
@@ -24,7 +24,7 @@ WorldFile emptyWorldFile(WorldCodec codec) => WorldFile(
 );
 
 World emptyWorld(WorldCodec codec) => World(
-  layers: <GroundLayer>{codec.layers.first},
+  layers: Set.of(codec.layers),
   minX: defaultWorldMinX,
   maxX: defaultWorldMaxX,
   minY: defaultWorldMinY,
@@ -42,8 +42,7 @@ class EditorStore {
   String? saveDirectory;
   String? saveFilename;
 
-  void reset() {
-    structuresData = serializeStructures(<String, Structure>{});
+  void resetWorld() {
     worldData = serializeWorld(emptyWorldFile(codec), codec);
   }
 }

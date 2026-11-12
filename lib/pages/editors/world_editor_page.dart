@@ -166,7 +166,7 @@ class _WorldEditorPageState extends State<WorldEditorPage> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          widget.store.reset();
+                          widget.store.resetWorld();
                           _registry.read(setState);
                           _registry.buildWorld(setState);
                           setState(() {
