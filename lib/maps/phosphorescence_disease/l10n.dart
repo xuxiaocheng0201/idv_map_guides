@@ -37,7 +37,8 @@ extension B1EntranceFeatureL10n on B1EntranceFeature {
 }
 
 extension B2EntranceFeatureL10n on B2EntranceFeature {
-  String labelWithS(S s) {
+  String label(BuildContext context) {
+    final s = S.of(context);
     final sb = StringBuffer();
     switch (leftType) {
       case B2EntranceFeatureType.none:
@@ -92,8 +93,6 @@ extension B2EntranceFeatureL10n on B2EntranceFeature {
     }
     return sb.toString();
   }
-
-  String label(BuildContext context) => labelWithS(S.of(context));
 }
 
 extension PhosphorescenceDiseaseEntranceFeatureL10n on PhosphorescenceDiseaseEntranceFeature {

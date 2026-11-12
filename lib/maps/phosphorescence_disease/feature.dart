@@ -1,8 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:idv_map_guides/core_data/classification.dart';
-import 'package:idv_map_guides/generated/l10n.dart';
-import 'package:idv_map_guides/generated/l10n_zh.dart';
-import 'package:idv_map_guides/maps/phosphorescence_disease/l10n.dart';
 
 part 'feature.freezed.dart';
 
@@ -46,8 +43,9 @@ abstract class B2EntranceFeature with _$B2EntranceFeature implements Comparable<
     final countA = _count(a);
     final countB = _count(b);
     if (countA != countB) return countA.compareTo(countB);
-    final l10nA = a.labelWithS(SZh());
-    final l10nB = b.labelWithS(SZh());
+    // eq if same label
+    final l10nA = _l10nIdentify(a);
+    final l10nB = _l10nIdentify(b);
     if (l10nA == l10nB) return 0;
     if (a.leftType != b.leftType) return a.leftType.index.compareTo(b.leftType.index);
     if (a.downType != b.downType) return a.downType.index.compareTo(b.downType.index);
@@ -59,6 +57,62 @@ abstract class B2EntranceFeature with _$B2EntranceFeature implements Comparable<
       (f.leftType != B2EntranceFeatureType.none ? 1 : 0) +
       (f.downType != B2EntranceFeatureType.none ? 1 : 0) +
       (f.rightType != B2EntranceFeatureType.none ? 1 : 0);
+
+  String _l10nIdentify(B2EntranceFeature f) {
+    final sb = StringBuffer();
+    switch (leftType) {
+      case B2EntranceFeatureType.none:
+        return 'LeftNo';
+      case B2EntranceFeatureType.straight:
+        sb.write('LeftStraight');
+        break;
+      case B2EntranceFeatureType.bentUpward:
+        sb.write('LeftUpwardBent');
+        break;
+      case B2EntranceFeatureType.bentDownward:
+        sb.write('LeftDownwardBent');
+        break;
+      case B2EntranceFeatureType.bentLeftward:
+      case B2EntranceFeatureType.bentRightward:
+        throw StateError('unreachable');
+    }
+    sb.write('-');
+    switch ((downType, rightType)) {
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.none):
+        return 'LeftOnly';
+
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.straight):
+        sb.write('RightStraight');
+        break;
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.bentUpward):
+        sb.write('RightUpwardBent');
+        break;
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.bentDownward):
+        sb.write('RightDownwardBent');
+        break;
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.bentLeftward):
+      case (B2EntranceFeatureType.none, B2EntranceFeatureType.bentRightward):
+        throw StateError('unreachable');
+
+      case (B2EntranceFeatureType.straight, B2EntranceFeatureType.none):
+        sb.write('DownStraight');
+        break;
+      case (B2EntranceFeatureType.bentLeftward, B2EntranceFeatureType.none):
+        sb.write('DownLeftwardBent');
+        break;
+      case (B2EntranceFeatureType.bentRightward, B2EntranceFeatureType.none):
+        sb.write('DownRightwardBent');
+        break;
+      case (B2EntranceFeatureType.bentUpward, B2EntranceFeatureType.none):
+      case (B2EntranceFeatureType.bentDownward, B2EntranceFeatureType.none):
+        throw StateError('unreachable');
+
+      case (_, _):
+        sb.write('Both');
+        break;
+    }
+    return sb.toString();
+  }
 }
 
 @freezed
