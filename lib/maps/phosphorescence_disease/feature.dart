@@ -53,14 +53,14 @@ abstract class B2EntranceFeature with _$B2EntranceFeature implements Comparable<
     return 0;
   }
 
-  int _count(B2EntranceFeature f) =>
+  static int _count(B2EntranceFeature f) =>
       (f.leftType != B2EntranceFeatureType.none ? 1 : 0) +
       (f.downType != B2EntranceFeatureType.none ? 1 : 0) +
       (f.rightType != B2EntranceFeatureType.none ? 1 : 0);
 
-  String _l10nIdentify(B2EntranceFeature f) {
+  static String _l10nIdentify(B2EntranceFeature f) {
     final sb = StringBuffer();
-    switch (leftType) {
+    switch (f.leftType) {
       case B2EntranceFeatureType.none:
         return 'LeftNo';
       case B2EntranceFeatureType.straight:
@@ -77,7 +77,7 @@ abstract class B2EntranceFeature with _$B2EntranceFeature implements Comparable<
         throw StateError('unreachable');
     }
     sb.write('-');
-    switch ((downType, rightType)) {
+    switch ((f.downType, f.rightType)) {
       case (B2EntranceFeatureType.none, B2EntranceFeatureType.none):
         return 'LeftOnly';
 

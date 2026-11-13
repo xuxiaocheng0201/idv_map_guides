@@ -24,7 +24,7 @@ abstract class MainEntranceFeature with _$MainEntranceFeature implements Compara
     return 0;
   }
 
-  int _count(MainEntranceFeature f) =>(f.hasUpDoor ? 1 : 0) + (f.hasLeftDoor ? 1 : 0) + (f.hasRightDoor ? 1 : 0);
+  static int _count(MainEntranceFeature f) =>(f.hasUpDoor ? 1 : 0) + (f.hasLeftDoor ? 1 : 0) + (f.hasRightDoor ? 1 : 0);
 }
 
 enum SideEntranceFeature implements Comparable<SideEntranceFeature> {
