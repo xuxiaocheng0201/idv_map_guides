@@ -200,15 +200,19 @@ class PhosphorescenceDiseaseWorldsNightmareProvider extends WorldsProvider<Phosp
   @override
   NavigateArguments navigateArguments(World world, EntranceType entrance) {
     final entranceNode = world.entranceNode(entrance)!;
-    final exitNodes = <EntranceType, Node>{};
-    for (final entry in world.entrances.entries) {
-      if (!entry.key.displayable) continue;
-      exitNodes[entry.key] = Node(entry.key.layer, entry.value.x, entry.value.y);
+    final exits = <Node>{};
+    for (final minecart in [
+      PhosphorescenceDiseaseEntranceType.minecartB2A,
+      PhosphorescenceDiseaseEntranceType.minecartB2B,
+      PhosphorescenceDiseaseEntranceType.minecartB3A,
+      PhosphorescenceDiseaseEntranceType.minecartB3B,
+    ]) {
+      exits.add(world.entranceNode(minecart)!);
     }
     return NavigateArguments(
       start: entranceNode,
       resources: Set.of(world.resources),
-      exits: exitNodes.values.toSet(),
+      exits: exits,
     );
   }
 }
