@@ -42,10 +42,7 @@ class MyApp extends StatelessWidget {
       child: SafeArea(
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          localizationsDelegates: [
-            S.delegate,
-            ...GlobalMaterialLocalizations.delegates,
-          ],
+          localizationsDelegates: S.localizationsDelegates,
           supportedLocales: S.supportedLocales,
           onGenerateTitle: (context) => S.of(context).title,
           navigatorKey: navigatorKey,
